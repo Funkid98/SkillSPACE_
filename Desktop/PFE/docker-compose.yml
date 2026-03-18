@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # ─── Backend: Login & Register ────
+  login-register:
+    build:
+      context: ./Backend/login-register-services
+    ports:
+      - "5001:5001"
+    env_file:
+      - ./Backend/login-register-services/.env
+    restart: always
+
+  # ─── Backend: Candidate Service ───
+  candidat:
+    build:
+      context: ./Backend/candidat-service
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./Backend/candidat-service/.env
+    restart: always
+
+  # ─── Backend: Recruiter Service ───
+  recruiter:
+    build:
+      context: ./Backend/recruter-service
+    ports:
+      - "5002:5002"
+    env_file:
+      - ./Backend/recruter-service/.env
+    restart: always
+
+  # ─── Frontend: SkillSpace App ─────
+  frontend:
+    build:
+      context: ./skillspace_front
+    ports:
+      - "8080:80"
+    restart: always
+
+networks:
+  default:
+    name: skillspace-network
