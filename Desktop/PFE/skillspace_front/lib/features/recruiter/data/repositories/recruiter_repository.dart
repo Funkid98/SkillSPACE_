@@ -1,0 +1,39 @@
+import 'dart:convert';
+import 'package:pfe/core/network/api_client.dart';
+import '../models/company_profile_model.dart';
+
+class RecruiterRepository {
+  final ApiClient apiClient;
+
+  RecruiterRepository({required this.apiClient});
+
+  Future<CompanyProfile> getProfile() async {
+    final response = await apiClient.get('/recruiter/profile');
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return CompanyProfile.fromJson(data);
+    } else {
+      throw Exception('Failed to load recruiter profile: ${response.statusCode}');
+    }
+  }
+
+  Future<CompanyProfile> updateProfile(CompanyProfile profile) async {
+    final response = await apiClient.put('/recruiter/profile', profile.toJson());
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return CompanyProfile.fromJson(data);
+    } else {
+      throw Exception('Failed to update recruiter profile: ${response.body}');
+    }
+  }
+
+  Future<String> uploadLogo(List<int> bytes, String filename) async {
+    final response = await apiClient.uploadFile('/recruiter/upload', bytes, filename, fieldName: 'logo');
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['url'];
+    } else {
+      throw Exception('Failed to upload logo: ${response.body}');
+    }
+  }
+}
