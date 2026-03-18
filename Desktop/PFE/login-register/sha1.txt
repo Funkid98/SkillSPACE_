@@ -1,0 +1,7 @@
+﻿Keystore type: PKCS12
+Keystore provider: SUN
+
+Your keystore contains 1 entry
+
+androiddebugkey, Mar 20, 2025, PrivateKeyEntry, 
+Certificate fingerprint (SHA-256): 86:14:D3:38:15:8E:E2:AA:FD:B9:CE:95:CE:18:48:03:2D:93:A8:0C:1E:72:34:7C:94:EF:71:24:B7:5A:B2:58

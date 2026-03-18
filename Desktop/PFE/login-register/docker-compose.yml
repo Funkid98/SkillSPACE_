@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # ─── Backend (Node.js API) ────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: arij3/skillspace-backend:latest
+    container_name: skillspace-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      MONGODB_URI: ${MONGODB_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      MAILTRAP_HOST: ${MAILTRAP_HOST}
+      MAILTRAP_PORT: ${MAILTRAP_PORT}
+      MAILTRAP_USER: ${MAILTRAP_USER}
+      MAILTRAP_PASS: ${MAILTRAP_PASS}
+      MAILTRAP_FROM: ${MAILTRAP_FROM}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+    networks:
+      - skillspace-network
+
+  # ─── Frontend (Flutter Web via Nginx) ────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: arij3/skillspace-frontend:latest
+    container_name: skillspace-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - skillspace-network
+
+# ─── Network ───────────────────────────────────────────────────────────────
+networks:
+  skillspace-network:
+    driver: bridge
