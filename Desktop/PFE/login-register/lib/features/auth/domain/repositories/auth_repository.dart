@@ -16,9 +16,11 @@ abstract class AuthRepository {
     String? role,
   });
 
-  Future<UserModel> signInWithGoogle();
+  Future<UserModel> signInWithGoogle({String? role});
 
-  Future<UserModel> signInWithGithub();
+  Future<void> signInWithGithub({String? role});
+  
+  Future<UserModel> signInWithGithubCode(String code, {String? role});
 
   Future<void> forgotPassword(String email);
 
@@ -27,6 +29,7 @@ abstract class AuthRepository {
   Future<void> resetPassword(String email, String otp, String newPassword);
 
   Future<UserModel> getProfile();
+  Future<void> updateProfile(Map<String, dynamic> updates);
 
   Future<Map<String, dynamic>> uploadCv(String filePath);
 

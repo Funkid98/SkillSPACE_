@@ -14,6 +14,8 @@ import 'package:pfe/features/auth/presentation/pages/auth_page.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../auth/presentation/pages/field_selection_page.dart';
+
 class _CardItem {
   final IconData icon;
   final String title;
@@ -46,7 +48,8 @@ class AudienceSection extends StatelessWidget {
           l10n.recruiterFeat4,
         ],
         onTap: () {
-          final authState = context.read<AuthCubit>().state;
+          final authCubit = context.read<AuthCubit>();
+          final authState = authCubit.state;
           if (authState.loggedInUser != null) {
             final user = authState.loggedInUser;
             final role = authState.role;
@@ -55,34 +58,51 @@ class AudienceSection extends StatelessWidget {
               MaterialPageRoute(
                 builder: (context) => role == UserRole.recruteur
                     ? const RecruiterShell(initialTab: RecruiterTab.profile)
-                    : DashboardShell(
-                        initialTab: DashboardTab.profil,
-                        initialUserData: user,
-                      ),
+                    : (user?['sector']?.toString().isEmpty ?? true)
+                        ? const FieldSelectionPage()
+                        : DashboardShell(
+                            initialTab: DashboardTab.profil,
+                            initialUserData: user,
+                          ),
               ),
             );
           } else {
             // Need to change role before opening AuthPage
-            context.read<AuthCubit>().selectRole(UserRole.recruteur);
-            context.read<AuthCubit>().switchTab(AuthTab.register);
+            authCubit.selectRole(UserRole.recruteur);
+            authCubit.switchTab(AuthTab.register);
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (audContext) => AuthPage(
                   onSuccess: () {
-                    final role = context.read<AuthCubit>().state.role;
-                    final user = context.read<AuthCubit>().state.loggedInUser;
-                    Navigator.pop(audContext);
-                    Navigator.pushReplacement(
-                      context,
+                    final currentAuthState = authCubit.state;
+                    final role = currentAuthState.role;
+                    final user = currentAuthState.loggedInUser;
+
+                    Navigator.of(audContext).pushAndRemoveUntil(
                       MaterialPageRoute(
-                        builder: (context) => role == UserRole.recruteur
-                            ? const RecruiterShell(initialTab: RecruiterTab.profile)
-                            : DashboardShell(
-                                initialTab: DashboardTab.profil,
-                                initialUserData: user,
-                              ),
+                        builder: (_) {
+                          if (role == UserRole.recruteur) {
+                            return const RecruiterShell(
+                                initialTab: RecruiterTab.profile);
+                          } else if (role == UserRole.formateur) {
+                            return DashboardShell(
+                              initialTab: DashboardTab.profil,
+                              initialUserData: user,
+                            );
+                          } else {
+                            final sector = user?['sector'];
+                            if (sector == null || sector.isEmpty) {
+                              return const FieldSelectionPage();
+                            }
+                            return DashboardShell(
+                              initialTab: DashboardTab.profil,
+                              initialUserData: user,
+                            );
+                          }
+                        },
                       ),
+                      (route) => false,
                     );
                   },
                 ),
@@ -102,35 +122,50 @@ class AudienceSection extends StatelessWidget {
             l10n.candidateFeat4,
           ],
           highlighted: true, onTap: () {
-        final authState = context.read<AuthCubit>().state;
+        final authCubit = context.read<AuthCubit>();
+        final authState = authCubit.state;
 
         if (authState.loggedInUser != null) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => DashboardShell(
-                initialTab: DashboardTab.profil,
-                initialUserData: authState.loggedInUser,
-              ),
+              builder: (context) {
+                final user = authState.loggedInUser;
+                final sector = user?['sector'];
+                if (sector == null || sector.toString().isEmpty) {
+                  return const FieldSelectionPage();
+                }
+                return DashboardShell(
+                  initialTab: DashboardTab.profil,
+                  initialUserData: user,
+                );
+              },
             ),
           );
         } else {
-          context.read<AuthCubit>().switchTab(AuthTab.register);
+          authCubit.switchTab(AuthTab.register);
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (audContext) => AuthPage(
                 onSuccess: () {
-                  Navigator.pop(audContext);
-                  Navigator.pushReplacement(
-                    context,
+                  final currentAuthState = authCubit.state;
+
+                  Navigator.of(audContext).pushAndRemoveUntil(
                     MaterialPageRoute(
-                      builder: (context) => DashboardShell(
-                        initialTab: DashboardTab.profil,
-                        initialUserData:
-                            context.read<AuthCubit>().state.loggedInUser,
-                      ),
+                      builder: (_) {
+                        final user = currentAuthState.loggedInUser;
+                        final sector = user?['sector'];
+                        if (sector == null || sector.isEmpty) {
+                          return const FieldSelectionPage();
+                        }
+                        return DashboardShell(
+                          initialTab: DashboardTab.profil,
+                          initialUserData: user,
+                        );
+                      },
                     ),
+                    (route) => false,
                   );
                 },
               ),
@@ -148,7 +183,73 @@ class AudienceSection extends StatelessWidget {
           l10n.trainerFeat3,
           l10n.trainerFeat4,
         ],
-        onTap: () {},
+        onTap: () {
+          final authCubit = context.read<AuthCubit>();
+          final authState = authCubit.state;
+          if (authState.loggedInUser != null) {
+            final user = authState.loggedInUser;
+            final role = authState.role;
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => role == UserRole.formateur
+                    ? DashboardShell(
+                        initialTab: DashboardTab.profil,
+                        initialUserData: user,
+                      )
+                    : role == UserRole.recruteur
+                        ? const RecruiterShell(initialTab: RecruiterTab.profile)
+                        : (user?['sector']?.toString().isEmpty ?? true)
+                            ? const FieldSelectionPage()
+                            : DashboardShell(
+                                initialTab: DashboardTab.profil,
+                                initialUserData: user,
+                              ),
+              ),
+            );
+          } else {
+            authCubit.selectRole(UserRole.formateur);
+            authCubit.switchTab(AuthTab.register);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (audContext) => AuthPage(
+                  onSuccess: () {
+                    final currentAuthState = authCubit.state;
+                    final role = currentAuthState.role;
+                    final user = currentAuthState.loggedInUser;
+                    Navigator.pop(audContext);
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) {
+                          if (role == UserRole.formateur) {
+                            return DashboardShell(
+                              initialTab: DashboardTab.profil,
+                              initialUserData: user,
+                            );
+                          } else if (role == UserRole.recruteur) {
+                            return const RecruiterShell(
+                                initialTab: RecruiterTab.profile);
+                          } else {
+                            final sector = user?['sector'];
+                            if (sector == null || sector.isEmpty) {
+                              return const FieldSelectionPage();
+                            }
+                            return DashboardShell(
+                              initialTab: DashboardTab.profil,
+                              initialUserData: user,
+                            );
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            );
+          }
+        },
       ),
     ];
 

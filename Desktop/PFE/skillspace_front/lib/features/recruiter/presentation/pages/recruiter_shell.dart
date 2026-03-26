@@ -38,7 +38,7 @@ class _RecruiterShellState extends State<RecruiterShell> {
     _activeTab = widget.initialTab;
   }
 
-  Future<void> _onTabChanged(RecruiterTab tab) async {
+  Future<void> _onTabChanged(RecruiterTab tab, BuildContext context) async {
     setState(() => _activeTab = tab);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('active_tab_index', tab.index);
@@ -54,35 +54,37 @@ class _RecruiterShellState extends State<RecruiterShell> {
       )..loadProfile(),
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F3EF),
-        body: isMobile
-            ? Column(
-                children: [
-                  _RecruiterMobileTopBar(
-                    activeTab: _activeTab,
-                    onTabSelected: _onTabChanged,
-                  ),
-                  Container(height: 1, color: const Color(0xFFEAE8E3)),
-                  Expanded(child: _buildContent()),
-                ],
-              )
-            : Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  RecruiterSidebar(
-                    activeTab: _activeTab,
-                    onTabSelected: _onTabChanged,
-                  ),
-                  Container(width: 1, color: const Color(0xFFEAE8E3)),
-                  Expanded(
-                    child: _buildContent(),
-                  ),
-                ],
-              ),
+        body: Builder(
+          builder: (context) => isMobile
+              ? Column(
+                  children: [
+                    _RecruiterMobileTopBar(
+                      activeTab: _activeTab,
+                      onTabSelected: (tab) => _onTabChanged(tab, context),
+                    ),
+                    Container(height: 1, color: const Color(0xFFEAE8E3)),
+                    Expanded(child: _buildContent(context)),
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    RecruiterSidebar(
+                      activeTab: _activeTab,
+                      onTabSelected: (tab) => _onTabChanged(tab, context),
+                    ),
+                    Container(width: 1, color: const Color(0xFFEAE8E3)),
+                    Expanded(
+                      child: _buildContent(context),
+                    ),
+                  ],
+                ),
+        ),
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(BuildContext context) {
     Widget page;
     switch (_activeTab) {
       case RecruiterTab.dashboard:
@@ -105,9 +107,16 @@ class _RecruiterShellState extends State<RecruiterShell> {
         );
         break;
       case RecruiterTab.candidates:
+        final profileState = context.read<RecruiterProfileCubit>().state;
+        String sector = 'Informatique';
+        if (profileState is RecruiterProfileLoaded) {
+          sector = profileState.profile.secteur;
+        }
         page = BlocProvider(
           key: const ValueKey('candidates'),
-          create: (_) => RecruiterCandidatesCubit()..loadCandidates(),
+          create: (_) => RecruiterCandidatesCubit(
+            repository: RecruiterRepository(apiClient: ApiClient()),
+          )..loadCandidates(sector),
           child: const RecruiterCandidatesPage(),
         );
         break;

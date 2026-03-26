@@ -3,6 +3,7 @@ version: '3.8'
 services:
   # ─── Backend: Login & Register ────
   login-register:
+    image: funkid99/skillspace-login:latest
     build:
       context: ./Backend/login-register-services
     ports:
@@ -13,6 +14,7 @@ services:
 
   # ─── Backend: Candidate Service ───
   candidat:
+    image: funkid99/skillspace-candidat:latest
     build:
       context: ./Backend/candidat-service
     ports:
@@ -23,6 +25,7 @@ services:
 
   # ─── Backend: Recruiter Service ───
   recruiter:
+    image: funkid99/skillspace-recruiter:latest
     build:
       context: ./Backend/recruter-service
     ports:
@@ -31,10 +34,23 @@ services:
       - ./Backend/recruter-service/.env
     restart: always
 
+  # ─── Backend: Offer Service ───
+  offer:
+    image: funkid99/skillspace-offer:latest
+    build:
+      context: ./Backend/offer-service
+    ports:
+      - "5003:5003"
+    env_file:
+      - ./Backend/offer-service/.env
+    restart: always
+
   # ─── Frontend: SkillSpace App ─────
   frontend:
+    image: funkid99/skillspace-frontend:latest
     build:
-      context: ./skillspace_front
+      context: .
+      dockerfile: skillspace_front/Dockerfile
     ports:
       - "8080:80"
     restart: always

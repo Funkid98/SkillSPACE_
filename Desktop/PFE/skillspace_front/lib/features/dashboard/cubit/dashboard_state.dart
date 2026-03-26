@@ -11,6 +11,11 @@ class DashboardLoaded extends DashboardState {
   DashboardLoaded(this.data);
 }
 
+class DashboardSaving extends DashboardState {
+  final DashboardData data;
+  DashboardSaving(this.data);
+}
+
 class DashboardError extends DashboardState {
   final String message;
   DashboardError(this.message);

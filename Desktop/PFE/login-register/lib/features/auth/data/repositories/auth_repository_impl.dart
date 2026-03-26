@@ -12,8 +12,12 @@ class AuthRepositoryImpl implements AuthRepository {
 
   AuthRepositoryImpl({ApiClient? apiClient, GoogleSignIn? googleSignIn})
       : _apiClient = apiClient ?? ApiClient(),
-        _googleSignIn =
-            googleSignIn ?? GoogleSignIn(scopes: ['email', 'openid']);
+        _googleSignIn = googleSignIn ??
+            GoogleSignIn(
+              clientId:
+                  '1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com',
+              scopes: ['email', 'openid'],
+            );
 
   // Helper method to save token and user data
   Future<void> _saveAuthData(String token, UserModel user) async {
@@ -32,7 +36,7 @@ class AuthRepositoryImpl implements AuthRepository {
     String? entreprise,
   }) async {
     final isRecruiter = role == 'recruteur' || role == 'recruiter';
-    final endpoint = isRecruiter ? '/recruiter/register' : '/candidat/register';
+    final endpoint = isRecruiter ? '/recruiter/register' : '/api/auth/register';
 
     final body = isRecruiter
         ? {
@@ -42,8 +46,8 @@ class AuthRepositoryImpl implements AuthRepository {
             'poste': 'Recruteur', // Default value
           }
         : {
-            'prenom': firstName,
-            'nom': lastName,
+            'firstName': firstName,
+            'lastName': lastName,
             'email': email,
             'password': password,
             'role': role ?? 'candidat',
@@ -73,6 +77,7 @@ class AuthRepositoryImpl implements AuthRepository {
       lastName: data['nom'] ?? '',
       email: data['email'],
       role: data['role'],
+      entreprise: data['entreprise'],
     );
   }
 
@@ -83,7 +88,7 @@ class AuthRepositoryImpl implements AuthRepository {
     String? role,
   }) async {
     final isRecruiter = role == 'recruteur' || role == 'recruiter';
-    final endpoint = isRecruiter ? '/recruiter/login' : '/candidat/login';
+    final endpoint = isRecruiter ? '/recruiter/login' : '/api/auth/login';
 
     final response = await _apiClient.post(endpoint, {
       'email': email,
@@ -106,8 +111,13 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<UserModel> signInWithGoogle() async {
+  Future<UserModel> signInWithGoogle({String? role}) async {
     try {
+      // Force library initialization on web by attempting a silent sign-in first
+      try {
+        await _googleSignIn.signInSilently();
+      } catch (_) {}
+
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
@@ -117,13 +127,22 @@ class AuthRepositoryImpl implements AuthRepository {
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
       final String? idToken = googleAuth.idToken;
+      final String? accessToken = googleAuth.accessToken;
 
-      if (idToken == null) {
+      if (idToken == null && accessToken == null) {
         throw Exception(
-            'Token Google introuvable. Assurez-vous que le SHA-1 est configuré sur Firebase.');
+            'Token Google introuvable. Assurez-vous que le SHA-1 est correctement configuré.');
       }
 
-      final response = await _apiClient.signInWithGoogle(idToken);
+      final isRecruiter = role == 'recruteur' || role == 'recruiter';
+      final endpoint = isRecruiter ? '/recruiter/google' : '/api/auth/google';
+      final body = {
+        'idToken': idToken,
+        'accessToken': accessToken,
+        'role': role ?? 'candidat'
+      };
+
+      final response = await _apiClient.post(endpoint, body);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
@@ -135,7 +154,10 @@ class AuthRepositoryImpl implements AuthRepository {
             data['message'] ?? 'Erreur lors de la connexion Google');
       }
     } catch (e) {
-      // Catch all and surface the error message
+      if (e.toString().contains('popup_closed')) {
+        // Do nothing or rethrow something that the Bloc can handle silently
+        throw Exception('Operation cancelled');
+      }
       throw Exception('Google Sign-In échoué: $e');
     }
   }
@@ -145,23 +167,51 @@ class AuthRepositoryImpl implements AuthRepository {
     final prefs = await SharedPreferences.getInstance();
     final userData = prefs.getString('user_data');
     bool isRecruiter = false;
+    bool isFormateur = false;
+    String? userId;
+
     if (userData != null) {
       final user = UserModel.fromJson(jsonDecode(userData));
       isRecruiter = user.role == 'recruteur' || user.role == 'recruiter';
+      isFormateur = user.role == 'formateur' || user.role == 'trainer';
+      userId = user.id;
     }
 
-    final endpoint = isRecruiter ? '/recruiter/profile' : '/candidat/me';
+    final endpoint = isRecruiter
+        ? '/recruiter/profile'
+        : (isFormateur ? '/api/formateur/profile/$userId' : '/candidat/me');
+
     final response = await _apiClient.get(endpoint);
     final data = jsonDecode(response.body);
 
     if (response.statusCode == 200) {
-      return isRecruiter
-          ? _mapRecruiterToUserModel(data)
-          : UserModel.fromJson(data);
+      if (isRecruiter) {
+        return _mapRecruiterToUserModel(data);
+      } else if (isFormateur) {
+        // Map Formateur database model to UserModel
+        return UserModel(
+          id: data['userId'] ?? userId ?? '',
+          firstName: data['firstName'] ?? '',
+          lastName: data['lastName'] ?? '',
+          email: data['email'] ?? '',
+          role: 'formateur',
+        );
+      } else {
+        return UserModel.fromJson(data);
+      }
     } else {
       throw Exception(data['error'] ??
           data['message'] ??
           'Impossible de récupérer le profil');
+    }
+  }
+
+  @override
+  Future<void> updateProfile(Map<String, dynamic> updates) async {
+    final response = await _apiClient.put('/candidat/me', updates);
+    final data = jsonDecode(response.body);
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception(data['message'] ?? data['error'] ?? 'Erreur lors de la mise à jour du profil');
     }
   }
 
@@ -183,32 +233,35 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<UserModel> signInWithGithub() async {
+  Future<void> signInWithGithub({String? role}) async {
     // 1. Open GitHub OAuth URL in the browser
-    const clientId = 'Ov23li2wNjAMnAFvBnyK';
-    const redirectUri = 'http://127.0.0.1:5001/api/auth/github/callback';
+    const clientId = 'Ov23li9VlgIH94DHCcgx';
+    const redirectUri = 'http://localhost:5001/api/auth/github/callback';
     const scope = 'user:email';
     const githubAuthUrl =
         'https://github.com/login/oauth/authorize?client_id=$clientId&redirect_uri=$redirectUri&scope=$scope';
 
     try {
       // Launch the GitHub OAuth page in the browser
-      await launchUrl(
+      final launched = await launchUrl(
         Uri.parse(githubAuthUrl),
-        mode: LaunchMode.externalApplication,
+        mode: LaunchMode.platformDefault,
       );
+      if (!launched) {
+        throw Exception('Impossible d\'ouvrir le navigateur.');
+      }
     } catch (e) {
-      throw Exception('Impossible d\'ouvrir le navigateur: $e');
+      throw Exception('Erreur lors de l\'ouverture du navigateur: $e');
     }
-    // 2. Wait for the server to receive the callback and redirect with the code
-    // The app never gets the code directly via redirect on pure Flutter.
-    // So we poll the backend for a success signal, or ask the user to enter the code.
-    // A simpler approach for local testing: open a dialog for code entry.
-    throw Exception('GITHUB_OPEN_BROWSER');
   }
 
-  Future<UserModel> signInWithGithubCode(String code) async {
-    final response = await _apiClient.signInWithGithub(code);
+  @override
+  Future<UserModel> signInWithGithubCode(String code, {String? role}) async {
+    final isRecruiter = role == 'recruteur' || role == 'recruiter';
+    final endpoint = isRecruiter ? '/recruiter/github' : '/api/auth/github';
+    final body = {'code': code.trim(), 'role': role ?? 'candidat'};
+
+    final response = await _apiClient.post(endpoint, body);
     final data = jsonDecode(response.body);
     if (response.statusCode == 200 && data['success'] == true) {
       final user = UserModel.fromJson(data['user']);

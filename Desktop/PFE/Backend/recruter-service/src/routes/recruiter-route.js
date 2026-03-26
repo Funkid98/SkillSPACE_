@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const { registerRecruiter, authRecruiter, getRecruiterProfile, updateRecruiterProfile } = require('../controllers/recruiter.controller');
+const { registerRecruiter, authRecruiter, getRecruiterProfile, updateRecruiterProfile, googleSignInForRecruiter, githubSignInForRecruiter, checkRecruiterEmailExists, listEmails } = require('../controllers/recruiter.controller');
 const { protect } = require('../middleware/auth-middleware');
 
 // Multer Storage Configuration
@@ -20,6 +20,9 @@ const upload = multer({ storage });
 // Public routes
 router.post('/register', registerRecruiter);
 router.post('/login', authRecruiter);
+router.post('/google', googleSignInForRecruiter);
+router.post('/github', githubSignInForRecruiter);
+router.get('/exists/:email', checkRecruiterEmailExists);
 
 // Protected routes
 router.get('/profile', protect, getRecruiterProfile);
@@ -30,7 +33,7 @@ router.post('/upload', protect, upload.single('logo'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ message: 'Please upload a file' });
     }
-    const url = `http://127.0.0.1:5002/uploads/${req.file.filename}`;
+    const url = `http://localhost:5002/uploads/${req.file.filename}`;
     res.json({ url });
 });
 

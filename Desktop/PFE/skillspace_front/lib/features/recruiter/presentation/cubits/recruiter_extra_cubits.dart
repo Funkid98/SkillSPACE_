@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/recruiter_job_offer_model.dart';
 import '../../data/repositories/recruiter_job_repository.dart';
+import '../../data/repositories/recruiter_repository.dart';
 
 abstract class RecruiterOffersState {}
 
@@ -79,77 +80,42 @@ class RecruiterCandidatesError extends RecruiterCandidatesState {
 }
 
 class RecruiterCandidatesCubit extends Cubit<RecruiterCandidatesState> {
-  RecruiterCandidatesCubit() : super(RecruiterCandidatesInitial());
+  final RecruiterRepository repository;
+  List<CandidateMatch> _fullList = [];
+  String _lastQuery = '';
 
-  void loadCandidates() async {
+  RecruiterCandidatesCubit({required this.repository}) : super(RecruiterCandidatesInitial());
+
+  void loadCandidates(String sector) async {
     emit(RecruiterCandidatesLoading());
     try {
-      await Future.delayed(const Duration(milliseconds: 700));
-      final candidates = [
-        CandidateMatch(
-          id: '1',
-          name: 'Jean Dupont',
-          role: 'Développeur Frontend',
-          location: 'Paris',
-          experience: 'Jeune diplômé',
-          skills: ['React', 'TypeScript', 'CSS', 'Git'],
-          matchScore: 92,
-          status: 'Nouveau',
-          isSaved: true,
-          initials: 'JD',
-        ),
-        CandidateMatch(
-          id: '2',
-          name: 'Marie Martin',
-          role: 'Data Analyst',
-          location: 'Lyon',
-          experience: '1 an de stage',
-          skills: ['Python', 'SQL', 'Excel', 'Tableau'],
-          matchScore: 87,
-          status: 'En revue',
-          isSaved: false,
-          initials: 'MM',
-        ),
-        CandidateMatch(
-          id: '3',
-          name: 'Lucas Bernard',
-          role: 'Développeur Full-Stack',
-          location: 'Bordeaux',
-          experience: 'Jeune diplômé',
-          skills: ['React', 'Node.js', 'MongoDB', 'TypeScript'],
-          matchScore: 84,
-          status: 'Nouveau',
-          isSaved: true,
-          initials: 'LB',
-        ),
-        CandidateMatch(
-          id: '4',
-          name: 'Sophie Duval',
-          role: 'UX Designer',
-          location: 'Remote',
-          experience: '6 mois de stage',
-          skills: ['Figma', 'Adobe XD', 'User Research'],
-          matchScore: 79,
-          status: 'Entretien planifié',
-          isSaved: false,
-          initials: 'SD',
-        ),
-        CandidateMatch(
-          id: '5',
-          name: 'Ahmed Benali',
-          role: 'Chef de projet IT',
-          location: 'Marseille',
-          experience: 'Jeune diplômé',
-          skills: ['Agile', 'JIRA', 'Communication', 'Scrum'],
-          matchScore: 75,
-          status: 'Nouveau',
-          isSaved: false,
-          initials: 'AB',
-        ),
-      ];
-      emit(RecruiterCandidatesLoaded(candidates));
+      _fullList = await repository.getCandidatesBySector(sector);
+      filterCandidates(_lastQuery);
     } catch (e) {
       emit(RecruiterCandidatesError(e.toString()));
     }
+  }
+
+  void filterCandidates(String query) {
+    _lastQuery = query;
+    if (_fullList.isEmpty && state is! RecruiterCandidatesLoading) {
+      emit(RecruiterCandidatesLoaded([]));
+      return;
+    }
+    
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) {
+      emit(RecruiterCandidatesLoaded(_fullList));
+      return;
+    }
+    
+    final filtered = _fullList.where((c) {
+      final nameMatch = c.name.toLowerCase().contains(q);
+      final roleMatch = c.role.toLowerCase().contains(q);
+      final skillMatch = c.skills.any((s) => s.toLowerCase().contains(q));
+      return nameMatch || roleMatch || skillMatch;
+    }).toList();
+    
+    emit(RecruiterCandidatesLoaded(filtered));
   }
 }

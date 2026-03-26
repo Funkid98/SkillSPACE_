@@ -8,9 +8,11 @@ const {
   resetPassword,
   googleSignIn,
   githubSignIn,
+  checkEmailExists,
 } = require('../controllers/authController');
 
 // Public routes
+router.get('/exists/:email', checkEmailExists);
 router.post('/register', register);
 router.post('/login', login);
 router.post('/forgot-password', forgotPassword);

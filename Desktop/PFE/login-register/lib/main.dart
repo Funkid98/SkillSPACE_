@@ -20,8 +20,12 @@ class SkillSpaceApp extends StatelessWidget {
       create: (context) => AuthRepositoryImpl(),
       child: MultiBlocProvider(
         providers: [
-          BlocProvider(create: (context) => AuthCubit(authRepository: context.read<AuthRepository>())),
-          BlocProvider(create: (context) => ForgotPasswordCubit(authRepository: context.read<AuthRepository>())),
+          BlocProvider(
+              create: (context) =>
+                  AuthCubit(authRepository: context.read<AuthRepository>())),
+          BlocProvider(
+              create: (context) => ForgotPasswordCubit(
+                  authRepository: context.read<AuthRepository>())),
         ],
         child: MaterialApp(
           title: 'SkillSpace',

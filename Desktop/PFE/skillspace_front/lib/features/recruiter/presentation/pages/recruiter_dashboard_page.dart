@@ -54,64 +54,49 @@ class _DashboardContent extends StatelessWidget {
                   AnimatedReveal(
                     delay: const Duration(milliseconds: 100),
                     direction: RevealDirection.fromTop,
-                    child: Text(
-                      l10n.recruiterDashboard,
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.textDark,
-                        letterSpacing: -0.5,
-                      ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        if (data.logoUrl != null && data.logoUrl!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                data.logoUrl!,
+                                height: 32,
+                                width: 32,
+                                fit: BoxFit.cover,
+                                errorBuilder: (ctx, _, __) => const Icon(Icons.business, size: 32, color: AppColors.textGray),
+                              ),
+                            ),
+                          ),
+                        Text(
+                          '${l10n.welcome} ${data.companyName}',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.textDark,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 6),
                   AnimatedReveal(
                     delay: const Duration(milliseconds: 200),
                     direction: RevealDirection.fromTop,
-                    child: Row(
-                      children: [
-                        if (data.logoUrl != null && data.logoUrl!.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 10),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: Image.network(
-                                data.logoUrl!,
-                                height: 28,
-                                width: 28,
-                                fit: BoxFit.cover,
-                                errorBuilder: (ctx, _, __) => const Icon(Icons.business, size: 24, color: AppColors.textGray),
-                              ),
-                            ),
-                          ),
-                        Text(
-                          '${l10n.welcome}, ${data.companyName}',
-                          style: const TextStyle(
-                              fontSize: 15, color: AppColors.textGray),
-                        ),
-                      ],
+                    child: Text(
+                      l10n.recruiterDashboard,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: AppColors.textGray,
+                      ),
                     ),
                   ),
                 ],
               ),
-              if (!isMobile)
-                AnimatedReveal(
-                  delay: const Duration(milliseconds: 100),
-                  child: ElevatedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.add, size: 18),
-                    label: Text(l10n.publishOffer),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.orange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 16),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
-                    ),
-                  ),
-                ),
             ],
           ),
           const SizedBox(height: 32),

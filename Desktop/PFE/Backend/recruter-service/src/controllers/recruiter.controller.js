@@ -1,10 +1,40 @@
 const Recruiter = require('../models/recruiter');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
+const axios = require('axios');
 
-const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, {
+const client = new OAuth2Client('1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com');
+
+const CANDIDAT_SERVICE_URL = 'http://localhost:5001/api/auth';
+
+const generateToken = (id, entreprise) => {
+    return jwt.sign({ id, entreprise }, process.env.JWT_SECRET, {
         expiresIn: '30d'
     });
+};
+
+const checkIfEmailExistsInCandidat = async (email) => {
+    try {
+        const response = await axios.get(`${CANDIDAT_SERVICE_URL}/exists/${email}`);
+        return response.data.exists;
+    } catch (error) {
+        console.error('Error checking email in candidat service:', error.message);
+        return false; // Fallback to false if service is down, or we could throw
+    }
+};
+
+/**
+ * @desc    Check if an email exists in recruiter database
+ * @route   GET /api/recruiter/exists/:email
+ * @access  Public
+ */
+const checkRecruiterEmailExists = async (req, res) => {
+    try {
+        const recruiter = await Recruiter.findOne({ email: req.params.email });
+        res.json({ exists: !!recruiter });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
 
 // @desc    Register a new recruiter
@@ -17,7 +47,13 @@ const registerRecruiter = async (req, res) => {
         const recruiterExists = await Recruiter.findOne({ email });
 
         if (recruiterExists) {
-            return res.status(400).json({ message: 'Recruiter already exists' });
+            return res.status(400).json({ message: 'Cet email est déjà utilisé par un recruteur.' });
+        }
+
+        // Check in candidat service
+        const existsAsCandidat = await checkIfEmailExistsInCandidat(email);
+        if (existsAsCandidat) {
+            return res.status(400).json({ message: 'Cet email est déjà utilisé par un candidat.' });
         }
 
         const recruiter = await Recruiter.create({
@@ -34,7 +70,8 @@ const registerRecruiter = async (req, res) => {
                 entreprise: recruiter.entreprise,
                 poste: recruiter.poste,
                 role: recruiter.role,
-                token: generateToken(recruiter._id)
+                token: generateToken(recruiter._id, recruiter.entreprise),
+                message: `Bienvenue "${recruiter.entreprise}"`
             });
         } else {
             res.status(400).json({ message: 'Invalid recruiter data' });
@@ -60,7 +97,8 @@ const authRecruiter = async (req, res) => {
                 entreprise: recruiter.entreprise,
                 poste: recruiter.poste,
                 role: recruiter.role,
-                token: generateToken(recruiter._id)
+                token: generateToken(recruiter._id, recruiter.entreprise),
+                message: `Bienvenue "${recruiter.entreprise}"`
             });
         } else {
             res.status(401).json({ message: 'Invalid email or password' });
@@ -139,9 +177,170 @@ const updateRecruiterProfile = async (req, res) => {
     }
 };
 
+// @desc    Auth recruiter with Google
+// @route   POST /api/recruiter/google
+// @access  Public
+const googleSignInForRecruiter = async (req, res) => {
+    try {
+        const { idToken, accessToken } = req.body;
+
+        if (!idToken && !accessToken) {
+            return res.status(400).json({ success: false, message: 'idToken or accessToken is required' });
+        }
+
+        let email;
+
+        if (idToken) {
+            const ticket = await client.verifyIdToken({
+                idToken,
+                audience: '1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com',
+            });
+            const payload = ticket.getPayload();
+            email = payload.email;
+        } else {
+            // Verify access token using Google UserInfo API
+            const response = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${accessToken}` }
+            });
+            email = response.data.email;
+        }
+
+        if (!email) {
+            throw new Error('Could not retrieve email from Google');
+        }
+
+        let recruiter = await Recruiter.findOne({ email });
+        if (!recruiter) {
+            // Check in candidat service before creating
+            const existsAsCandidat = await checkIfEmailExistsInCandidat(email);
+            if (existsAsCandidat) {
+                return res.status(400).json({ success: false, message: 'Cet email est déjà utilisé par un candidat.' });
+            }
+
+            const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+            recruiter = await Recruiter.create({
+                email,
+                password: randomPassword,
+                entreprise: 'A définir',
+                poste: 'Recruteur',
+                role: 'recruteur'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Bienvenue "${recruiter.entreprise}"`,
+            token: generateToken(recruiter._id, recruiter.entreprise),
+            user: {
+                id: recruiter._id,
+                email: recruiter.email,
+                entreprise: recruiter.entreprise,
+                poste: recruiter.poste,
+                role: recruiter.role,
+                firstName: 'Recruteur',
+                lastName: ''
+            }
+        });
+    } catch (error) {
+        console.error('Google Sign In error:', error);
+        res.status(401).json({ success: false, message: 'Authentification Google échouée.', error: error.message });
+    }
+};
+
+// @desc    Auth recruiter with GitHub
+// @route   POST /api/recruiter/github
+// @access  Public
+const githubSignInForRecruiter = async (req, res) => {
+    try {
+        const { code } = req.body;
+
+        if (!code) {
+            return res.status(400).json({ success: false, message: 'Le code GitHub est requis.' });
+        }
+
+        // 1. Échanger le code contre un access token
+        const tokenResponse = await axios.post(
+            'https://github.com/login/oauth/access_token',
+            {
+                client_id: process.env.GITHUB_CLIENT_ID || 'Ov23li9VlgIH94DHCcgx',
+                client_secret: process.env.GITHUB_CLIENT_SECRET,
+                code,
+            },
+            {
+                headers: { Accept: 'application/json' },
+            }
+        );
+
+        const accessToken = tokenResponse.data.access_token;
+
+        if (!accessToken) {
+            return res.status(400).json({ success: false, message: 'Code GitHub invalide ou expiré.' });
+        }
+
+        // 2. Récupérer les infos de l'utilisateur
+        const userResponse = await axios.get('https://api.github.com/user', {
+            headers: { Authorization: `Bearer ${accessToken}` },
+        });
+
+        const githubUser = userResponse.data;
+
+        // 3. Récupérer l'email
+        let email = githubUser.email;
+        if (!email) {
+            const emailResponse = await axios.get('https://api.github.com/user/emails', {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            const primaryEmail = emailResponse.data.find(e => e.primary && e.verified);
+            email = primaryEmail ? primaryEmail.email : emailResponse.data[0].email;
+        }
+
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Impossible de récupérer une adresse email depuis GitHub.' });
+        }
+
+        let recruiter = await Recruiter.findOne({ email });
+        if (!recruiter) {
+            // Check in candidat service before creating
+            const existsAsCandidat = await checkIfEmailExistsInCandidat(email);
+            if (existsAsCandidat) {
+                return res.status(400).json({ success: false, message: 'Cet email est déjà utilisé par un candidat.' });
+            }
+
+            const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+            recruiter = await Recruiter.create({
+                email,
+                password: randomPassword,
+                entreprise: 'A définir',
+                poste: 'Recruteur',
+                role: 'recruteur'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Bienvenue "${recruiter.entreprise}"`,
+            token: generateToken(recruiter._id, recruiter.entreprise),
+            user: {
+                id: recruiter._id,
+                email: recruiter.email,
+                entreprise: recruiter.entreprise,
+                role: recruiter.role,
+                firstName: githubUser.name || githubUser.login || 'Recruteur',
+                lastName: ''
+            }
+        });
+    } catch (error) {
+        console.error('GitHub Sign In error:', error);
+        res.status(500).json({ success: false, message: 'Authentification GitHub échouée.', error: error.message });
+    }
+};
+
 module.exports = {
     registerRecruiter,
     authRecruiter,
     getRecruiterProfile,
-    updateRecruiterProfile
+    updateRecruiterProfile,
+    googleSignInForRecruiter,
+    githubSignInForRecruiter,
+    checkRecruiterEmailExists
 };

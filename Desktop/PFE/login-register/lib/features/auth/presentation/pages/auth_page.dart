@@ -6,6 +6,7 @@ import '../cubit/forgot_password_cubit.dart';
 import '../../../../core/theme.dart';
 import '../../../../core/utils/app_toast.dart';
 import '../../../../core/utils/string_extension.dart';
+import 'package:form_validator/form_validator.dart';
 
 class AuthPage extends StatefulWidget {
   final VoidCallback? onSuccess;
@@ -21,6 +22,8 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
   final _firstCtrl = TextEditingController();
   final _lastCtrl = TextEditingController();
   final _entrepriseCtrl = TextEditingController();
+  final _registerFormKey = GlobalKey<FormState>();
+  final _loginFormKey = GlobalKey<FormState>();
 
   bool _showForgot = false;
 
@@ -94,14 +97,29 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
                 AppToast.showSuccess(context,
                     'Compte créé avec succès ! Connectez-vous maintenant.');
                 context.read<AuthCubit>().switchTab(AuthTab.login);
+                // Reset isSuccess so the login listener can fire again
+                context.read<AuthCubit>().clearSuccess();
               } else {
                 // Login success
                 final user = state.loggedInUser;
-                final firstName = user?['firstName']?.toString() ?? '';
-                final displayName = firstName.isNotEmpty 
-                    ? firstName.capitalize() 
-                    : user?['email']?.toString() ?? 'Utilisateur';
-                AppToast.showSuccess(context, 'Bienvenue, $displayName !');
+                String welcomeMsg;
+                String displayName;
+                final company = user?['entreprise']?.toString() ?? '';
+                final userRole = (user?['role']?.toString() ?? '').toLowerCase();
+
+                if (company.isNotEmpty || userRole == 'recruiter' || userRole == 'recruteur') {
+                  displayName = company.isNotEmpty 
+                      ? company 
+                      : user?['email']?.toString() ?? 'Entreprise';
+                  welcomeMsg = 'Bienvenue $displayName !';
+                } else {
+                  final firstName = user?['firstName']?.toString() ?? '';
+                  displayName = firstName.isNotEmpty
+                      ? firstName.capitalize()
+                      : user?['email']?.toString() ?? 'Utilisateur';
+                  welcomeMsg = 'Bienvenue, $displayName !';
+                }
+                AppToast.showSuccess(context, welcomeMsg);
                 if (widget.onSuccess != null) {
                   widget.onSuccess!();
                 }
@@ -138,12 +156,14 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
                                   ? _ForgotPasswordFlow(onBack: _hideForgotFlow)
                                   : authState.tab == AuthTab.login
                                       ? _LoginForm(
+                                          formKey: _loginFormKey,
                                           emailCtrl: _emailCtrl,
                                           passCtrl: _passCtrl,
                                           state: authState,
                                           onForgot: _showForgotFlow,
                                         )
                                       : _RegisterForm(
+                                          formKey: _registerFormKey,
                                           firstCtrl: _firstCtrl,
                                           lastCtrl: _lastCtrl,
                                           entrepriseCtrl: _entrepriseCtrl,
@@ -510,93 +530,139 @@ class _RoleCard extends StatelessWidget {
 
 // ─── Login Form ───────────────────────────────────────────────────────────────
 class _LoginForm extends StatelessWidget {
+  final GlobalKey<FormState> formKey;
   final TextEditingController emailCtrl;
   final TextEditingController passCtrl;
   final AuthState state;
   final VoidCallback onForgot;
   const _LoginForm(
-      {required this.emailCtrl,
+      {required this.formKey,
+      required this.emailCtrl,
       required this.passCtrl,
       required this.state,
       required this.onForgot});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Bon retour ! 👋',
-            style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.textDark,
-                letterSpacing: -0.5)),
-        const SizedBox(height: 4),
-        const Text('Connectez-vous pour continuer',
-            style: TextStyle(fontSize: 13.5, color: AppTheme.textGrey)),
-        const SizedBox(height: 26),
-        if (state.error != null) ...[
-          _ErrorBanner(state.error!),
-          const SizedBox(height: 10),
-        ],
-        const _Label('Email'),
-        TextField(
-          controller: emailCtrl,
-          keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(
-            hintText: 'vous@exemple.com',
-            prefixIcon: Icon(Icons.mail_outline_rounded,
-                size: 18, color: AppTheme.textGrey),
+    return Form(
+      key: formKey,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Bon retour ! 👋',
+              style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textDark,
+                  letterSpacing: -0.5)),
+          const SizedBox(height: 4),
+          const Text('Connectez-vous pour continuer',
+              style: TextStyle(fontSize: 13.5, color: AppTheme.textGrey)),
+          const SizedBox(height: 26),
+          if (state.error != null) ...[
+            _ErrorBanner(state.error!),
+            const SizedBox(height: 10),
+          ],
+          const _Label('Email'),
+          TextFormField(
+            controller: emailCtrl,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(
+              hintText: 'vous@exemple.com',
+              prefixIcon: Icon(Icons.mail_outline_rounded,
+                  size: 18, color: AppTheme.textGrey),
+            ),
+            validator: ValidationBuilder()
+                .required('Email requis')
+                .email('Email invalide')
+                .build(),
           ),
-        ),
-        const SizedBox(height: 16),
-        const _Label('Mot de passe'),
-        TextField(
-          controller: passCtrl,
-          obscureText: !state.passwordVisible,
-          decoration: InputDecoration(
-            hintText: '••••••••',
-            prefixIcon: const Icon(Icons.lock_outline_rounded,
-                size: 18, color: AppTheme.textGrey),
-            suffixIcon: IconButton(
-              icon: Icon(
-                state.passwordVisible
-                    ? Icons.visibility_outlined
-                    : Icons.visibility_off_outlined,
-                color: AppTheme.textGrey,
-                size: 18,
+          const SizedBox(height: 16),
+          const _Label('Mot de passe'),
+          TextFormField(
+            controller: passCtrl,
+            obscureText: !state.passwordVisible,
+            decoration: InputDecoration(
+              hintText: '••••••••',
+              prefixIcon: const Icon(Icons.lock_outline_rounded,
+                  size: 18, color: AppTheme.textGrey),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  state.passwordVisible
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  color: AppTheme.textGrey,
+                  size: 18,
+                ),
+                onPressed: () => context.read<AuthCubit>().togglePassword(),
               ),
-              onPressed: () => context.read<AuthCubit>().togglePassword(),
+            ),
+            validator: ValidationBuilder()
+                .required('Mot de passe requis')
+                .build(),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              SizedBox(
+                height: 24,
+                width: 24,
+                child: Checkbox(
+                  value: state.staySignedIn,
+                  activeColor: AppTheme.accent,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4)),
+                  onChanged: (_) =>
+                      context.read<AuthCubit>().toggleStaySignedIn(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => context.read<AuthCubit>().toggleStaySignedIn(),
+                child: const Text(
+                  'Rester connecté(e)',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppTheme.textDark,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _RoleSelector(selected: state.role),
+          const SizedBox(height: 28),
+          _SubmitButton(
+            label: 'Se connecter',
+            isLoading: state.isLoading,
+            onTap: () {
+              if (formKey.currentState?.validate() ?? false) {
+                context.read<AuthCubit>().login(emailCtrl.text, passCtrl.text);
+              }
+            },
+          ),
+          const SizedBox(height: 24),
+          const _OrDivider(),
+          const SizedBox(height: 24),
+          _SocialLoginButtons(
+            isLoading: state.isLoading,
+            onGoogleTap: () => context.read<AuthCubit>().signInWithGoogle(),
+            onGithubTap: () => context.read<AuthCubit>().signInWithGithub(),
+          ),
+          const SizedBox(height: 14),
+          Center(
+            child: TextButton(
+              onPressed: onForgot,
+              style: TextButton.styleFrom(foregroundColor: AppTheme.accent),
+              child: const Text('Mot de passe oublié ?',
+                  style:
+                      TextStyle(fontWeight: FontWeight.w500, fontSize: 13.5)),
             ),
           ),
-        ),
-        const SizedBox(height: 20),
-        _RoleSelector(selected: state.role),
-        const SizedBox(height: 28),
-        _SubmitButton(
-          label: 'Se connecter',
-          isLoading: state.isLoading,
-          onTap: () =>
-              context.read<AuthCubit>().login(emailCtrl.text, passCtrl.text),
-        ),
-        const SizedBox(height: 24),
-        const _OrDivider(),
-        const SizedBox(height: 24),
-        _SocialLoginButtons(
-          isLoading: state.isLoading,
-          onGoogleTap: () => context.read<AuthCubit>().signInWithGoogle(),
-          onGithubTap: () => context.read<AuthCubit>().signInWithGithub(),
-        ),
-        const SizedBox(height: 14),
-        Center(
-          child: TextButton(
-            onPressed: onForgot,
-            style: TextButton.styleFrom(foregroundColor: AppTheme.accent),
-            child: const Text('Mot de passe oublié ?',
-                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13.5)),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -608,9 +674,11 @@ class _RegisterForm extends StatelessWidget {
   final TextEditingController entrepriseCtrl;
   final TextEditingController emailCtrl;
   final TextEditingController passCtrl;
+  final GlobalKey<FormState> formKey;
   final AuthState state;
   const _RegisterForm(
-      {required this.firstCtrl,
+      {required this.formKey,
+      required this.firstCtrl,
       required this.lastCtrl,
       required this.entrepriseCtrl,
       required this.emailCtrl,
@@ -619,7 +687,10 @@ class _RegisterForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Form(
+      key: formKey,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('Créer un compte ✨',
@@ -644,10 +715,19 @@ class _RegisterForm extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const _Label('Prénom'),
-                      TextField(
-                          controller: firstCtrl,
-                          textCapitalization: TextCapitalization.words,
-                          decoration: const InputDecoration(hintText: 'Jean')),
+                      TextFormField(
+                        controller: firstCtrl,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(hintText: 'Jean'),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'[a-zA-ZÀ-ÿ\s-]')),
+                        ],
+                        validator: ValidationBuilder()
+                            .required('Prénom requis')
+                            .minLength(4, 'Minimum 4 caractères')
+                            .build(),
+                      ),
                     ]),
               ),
               const SizedBox(width: 12),
@@ -656,11 +736,19 @@ class _RegisterForm extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const _Label('Nom'),
-                      TextField(
-                          controller: lastCtrl,
-                          textCapitalization: TextCapitalization.words,
-                          decoration:
-                              const InputDecoration(hintText: 'Dupont')),
+                      TextFormField(
+                        controller: lastCtrl,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(hintText: 'Dupont'),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'[a-zA-ZÀ-ÿ\s-]')),
+                        ],
+                        validator: ValidationBuilder()
+                            .required('Nom requis')
+                            .minLength(4, 'Minimum 4 caractères')
+                            .build(),
+                      ),
                     ]),
               ),
             ],
@@ -668,18 +756,24 @@ class _RegisterForm extends StatelessWidget {
         if (state.role == UserRole.recruteur) ...[
           const SizedBox(height: 16),
           const _Label('Nom de l\'entreprise'),
-          TextField(
-              controller: entrepriseCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                hintText: 'SkillSpace Inc.',
-                prefixIcon: Icon(Icons.business_rounded,
-                    size: 18, color: AppTheme.textGrey),
-              )),
+          TextFormField(
+            controller: entrepriseCtrl,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(
+              hintText: 'SkillSpace Inc.',
+              prefixIcon: Icon(Icons.business_rounded,
+                  size: 18, color: AppTheme.textGrey),
+            ),
+            validator: state.role == UserRole.recruteur
+                ? ValidationBuilder()
+                    .required('Nom de l\'entreprise requis')
+                    .build()
+                : null,
+          ),
         ],
         const SizedBox(height: 16),
         const _Label('Email'),
-        TextField(
+        TextFormField(
           controller: emailCtrl,
           keyboardType: TextInputType.emailAddress,
           decoration: const InputDecoration(
@@ -687,10 +781,14 @@ class _RegisterForm extends StatelessWidget {
             prefixIcon: Icon(Icons.mail_outline_rounded,
                 size: 18, color: AppTheme.textGrey),
           ),
+          validator: ValidationBuilder()
+              .required('Email requis')
+              .email('Email invalide')
+              .build(),
         ),
         const SizedBox(height: 16),
         const _Label('Mot de passe'),
-        TextField(
+        TextFormField(
           controller: passCtrl,
           obscureText: !state.passwordVisible,
           decoration: InputDecoration(
@@ -708,6 +806,10 @@ class _RegisterForm extends StatelessWidget {
               onPressed: () => context.read<AuthCubit>().togglePassword(),
             ),
           ),
+          validator: ValidationBuilder()
+              .required('Mot de passe requis')
+              .minLength(6, 'Minimum 6 caractères')
+              .build(),
         ),
         const SizedBox(height: 20),
         _RoleSelector(selected: state.role, sectionLabel: 'Je suis un(e)'),
@@ -715,23 +817,20 @@ class _RegisterForm extends StatelessWidget {
         _SubmitButton(
           label: 'Créer mon compte',
           isLoading: state.isLoading,
-          onTap: () => context.read<AuthCubit>().register(
-                firstCtrl.text,
-                lastCtrl.text,
-                emailCtrl.text,
-                passCtrl.text,
-                entreprise: entrepriseCtrl.text,
-              ),
+          onTap: () {
+            if (formKey.currentState?.validate() ?? false) {
+              context.read<AuthCubit>().register(
+                    firstCtrl.text,
+                    lastCtrl.text,
+                    emailCtrl.text,
+                    passCtrl.text,
+                    entreprise: entrepriseCtrl.text,
+                  );
+            }
+          },
         ),
         const SizedBox(height: 24),
-        const _OrDivider(),
-        const SizedBox(height: 24),
-        _SocialLoginButtons(
-          isLoading: state.isLoading,
-          onGoogleTap: () => context.read<AuthCubit>().signInWithGoogle(),
-          onGithubTap: () => context.read<AuthCubit>().signInWithGithub(),
-        ),
-        const SizedBox(height: 24),
+
         Center(
           child: RichText(
             textAlign: TextAlign.center,
@@ -754,6 +853,7 @@ class _RegisterForm extends StatelessWidget {
           ),
         ),
       ],
+    ),
     );
   }
 }
@@ -807,6 +907,7 @@ class _ForgotStepEmail extends StatefulWidget {
 
 class _ForgotStepEmailState extends State<_ForgotStepEmail> {
   final _emailCtrl = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
@@ -833,17 +934,24 @@ class _ForgotStepEmailState extends State<_ForgotStepEmail> {
               const SizedBox(height: 10),
             ],
             const _Label('Email'),
-            TextField(
+            TextFormField(
               controller: _emailCtrl,
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(hintText: 'vous@exemple.com'),
+              validator: ValidationBuilder()
+                  .required('Email requis')
+                  .email('Email invalide')
+                  .build(),
             ),
             const SizedBox(height: 28),
             _SubmitButton(
               label: 'Envoyer le code',
               isLoading: state.isLoading,
-              onTap: () =>
-                  context.read<ForgotPasswordCubit>().sendOtp(_emailCtrl.text),
+              onTap: () {
+                if (_formKey.currentState?.validate() ?? false) {
+                  context.read<ForgotPasswordCubit>().sendOtp(_emailCtrl.text);
+                }
+              },
             ),
           ],
         );

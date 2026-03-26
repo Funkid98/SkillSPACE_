@@ -8,6 +8,8 @@ import '../profile/cubit/profile_cubit.dart';
 import '../profile/presentation/pages/profile_page.dart';
 import '../job_offers/cubit/job_offers_cubit.dart';
 import '../job_offers/presentation/pages/job_offers_page.dart';
+import '../trainer/presentation/pages/formateur_profile_screen.dart';
+import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import '../../core/l10n/app_localizations.dart';
 
 class DashboardShell extends StatefulWidget {
@@ -30,6 +32,15 @@ class _DashboardShellState extends State<DashboardShell> {
   void initState() {
     super.initState();
     _activeTab = widget.initialTab;
+    
+    // Safety: Ensure trainers and recruiters don't land on candidate dashboard
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final role = context.read<AuthCubit>().state.role;
+      if ((role == UserRole.formateur || role == UserRole.recruteur) && 
+          _activeTab == DashboardTab.tableau) {
+        setState(() => _activeTab = DashboardTab.profil);
+      }
+    });
   }
 
   Future<void> _onTabChanged(DashboardTab tab) async {
@@ -82,6 +93,13 @@ class _DashboardShellState extends State<DashboardShell> {
           child: const DashboardPage(),
         );
       case DashboardTab.profil:
+        final authState = context.read<AuthCubit>().state;
+        final role = authState.loggedInUser?['role']?.toString() ?? '';
+        
+        if (role == 'formateur' || role == 'trainer') {
+          return FormateurProfileScreen(userId: authState.loggedInUser?['id'] ?? '');
+        }
+        
         return BlocProvider(
           create: (_) => ProfileCubit(initialUserData: widget.initialUserData)
             ..loadProfile(),

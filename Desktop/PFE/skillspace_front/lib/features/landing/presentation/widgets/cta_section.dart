@@ -14,6 +14,8 @@ import 'package:skillspace/shared/widgets/app_sidebar.dart';
 import 'package:skillspace/features/recruiter/presentation/pages/recruiter_shell.dart';
 import 'package:skillspace/features/recruiter/presentation/widgets/recruiter_sidebar.dart';
 
+import '../../../auth/presentation/pages/field_selection_page.dart';
+
 class CtaSection extends StatelessWidget {
   const CtaSection({super.key});
 
@@ -72,25 +74,41 @@ class CtaSection extends StatelessWidget {
                 child: HoverScale(
                   child: ElevatedButton(
                     onPressed: () {
-                      context.read<AuthCubit>().switchTab(AuthTab.register);
+                      final authCubit = context.read<AuthCubit>();
+                      authCubit.switchTab(AuthTab.register);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (ctaContext) => AuthPage(
                             onSuccess: () {
-                              final role = context.read<AuthCubit>().state.role;
-                              final user = context.read<AuthCubit>().state.loggedInUser;
-                              Navigator.pop(ctaContext);
-                              Navigator.pushReplacement(
-                                context,
+                              final authState = authCubit.state;
+                              final role = authState.role;
+                              final user = authState.loggedInUser;
+
+                              Navigator.of(ctaContext).pushAndRemoveUntil(
                                 MaterialPageRoute(
-                                  builder: (context) => role == UserRole.recruteur
-                                      ? const RecruiterShell(initialTab: RecruiterTab.profile)
-                                      : DashboardShell(
-                                          initialTab: DashboardTab.profil,
-                                          initialUserData: user,
-                                        ),
+                                  builder: (_) {
+                                    if (role == UserRole.recruteur) {
+                                      return const RecruiterShell(
+                                          initialTab: RecruiterTab.profile);
+                                    } else if (role == UserRole.formateur) {
+                                      return DashboardShell(
+                                        initialTab: DashboardTab.profil,
+                                        initialUserData: user,
+                                      );
+                                    } else {
+                                      final sector = user?['sector'];
+                                      if (sector == null || sector.isEmpty) {
+                                        return const FieldSelectionPage();
+                                      }
+                                      return DashboardShell(
+                                        initialTab: DashboardTab.profil,
+                                        initialUserData: user,
+                                      );
+                                    }
+                                  },
                                 ),
+                                (route) => false,
                               );
                             },
                           ),

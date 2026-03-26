@@ -6,6 +6,7 @@ import '../../../../core/app_colors.dart';
 import '../../../../core/app_text_styles.dart';
 import '../../../../core/l10n/l10n_cubit.dart';
 import '../../../../core/l10n/app_localizations.dart';
+import 'package:awesome_dialog/awesome_dialog.dart';
 
 enum DashboardTab { tableau, profil, offres, simulation, formations }
 
@@ -74,8 +75,8 @@ class AppSidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(24, 24, 24, 40),
             child: Row(
               children: [
                 Text('SkillSpace', style: AppTextStyles.navBrand),
@@ -86,6 +87,9 @@ class AppSidebar extends StatelessWidget {
             final role = context.read<AuthCubit>().state.role;
             if (role == UserRole.recruteur) {
               return tab == DashboardTab.tableau || tab == DashboardTab.profil;
+            }
+            if (role == UserRole.formateur) {
+              return tab == DashboardTab.profil;
             }
             return true;
           }).map(
@@ -104,15 +108,7 @@ class AppSidebar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             child: TextButton.icon(
-              onPressed: () async {
-                await context.read<AuthCubit>().logout();
-                if (context.mounted) {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const LandingPage()),
-                    (route) => false,
-                  );
-                }
-              },
+              onPressed: () => _showLogoutConfirmation(context),
               icon: const Icon(Icons.logout_rounded,
                   size: 18, color: AppColors.textGray),
               label: Text(
@@ -319,7 +315,16 @@ class _MobileDrawer extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
-          ...DashboardTab.values.map(
+          ...DashboardTab.values.where((tab) {
+            final role = context.read<AuthCubit>().state.role;
+            if (role == UserRole.recruteur) {
+              return tab == DashboardTab.tableau || tab == DashboardTab.profil;
+            }
+            if (role == UserRole.formateur) {
+              return tab == DashboardTab.profil;
+            }
+            return true;
+          }).map(
             (tab) => _DrawerItem(
               tab: tab,
               isActive: tab == activeTab,
@@ -341,8 +346,8 @@ class _MobileDrawer extends StatelessWidget {
                   fontWeight: FontWeight.w600),
             ),
             onTap: () {
-              Navigator.pop(context);
-              Navigator.of(context).pop();
+              Navigator.pop(context); // Close drawer
+              _showLogoutConfirmation(context);
             },
           ),
         ],
@@ -455,4 +460,106 @@ class _NavItem extends StatelessWidget {
       ),
     );
   }
+}
+
+void _showLogoutConfirmation(BuildContext context) {
+  final l10n = AppLocalizations.of(context);
+  AwesomeDialog(
+    context: context,
+    width: 380,
+    padding: EdgeInsets.zero,
+    dialogType: DialogType.noHeader,
+    customHeader: Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+      ),
+      child:
+          const Icon(Icons.logout_rounded, size: 40, color: AppColors.orange),
+    ),
+    animType: AnimType.scale,
+    body: Column(
+      children: [
+        const SizedBox(height: 10),
+        Text(
+          l10n.logout,
+          style: const TextStyle(
+              fontWeight: FontWeight.w900, fontSize: 16, color: Colors.black87),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Voulez-vous vraiment vous déconnecter ?',
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: SizedBox(
+                  height: 42,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.grey.shade300),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(
+                      l10n.cancel.toUpperCase(),
+                      style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 3,
+                child: SizedBox(
+                  height: 42,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.orange,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () async {
+                      await context.read<AuthCubit>().logout();
+                      if (context.mounted) {
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                              builder: (_) => const LandingPage()),
+                          (route) => false,
+                        );
+                      }
+                    },
+                    child: Text(
+                      l10n.logout.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
+    ),
+  ).show();
 }

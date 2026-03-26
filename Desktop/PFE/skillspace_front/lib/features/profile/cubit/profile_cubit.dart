@@ -101,6 +101,21 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
   }
 
+  void updateSkillPercent(int index, int percent) {
+    if (state is ProfileLoaded) {
+      final data = (state as ProfileLoaded).data;
+      if (index >= 0 && index < data.skills.length) {
+        final updatedSkills = List<ProfileSkill>.from(data.skills);
+        final skill = updatedSkills[index];
+        updatedSkills[index] = ProfileSkill(
+          name: skill.name,
+          percent: percent.clamp(0, 100),
+        );
+        emit(ProfileLoaded(data.copyWith(skills: updatedSkills), isSaved: false));
+      }
+    }
+  }
+
   void updateFromExtractedData(Map<String, dynamic> data) {
     if (state is ProfileLoaded) {
       final current = (state as ProfileLoaded).data;
@@ -119,7 +134,7 @@ class ProfileCubit extends Cubit<ProfileState> {
           if (s is String) {
             return ProfileSkill(name: s);
           } else if (s is Map) {
-            return ProfileSkill(name: s['name'] ?? '');
+            return ProfileSkill(name: s['name'] ?? '', percent: (s['percent'] ?? 50).toInt());
           }
           return const ProfileSkill(name: '');
         }).toList() ?? current.skills,

@@ -8,7 +8,7 @@ class RecruiterJobRepository {
   RecruiterJobRepository({required this.apiClient});
 
   Future<List<RecruiterJobOffer>> getJobs() async {
-    final response = await apiClient.get('/job');
+    final response = await apiClient.get('/api/offers');
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
       return data.map((item) => RecruiterJobOffer.fromJson(item)).toList();
@@ -18,7 +18,7 @@ class RecruiterJobRepository {
   }
 
   Future<RecruiterJobOffer> createJob(RecruiterJobOffer job) async {
-    final response = await apiClient.post('/job', job.toJson());
+    final response = await apiClient.post('/api/offers', job.toJson());
     if (response.statusCode == 201) {
       final data = jsonDecode(response.body);
       return RecruiterJobOffer.fromJson(data);
@@ -28,7 +28,7 @@ class RecruiterJobRepository {
   }
 
   Future<RecruiterJobOffer> updateJob(String id, RecruiterJobOffer job) async {
-    final response = await apiClient.put('/job/$id', job.toJson());
+    final response = await apiClient.put('/api/offers/$id', job.toJson());
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return RecruiterJobOffer.fromJson(data);
@@ -38,7 +38,7 @@ class RecruiterJobRepository {
   }
 
   Future<void> deleteJob(String id) async {
-    final response = await apiClient.delete('/job/$id');
+    final response = await apiClient.delete('/api/offers/$id');
     if (response.statusCode != 200) {
       throw Exception('Failed to delete job offer: ${response.body}');
     }

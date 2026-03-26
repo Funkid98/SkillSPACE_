@@ -1,11 +1,46 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const Entreprise = require('../models/Entreprise');
 const { sendOtpEmail, sendLoginSuccessEmail } = require('../services/emailService');
 const { OAuth2Client } = require('google-auth-library');
 const axios = require('axios');
 
-const client = new OAuth2Client('753441966061-vhqvpffrs676m571107na1d1rtike6m7.apps.googleusercontent.com');
+const client = new OAuth2Client('1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com');
+
+const RECRUITER_SERVICE_URL = 'http://127.0.0.1:5002/recruiter';
+const TRAINER_SERVICE_URL = 'http://127.0.0.1:5004/api/formateur';
+
+const createTrainerProfile = async (userId, data) => {
+  try {
+    await axios.put(`${TRAINER_SERVICE_URL}/profile/${userId}`, data);
+  } catch (error) {
+    console.error('Error creating trainer profile:', error.message);
+  }
+};
+
+const checkIfEmailExistsInRecruiter = async (email) => {
+  try {
+    const url = `${RECRUITER_SERVICE_URL}/exists/${email}`;
+    const response = await axios.get(url);
+    return response.data.exists;
+  } catch (error) {
+    console.error('Error checking email in recruiter service:', error.message);
+    return false;
+  }
+};
+
+/**
+ * @desc    Check if an email exists in candidat database
+ * @route   GET /api/auth/exists/:email
+ * @access  Public
+ */
+exports.checkEmailExists = async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.params.email });
+    res.json({ exists: !!user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 // ── Générer un JWT
 const generateToken = (userId) => {
@@ -46,14 +81,14 @@ exports.register = async (req, res) => {
       });
     }
 
-    if (role === 'recruteur' && !entreprise) {
+    if (role === 'recruteur') {
       return res.status(400).json({
         success: false,
-        message: 'Le nom de l\'entreprise est requis pour les recruteurs.',
+        message: 'Les recruteurs doivent s\'inscrire via l\'espace entreprise dédié.',
       });
     }
 
-    // Vérifier si l'email existe déjà
+    // Vérifier si l'email existe déjà localement
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(409).json({
@@ -62,15 +97,13 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Si recruteur, gérer l'entreprise
-    let entrepriseId = null;
-    const isRecruiter = role === 'recruteur';
-    if (isRecruiter) {
-      let ent = await Entreprise.findOne({ nom: entreprise });
-      if (!ent) {
-        ent = await Entreprise.create({ nom: entreprise });
-      }
-      entrepriseId = ent._id;
+    // Vérifier dans le service recruteur
+    const existsAsRecruiter = await checkIfEmailExistsInRecruiter(email);
+    if (existsAsRecruiter) {
+      return res.status(409).json({
+        success: false,
+        message: 'Cet email est déjà utilisé .',
+      });
     }
 
     // Créer l'utilisateur
@@ -78,7 +111,6 @@ exports.register = async (req, res) => {
       email,
       password,
       role: role || 'candidat',
-      entreprise: entrepriseId,
       jobtitle: jobtitle || '',
     };
     if (firstName) userData.prenom = firstName;
@@ -86,9 +118,13 @@ exports.register = async (req, res) => {
 
     let user = await User.create(userData);
 
-    // Populer l'entreprise si elle existe pour la réponse
-    if (entrepriseId) {
-      user = await User.findById(user._id).populate('entreprise');
+    // Initialiser le profil dans le trainer-service si c'est un formateur
+    if (user.role === 'formateur') {
+      await createTrainerProfile(user._id, {
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+      });
     }
 
     const token = generateToken(user._id);
@@ -103,6 +139,7 @@ exports.register = async (req, res) => {
         lastName: user.nom,
         email: user.email,
         role: user.role,
+        sector: user.sector,
       },
     });
   } catch (error) {
@@ -127,8 +164,8 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Trouver l'utilisateur et peupler l'entreprise
-    const user = await User.findOne({ email }).populate('entreprise');
+    // Trouver l'utilisateur
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -185,28 +222,69 @@ exports.login = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 exports.googleSignIn = async (req, res) => {
   try {
-    const { idToken, role } = req.body;
+    const { idToken, accessToken, role } = req.body;
 
-    if (!idToken) {
+    if (!idToken && !accessToken) {
       return res.status(400).json({
         success: false,
-        message: 'idToken est requis.',
+        message: 'idToken ou accessToken est requis.',
       });
     }
 
-    // Vérifier le token Google
-    const ticket = await client.verifyIdToken({
-      idToken,
-      audience: '753441966061-vhqvpffrs676m571107na1d1rtike6m7.apps.googleusercontent.com',
-    });
+    // Forward to recruiter service if needed
+    if (role === 'recruteur') {
+      try {
+        const recruiterResponse = await axios.post('http://localhost:5002/api/recruiter/google', { idToken, accessToken });
+        return res.status(recruiterResponse.status).json(recruiterResponse.data);
+      } catch (recruiterError) {
+        console.error('Error forwarding google auth to recruiter service:', recruiterError.response?.data || recruiterError.message);
+        return res.status(recruiterError.response?.status || 500).json(recruiterError.response?.data || {
+          success: false,
+          message: 'Erreur lors de l\'authentification recruteur.',
+          error: recruiterError.message
+        });
+      }
+    }
 
-    const payload = ticket.getPayload();
-    const { email, given_name, family_name, sub } = payload; // sub is the google user id
+    let email, given_name, family_name;
+
+    if (idToken) {
+      // Verify idToken using google-auth-library
+      const ticket = await client.verifyIdToken({
+        idToken,
+        audience: '1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com',
+      });
+      const payload = ticket.getPayload();
+      email = payload.email;
+      given_name = payload.given_name;
+      family_name = payload.family_name;
+    } else {
+      // Verify accessToken using Google UserInfo API
+      const response = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      email = response.data.email;
+      given_name = response.data.given_name;
+      family_name = response.data.family_name;
+    }
+
+    if (!email) {
+      throw new Error('Impossible de récupérer l\'email de l\'utilisateur Google.');
+    }
 
     // Vérifier si l'utilisateur existe déjà
     let user = await User.findOne({ email });
 
     if (!user) {
+      // Vérifier si l'email existe en tant que recruteur avant de créer un candidat
+      const existsAsRecruiter = await checkIfEmailExistsInRecruiter(email);
+      if (existsAsRecruiter) {
+        return res.status(403).json({
+          success: false,
+          message: 'Cet email est déjà utilisé .',
+        });
+      }
+
       // Créer un utilisateur s'il n'existe pas
       // Générer un mdp aléatoire très fort vu qu'il se connectera via Google
       const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
@@ -216,6 +294,15 @@ exports.googleSignIn = async (req, res) => {
         email: email,
         password: randomPassword,
         role: role || 'candidat',
+      });
+    }
+
+    // Initialiser le profil dans le trainer-service si c'est un formateur
+    if (user.role === 'formateur') {
+      await createTrainerProfile(user._id, {
+        firstName: user.prenom,
+        lastName: user.nom,
+        email: user.email,
       });
     }
 
@@ -432,6 +519,21 @@ exports.githubSignIn = async (req, res) => {
       });
     }
 
+    // Verify if it's a recruiter and forward if needed
+    if (role === 'recruteur') {
+      try {
+        const recruiterResponse = await axios.post('http://localhost:5002/api/recruiter/github', { code });
+        return res.status(recruiterResponse.status).json(recruiterResponse.data);
+      } catch (recruiterError) {
+        console.error('Error forwarding github auth to recruiter service:', recruiterError.response?.data || recruiterError.message);
+        return res.status(recruiterError.response?.status || 500).json(recruiterError.response?.data || {
+          success: false,
+          message: 'Erreur lors de l\'authentification recruteur.',
+          error: recruiterError.message
+        });
+      }
+    }
+
     // 1. Échanger le code contre un access token
     const tokenResponse = await axios.post(
       'https://github.com/login/oauth/access_token',
@@ -490,6 +592,15 @@ exports.githubSignIn = async (req, res) => {
     let user = await User.findOne({ email });
 
     if (!user) {
+      // Vérifier si l'email existe en tant que recruteur avant de créer un candidat
+      const existsAsRecruiter = await checkIfEmailExistsInRecruiter(email);
+      if (existsAsRecruiter) {
+        return res.status(403).json({
+          success: false,
+          message: 'Cet email est déjà utilisé par un recruteur.',
+        });
+      }
+
       // Créer un utilisateur s'il n'existe pas
       // Générer un mdp aléatoire très fort pour qu'il puisse se connecter nativement plus tard si besoin
       const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
@@ -501,6 +612,15 @@ exports.githubSignIn = async (req, res) => {
         email: email,
         password: randomPassword,
         role: role || 'candidat',
+      });
+    }
+
+    // Initialiser le profil dans le trainer-service si c'est un formateur
+    if (user.role === 'formateur') {
+      await createTrainerProfile(user._id, {
+        firstName: user.prenom,
+        lastName: user.nom,
+        email: user.email,
       });
     }
 

@@ -21,8 +21,13 @@ class DashboardPage extends StatelessWidget {
         if (state is DashboardError) {
           return Center(child: Text(state.message));
         }
-        final data = (state as DashboardLoaded).data;
-        return _DashboardContent(data: data);
+        final DashboardData data;
+        if (state is DashboardSaving) {
+          data = state.data;
+        } else {
+          data = (state as DashboardLoaded).data;
+        }
+        return _DashboardContent(data: data, isSaving: state is DashboardSaving);
       },
     );
   }
@@ -30,7 +35,8 @@ class DashboardPage extends StatelessWidget {
 
 class _DashboardContent extends StatelessWidget {
   final DashboardData data;
-  const _DashboardContent({required this.data});
+  final bool isSaving;
+  const _DashboardContent({required this.data, this.isSaving = false});
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +82,7 @@ class _DashboardContent extends StatelessWidget {
 
             const SizedBox(height: 32),
 
-            // ─── Offres + Compétences ────────────────────────────
+            // ─── Main Grid Layout (Staggered Columns) ────
             isMobile
                 ? Column(
                     children: [
@@ -86,35 +92,9 @@ class _DashboardContent extends StatelessWidget {
                       const SizedBox(height: 20),
                       AnimatedReveal(
                           delay: const Duration(milliseconds: 800),
-                          child: _SkillsCard(skills: data.skills)),
-                    ],
-                  )
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: AnimatedReveal(
-                            delay: const Duration(milliseconds: 700),
-                            child:
-                                _RecentOffersCard(offers: data.recentOffers)),
-                      ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        flex: 2,
-                        child: AnimatedReveal(
-                            delay: const Duration(milliseconds: 800),
-                            child: _SkillsCard(skills: data.skills)),
-                      ),
-                    ],
-                  ),
-
-            const SizedBox(height: 32),
-
-            // ─── Entretiens + Visibilité ────
-            isMobile
-                ? Column(
-                    children: [
+                          child:
+                              _SkillsCard(skills: data.skills, isSaving: isSaving)),
+                      const SizedBox(height: 20),
                       AnimatedReveal(
                           delay: const Duration(milliseconds: 900),
                           child: _UpcomingInterviewsCard(
@@ -130,21 +110,42 @@ class _DashboardContent extends StatelessWidget {
                 : Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Left Column: Offers + Interviews (Flex 3)
                       Expanded(
                         flex: 3,
-                        child: AnimatedReveal(
-                            delay: const Duration(milliseconds: 900),
-                            child: _UpcomingInterviewsCard(
-                                interviews: data.upcomingInterviews)),
+                        child: Column(
+                          children: [
+                            AnimatedReveal(
+                                delay: const Duration(milliseconds: 700),
+                                child: _RecentOffersCard(
+                                    offers: data.recentOffers)),
+                            const SizedBox(height: 24),
+                            AnimatedReveal(
+                                delay: const Duration(milliseconds: 900),
+                                child: _UpcomingInterviewsCard(
+                                    interviews: data.upcomingInterviews)),
+                          ],
+                        ),
                       ),
                       const SizedBox(width: 24),
+                      // Right Column: Skills + Visibility (Flex 2)
                       Expanded(
                         flex: 2,
-                        child: AnimatedReveal(
-                            delay: const Duration(milliseconds: 1000),
-                            child: _ProfileVisibilityCard(
-                                viewsCount: data.profileViewsCount,
-                                percentChange: data.profileViewsPercentChange)),
+                        child: Column(
+                          children: [
+                            AnimatedReveal(
+                                delay: const Duration(milliseconds: 800),
+                                child: _SkillsCard(
+                                    skills: data.skills, isSaving: isSaving)),
+                            const SizedBox(height: 24),
+                            AnimatedReveal(
+                                delay: const Duration(milliseconds: 1000),
+                                child: _ProfileVisibilityCard(
+                                    viewsCount: data.profileViewsCount,
+                                    percentChange:
+                                        data.profileViewsPercentChange)),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -360,7 +361,16 @@ class _RecentOffersCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          ...offers.map((o) => _OfferRow(offer: o)),
+          if (offers.isEmpty)
+             const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Text('Aucune offre récente',
+                        style: TextStyle(color: AppColors.textGray, fontSize: 14)),
+                  ),
+                )
+          else
+            ...offers.map((o) => _OfferRow(offer: o)),
         ],
       ),
     );
@@ -452,13 +462,40 @@ class _OfferRow extends StatelessWidget {
 }
 
 // ─── Skills Card ───────────────────────────────────────────────────────────
-class _SkillsCard extends StatelessWidget {
+class _SkillsCard extends StatefulWidget {
   final List<UserSkill> skills;
-  const _SkillsCard({required this.skills});
+  final bool isSaving;
+  const _SkillsCard({required this.skills, this.isSaving = false});
+
+  @override
+  State<_SkillsCard> createState() => _SkillsCardState();
+}
+
+class _SkillsCardState extends State<_SkillsCard> {
+  void _showSkillsModal() {
+    final cubit = context.read<DashboardCubit>();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => BlocProvider.value(
+        value: cubit,
+        child: const _SkillsModalContent(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    
+    // Sort skills by percentage descending
+    final sortedSkills = List<UserSkill>.from(widget.skills)
+      ..sort((a, b) => b.percent.compareTo(a.percent));
+    
+    final displaySkills = sortedSkills.take(3).toList();
+    final hasMore = sortedSkills.length > 3;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(28),
@@ -481,34 +518,184 @@ class _SkillsCard extends StatelessWidget {
                   color: AppColors.textDark,
                 ),
               ),
-              TextButton(
-                onPressed: () {},
-                child: Text(
-                  l10n.edit,
-                  style: const TextStyle(
-                      color: AppColors.orange,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold),
+              if (widget.skills.isNotEmpty)
+                TextButton(
+                  onPressed: _showSkillsModal,
+                  child: Text(
+                    l10n.edit,
+                    style: const TextStyle(
+                        color: AppColors.orange,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold),
+                  ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 16),
-          ...skills.map((s) => _SkillRow(skill: s)),
+          if (widget.skills.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.auto_awesome, size: 40, color: Colors.grey.shade300),
+                    const SizedBox(height: 8),
+                    const Text('Aucune compétence ajoutée',
+                        style: TextStyle(color: AppColors.textGray, fontSize: 14)),
+                  ],
+                ),
+              ),
+            )
+          else ...[
+            ...displaySkills.asMap().entries.map((entry) => _SkillRow(
+                  skill: entry.value,
+                  index: widget.skills.indexOf(entry.value),
+                  editing: false,
+                )),
+            if (hasMore) ...[
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton(
+                  onPressed: _showSkillsModal,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Voir les ${widget.skills.length - 3} autres',
+                        style: const TextStyle(
+                          color: AppColors.textGray,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.keyboard_arrow_down_rounded, 
+                        size: 18, color: AppColors.textGray),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
         ],
       ),
     );
   }
 }
 
+class _SkillsModalContent extends StatelessWidget {
+  const _SkillsModalContent();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<DashboardCubit, DashboardState>(
+      builder: (context, state) {
+        final data = state is DashboardLoaded
+            ? state.data
+            : (state is DashboardSaving ? state.data : null);
+        final isSaving = state is DashboardSaving;
+
+        if (data == null) return const SizedBox.shrink();
+
+        return Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+            top: 32,
+            left: 28,
+            right: 28,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Toutes mes compétences',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.bg,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.6,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: data.skills.asMap().entries.map((entry) => _SkillRow(
+                          skill: entry.value,
+                          index: entry.key,
+                          editing: true,
+                        )).toList(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: isSaving
+                      ? null
+                      : () async {
+                          await context.read<DashboardCubit>().saveSkills();
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                          }
+                        },
+                  icon: isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.save_rounded, size: 20),
+                  label: Text(isSaving ? 'Enregistrement...' : 'Enregistrer'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.orange,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _SkillRow extends StatelessWidget {
   final UserSkill skill;
-  const _SkillRow({required this.skill});
+  final int index;
+  final bool editing;
+  const _SkillRow({required this.skill, required this.index, required this.editing});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -533,16 +720,37 @@ class _SkillRow extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: skill.percent / 100,
-              minHeight: 8,
-              backgroundColor: AppColors.border,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.navy),
+          const SizedBox(height: 4),
+          if (editing)
+            SliderTheme(
+              data: SliderThemeData(
+                activeTrackColor: AppColors.navy,
+                inactiveTrackColor: AppColors.border,
+                thumbColor: AppColors.orange,
+                overlayColor: AppColors.orange.withOpacity(0.15),
+                trackHeight: 8,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+              ),
+              child: Slider(
+                value: skill.percent.toDouble(),
+                min: 0,
+                max: 100,
+                divisions: 20,
+                onChanged: (val) {
+                  context.read<DashboardCubit>().updateSkillPercent(index, val.round());
+                },
+              ),
+            )
+          else
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                value: skill.percent / 100,
+                minHeight: 8,
+                backgroundColor: AppColors.border,
+                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.navy),
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -751,62 +959,38 @@ class _ProfileVisibilityCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  l10n.viewsThisMonth,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textGray,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isPositive
-                      ? AppColors.success.withOpacity(0.1)
-                      : AppColors.error.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isPositive
-                          ? Icons.trending_up_rounded
-                          : Icons.trending_down_rounded,
-                      size: 16,
-                      color: isPositive ? AppColors.success : AppColors.error,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${percentChange.abs()}%',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                        size: 16,
                         color: isPositive ? AppColors.success : AppColors.error,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  l10n.vsLastMonth,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textGray,
-                    fontWeight: FontWeight.w500,
+                      const SizedBox(width: 4),
+                      Text(
+                        '${isPositive ? "+" : ""}$percentChange%',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: isPositive ? AppColors.success : AppColors.error,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'vs dernier mois',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textGray,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

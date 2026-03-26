@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:pfe/core/network/api_client.dart';
 import '../models/company_profile_model.dart';
+import '../models/recruiter_job_offer_model.dart';
 
 class RecruiterRepository {
   final ApiClient apiClient;
@@ -34,6 +35,16 @@ class RecruiterRepository {
       return data['url'];
     } else {
       throw Exception('Failed to upload logo: ${response.body}');
+    }
+  }
+
+  Future<List<CandidateMatch>> getCandidatesBySector(String sector) async {
+    final response = await apiClient.get('/candidat/recent/$sector');
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((item) => CandidateMatch.fromJson(item)).toList();
+    } else {
+      throw Exception('Failed to load matching candidates: ${response.statusCode}');
     }
   }
 }

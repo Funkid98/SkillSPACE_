@@ -1,10 +1,18 @@
-# Stage 1: Build
+w# Stage 1: Build
 FROM ghcr.io/cirruslabs/flutter:stable AS build
+
+# Create a non-root user if needed, but cirruslabs/flutter usually uses root.
+# To avoid the warning, we can set HOME or just ignore it.
+USER root
 
 WORKDIR /app
 
-# Copy the project files
-COPY . .
+# Copy the shared dependency to the parent directory of where the app will be
+# This matches 'path: ../login-register' in pubspec.yaml
+COPY ./login-register /login-register
+
+# Copy the actual app
+COPY ./skillspace_front .
 
 # Get dependencies
 RUN flutter pub get
@@ -19,7 +27,7 @@ FROM nginx:alpine
 COPY --from=build /app/build/web /usr/share/nginx/html
 
 # Copy nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY ./skillspace_front/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 

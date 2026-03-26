@@ -5,12 +5,12 @@ const userSchema = new mongoose.Schema(
   {
     prenom: {
       type: String,
-      required: [function() { return this.role !== 'recruteur'; }, 'Le prénom est requis'],
+      required: [function () { return this.role !== 'recruteur'; }, 'Le prénom est requis'],
       trim: true,
     },
     nom: {
       type: String,
-      required: [function() { return this.role !== 'recruteur'; }, 'Le nom est requis'],
+      required: [function () { return this.role !== 'recruteur'; }, 'Le nom est requis'],
       trim: true,
     },
     email: {
@@ -34,19 +34,7 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    // Chamos pour le candidat service
-    jobtitle: { type: String, default: '' },
-    telephone: { type: String, default: '' },
-    localisation: { type: String, default: '' },
-    bio: { type: String, default: '' },
-    skills: { type: [String], default: [] },
-    cv_path: { type: String, default: '' },
-    completion_percent: { type: Number, default: 30 },
-    // OTP pour reset password
-    entreprise: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Entreprise',
-    },
+    // Profile fields removed (handled by candidat-service)
     resetOtp: {
       type: String,
       default: null,

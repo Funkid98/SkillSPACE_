@@ -15,6 +15,7 @@ class AuthState {
   final bool isUploadingCv;
   final Map<String, dynamic>? cvData;
   final Map<String, dynamic>? loggedInUser; // Holds user data after login
+  final bool staySignedIn;
 
   const AuthState({
     this.tab = AuthTab.login,
@@ -27,6 +28,7 @@ class AuthState {
     this.isUploadingCv = false,
     this.cvData,
     this.loggedInUser,
+    this.staySignedIn = true,
   });
 
   AuthState copyWith({
@@ -41,6 +43,7 @@ class AuthState {
     bool? isUploadingCv,
     Map<String, dynamic>? cvData,
     Map<String, dynamic>? loggedInUser,
+    bool? staySignedIn,
   }) {
     return AuthState(
       tab: tab ?? this.tab,
@@ -53,6 +56,7 @@ class AuthState {
       isUploadingCv: isUploadingCv ?? this.isUploadingCv,
       cvData: cvData ?? this.cvData,
       loggedInUser: loggedInUser ?? this.loggedInUser,
+      staySignedIn: staySignedIn ?? this.staySignedIn,
     );
   }
 }

@@ -42,7 +42,15 @@ class ProfileData {
           : json['entreprise'],
       poste: json['poste'] ?? json['jobtitle'],
       skills: (json['skills'] as List?)
-              ?.map((s) => ProfileSkill(name: s.toString()))
+              ?.map((s) {
+                if (s is Map<String, dynamic>) {
+                  return ProfileSkill(
+                    name: s['name'] ?? '',
+                    percent: (s['percent'] ?? 50).toInt(),
+                  );
+                }
+                return ProfileSkill(name: s.toString());
+              })
               .toList() ??
           [],
       role: json['role'] ?? 'candidat',
@@ -61,7 +69,7 @@ class ProfileData {
       'entreprise': entreprise,
       'poste': poste,
       'jobtitle': poste,
-      'skills': skills.map((s) => s.name).toList(),
+      'skills': skills.map((s) => {'name': s.name, 'percent': s.percent}).toList(),
       'role': role,
     };
   }
@@ -123,6 +131,7 @@ class ProfileData {
 
 class ProfileSkill {
   final String name;
+  final int percent;
 
-  const ProfileSkill({required this.name});
+  const ProfileSkill({required this.name, this.percent = 50});
 }

@@ -107,42 +107,35 @@ class _ProfileContent extends StatelessWidget {
             child: _CompletionCard(),
           ),
 
-          const SizedBox(height: 24),
-
-          // Personal info form
-          const AnimatedReveal(
-            delay: Duration(milliseconds: 400),
-            child: _PersonalInfoCard(),
-          ),
-
-          const SizedBox(height: 24),
-
-          // CV upload
-          AnimatedReveal(
-            delay: const Duration(milliseconds: 500),
-            child: BlocProvider(
-              create: (_) => CvExtractionCubit(),
-              child: BlocBuilder<ProfileCubit, ProfileState>(
-                buildWhen: (prev, curr) =>
-                    curr is ProfileLoaded &&
-                    (prev is! ProfileLoaded ||
-                        prev.data.hasCv != curr.data.hasCv),
-                builder: (context, state) {
-                  final hasCv =
-                      state is ProfileLoaded ? state.data.hasCv : false;
-                  return _CvCard(hasCv: hasCv);
-                },
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Skills
-          const AnimatedReveal(
-            delay: Duration(milliseconds: 600),
-            child: _SkillsCard(),
-          ),
+          // Main Content Grid
+          Responsive.isMobile(context)
+              ? Column(
+                  children: [
+                    const AnimatedReveal(
+                      delay: Duration(milliseconds: 400),
+                      child: _PersonalInfoCard(),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildCvAndSkills(context),
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Expanded(
+                      flex: 3,
+                      child: AnimatedReveal(
+                        delay: Duration(milliseconds: 400),
+                        child: _PersonalInfoCard(),
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      flex: 2,
+                      child: _buildCvAndSkills(context),
+                    ),
+                  ],
+                ),
 
           const SizedBox(height: 48),
 
@@ -189,6 +182,36 @@ class _ProfileContent extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCvAndSkills(BuildContext context) {
+    return Column(
+      children: [
+        // CV upload
+        AnimatedReveal(
+          delay: const Duration(milliseconds: 500),
+          child: BlocProvider(
+            create: (_) => CvExtractionCubit(),
+            child: BlocBuilder<ProfileCubit, ProfileState>(
+              buildWhen: (prev, curr) =>
+                  curr is ProfileLoaded &&
+                  (prev is! ProfileLoaded ||
+                      prev.data.hasCv != curr.data.hasCv),
+              builder: (context, state) {
+                final hasCv = state is ProfileLoaded ? state.data.hasCv : false;
+                return _CvCard(hasCv: hasCv);
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        // Skills
+        const AnimatedReveal(
+          delay: Duration(milliseconds: 600),
+          child: _SkillsCard(),
+        ),
+      ],
     );
   }
 }
@@ -863,8 +886,15 @@ class _CvSuccessView extends StatelessWidget {
 }
 
 // ─── Skills Card ───────────────────────────────────────────────────────────
-class _SkillsCard extends StatelessWidget {
+class _SkillsCard extends StatefulWidget {
   const _SkillsCard();
+
+  @override
+  State<_SkillsCard> createState() => _SkillsCardState();
+}
+
+class _SkillsCardState extends State<_SkillsCard> {
+  bool _editing = false;
 
   @override
   Widget build(BuildContext context) {
@@ -875,8 +905,12 @@ class _SkillsCard extends StatelessWidget {
           (prev is! ProfileLoaded ||
               !listEquals(prev.data.skills, curr.data.skills)),
       builder: (context, state) {
-        final skills =
+        final rawSkills =
             state is ProfileLoaded ? state.data.skills : <ProfileSkill>[];
+
+        // Sort skills by percentage descending
+        final skills = List<ProfileSkill>.from(rawSkills)
+          ..sort((a, b) => b.percent.compareTo(a.percent));
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.all(28),
@@ -888,20 +922,45 @@ class _SkillsCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                l10n.skills,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textDark,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    l10n.skills,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => setState(() => _editing = !_editing),
+                    child: Text(
+                      _editing ? 'Terminé' : l10n.edit,
+                      style: TextStyle(
+                          color: _editing ? AppColors.navy : AppColors.orange,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 20),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: skills.map((s) => _SkillChip(skill: s)).toList(),
-              ),
+              if (skills.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: Text('Aucune compétence ajoutée',
+                        style:
+                            TextStyle(color: AppColors.textGray, fontSize: 13)),
+                  ),
+                )
+              else
+                ...skills.asMap().entries.map((entry) => _SkillRow(
+                      skill: entry.value,
+                      index: entry.key,
+                      editing: _editing,
+                    )),
             ],
           ),
         );
@@ -910,30 +969,74 @@ class _SkillsCard extends StatelessWidget {
   }
 }
 
-class _SkillChip extends StatelessWidget {
+class _SkillRow extends StatelessWidget {
   final ProfileSkill skill;
-  const _SkillChip({required this.skill});
+  final int index;
+  final bool editing;
+  const _SkillRow(
+      {required this.skill, required this.index, required this.editing});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.bg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            skill.name.capitalize(),
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textDark,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                skill.name.capitalize(),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textDark,
+                ),
+              ),
+              Text(
+                '${skill.percent}%',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.navy,
+                ),
+              ),
+            ],
           ),
+          const SizedBox(height: 6),
+          if (editing)
+            SliderTheme(
+              data: SliderThemeData(
+                activeTrackColor: AppColors.navy,
+                inactiveTrackColor: AppColors.border,
+                thumbColor: AppColors.orange,
+                overlayColor: AppColors.orange.withOpacity(0.15),
+                trackHeight: 6,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+              ),
+              child: Slider(
+                value: skill.percent.toDouble(),
+                min: 0,
+                max: 100,
+                divisions: 20,
+                onChanged: (val) {
+                  context
+                      .read<ProfileCubit>()
+                      .updateSkillPercent(index, val.round());
+                },
+              ),
+            )
+          else
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                value: skill.percent / 100,
+                minHeight: 6,
+                backgroundColor: AppColors.border,
+                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.navy),
+              ),
+            ),
         ],
       ),
     );

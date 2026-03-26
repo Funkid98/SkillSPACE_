@@ -6,6 +6,9 @@ import '../../../../core/l10n/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../shared/widgets/animated_reveal.dart';
 import '../cubits/recruiter_profile_cubit.dart';
+import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
+import '../../../landing/presentation/pages/landing_page.dart';
+import 'package:awesome_dialog/awesome_dialog.dart';
 
 enum RecruiterTab { dashboard, profile, offers, candidates }
 
@@ -87,13 +90,18 @@ class RecruiterSidebar extends StatelessWidget {
                               width: 32,
                               height: 32,
                               fit: BoxFit.cover,
-                              errorBuilder: (ctx, _, __) => const Icon(Icons.business, size: 32, color: AppColors.textGray),
+                              errorBuilder: (ctx, _, __) => const Icon(
+                                  Icons.business,
+                                  size: 32,
+                                  color: AppColors.textGray),
                             ),
                           ),
                         ),
                       Expanded(
                         child: Text(
-                          profile.entreprise.isNotEmpty ? profile.entreprise : 'SkillSpace',
+                          profile.entreprise.isNotEmpty
+                              ? profile.entreprise
+                              : 'SkillSpace',
                           style: AppTextStyles.navBrand.copyWith(fontSize: 18),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -133,7 +141,7 @@ class RecruiterSidebar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             child: TextButton.icon(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => _showLogoutConfirmation(context),
               icon: const Icon(Icons.logout_rounded,
                   size: 18, color: AppColors.textGray),
               label: Text(
@@ -150,6 +158,110 @@ class RecruiterSidebar extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _showLogoutConfirmation(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    AwesomeDialog(
+      context: context,
+      width: 380,
+      padding: EdgeInsets.zero,
+      dialogType: DialogType.noHeader,
+      customHeader: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+        ),
+        child:
+            const Icon(Icons.logout_rounded, size: 40, color: AppColors.orange),
+      ),
+      animType: AnimType.scale,
+      body: Column(
+        children: [
+          const SizedBox(height: 10),
+          Text(
+            l10n.logout,
+            style: const TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 16,
+                color: Colors.black87),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Voulez-vous vraiment vous déconnecter ?',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: SizedBox(
+                    height: 42,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Colors.grey.shade300),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(
+                        l10n.cancel.toUpperCase(),
+                        style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 3,
+                  child: SizedBox(
+                    height: 42,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.orange,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: () async {
+                        await context.read<AuthCubit>().logout();
+                        if (context.mounted) {
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(
+                                builder: (_) => const LandingPage()),
+                            (route) => false,
+                          );
+                        }
+                      },
+                      child: Text(
+                        l10n.logout.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    ).show();
   }
 }
 

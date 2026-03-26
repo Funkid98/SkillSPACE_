@@ -4,7 +4,7 @@ import 'package:file_picker/file_picker.dart';
 
 class CvExtractionService {
   // Change this to your backend URL
-  static const String _baseUrl = 'http://localhost:5000';
+  static const String _baseUrl = 'http://127.0.0.1:5000';
 
   /// Upload a CV file and return the AI-extracted data as a Map.
   static Future<Map<String, dynamic>> uploadCv({

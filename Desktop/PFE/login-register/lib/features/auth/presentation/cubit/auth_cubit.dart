@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../data/models/user_model.dart';
 
 part 'auth_state.dart';
 
@@ -12,9 +15,15 @@ class AuthCubit extends Cubit<AuthState> {
   void switchTab(AuthTab tab) =>
       emit(state.copyWith(tab: tab, clearError: true));
   void selectRole(UserRole role) => emit(state.copyWith(role: role));
-  void togglePassword() =>
-      emit(state.copyWith(passwordVisible: !state.passwordVisible));
+  void togglePassword() {
+    emit(state.copyWith(passwordVisible: !state.passwordVisible));
+  }
+
+  void toggleStaySignedIn() {
+    emit(state.copyWith(staySignedIn: !state.staySignedIn));
+  }
   void clearError() => emit(state.copyWith(clearError: true));
+  void clearSuccess() => emit(state.copyWith(isSuccess: false));
 
   Future<void> login(String email, String password) async {
     if (email.isEmpty || password.isEmpty) {
@@ -28,17 +37,38 @@ class AuthCubit extends Cubit<AuthState> {
         password: password,
         role: state.role.name,
       );
+      UserRole userRole = UserRole.candidat;
+      if (user.role == 'recruteur' || user.role == 'recruiter') {
+        userRole = UserRole.recruteur;
+      } else if (user.role == 'formateur' || user.role == 'trainer') {
+        userRole = UserRole.formateur;
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('stay_signed_in', state.staySignedIn);
+
+      String? synchronizedSector;
+      if (userRole == UserRole.candidat) {
+        final fullProfile = await _fetchFullProfile();
+        synchronizedSector = fullProfile?.sector;
+      }
+
       emit(state.copyWith(
         isLoading: false,
         isSuccess: true,
+        role: userRole,
         loggedInUser: {
+          'id': user.id,
           'firstName': user.firstName,
           'lastName': user.lastName,
           'email': user.email,
           'role': user.role,
+          'entreprise': user.entreprise,
+          'sector': synchronizedSector ?? user.sector,
         },
       ));
-    } catch (e) {
+    }
+ catch (e) {
       emit(state.copyWith(
           isLoading: false, error: e.toString().replaceAll('Exception: ', '')));
     }
@@ -65,7 +95,7 @@ class AuthCubit extends Cubit<AuthState> {
     }
     emit(state.copyWith(isLoading: true, clearError: true));
     try {
-      await authRepository.register(
+      final user = await authRepository.register(
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim(),
@@ -73,8 +103,37 @@ class AuthCubit extends Cubit<AuthState> {
         role: state.role.name,
         entreprise: entreprise,
       );
-      emit(state.copyWith(isLoading: false, isSuccess: true));
-    } catch (e) {
+      UserRole userRole = UserRole.candidat;
+      if (user.role == 'recruteur' || user.role == 'recruiter') {
+        userRole = UserRole.recruteur;
+      } else if (user.role == 'formateur' || user.role == 'trainer') {
+        userRole = UserRole.formateur;
+      }
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('stay_signed_in', state.staySignedIn);
+
+      String? synchronizedSector;
+      if (userRole == UserRole.candidat) {
+        final fullProfile = await _fetchFullProfile();
+        synchronizedSector = fullProfile?.sector;
+      }
+
+      emit(state.copyWith(
+        isLoading: false,
+        isSuccess: true,
+        role: userRole,
+        loggedInUser: {
+          'id': user.id,
+          'firstName': user.firstName,
+          'lastName': user.lastName,
+          'email': user.email,
+          'role': user.role,
+          'entreprise': user.entreprise,
+          'sector': synchronizedSector ?? user.sector,
+        },
+      ));
+    }
+ catch (e) {
       emit(state.copyWith(
           isLoading: false, error: e.toString().replaceAll('Exception: ', '')));
     }
@@ -83,26 +142,63 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> signInWithGoogle() async {
     emit(state.copyWith(isLoading: true, clearError: true));
     try {
-      await authRepository.signInWithGoogle();
-      emit(state.copyWith(isLoading: false, isSuccess: true));
-    } catch (e) {
+      final user = await authRepository.signInWithGoogle(role: state.role.name);
+      UserRole userRole = UserRole.candidat;
+      if (user.role == 'recruteur' || user.role == 'recruiter') {
+        userRole = UserRole.recruteur;
+      } else if (user.role == 'formateur' || user.role == 'trainer') {
+        userRole = UserRole.formateur;
+      }
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('stay_signed_in', state.staySignedIn);
+
+      String? synchronizedSector;
+      if (userRole == UserRole.candidat) {
+        final fullProfile = await _fetchFullProfile();
+        synchronizedSector = fullProfile?.sector;
+      }
+
       emit(state.copyWith(
-          isLoading: false, error: e.toString().replaceAll('Exception: ', '')));
+        isLoading: false,
+        isSuccess: true,
+        role: userRole,
+        loggedInUser: {
+          'id': user.id,
+          'firstName': user.firstName,
+          'lastName': user.lastName,
+          'email': user.email,
+          'role': user.role,
+          'entreprise': user.entreprise,
+          'sector': synchronizedSector ?? user.sector,
+        },
+      ));
+    } catch (e) {
+      final errorMsg = e.toString().replaceAll('Exception: ', '');
+      if (errorMsg.contains('popup_closed')) {
+        emit(state.copyWith(isLoading: false));
+        return;
+      }
+      emit(state.copyWith(isLoading: false, error: errorMsg));
     }
+  }
+
+  void completeGithubSignIn(String code) {
+    emit(state.copyWith(githubAwaitingCode: false));
+    submitGithubCode(code);
   }
 
   Future<void> signInWithGithub() async {
     emit(state.copyWith(isLoading: true, clearError: true));
     try {
-      await authRepository.signInWithGithub();
-      emit(state.copyWith(isLoading: false, isSuccess: true));
+      await authRepository.signInWithGithub(role: state.role.name);
+      emit(state.copyWith(githubAwaitingCode: true));
     } catch (e) {
-      final msg = e.toString().replaceAll('Exception: ', '');
-      if (msg == 'GITHUB_OPEN_BROWSER') {
-        emit(state.copyWith(isLoading: false, githubAwaitingCode: true));
-      } else {
-        emit(state.copyWith(isLoading: false, error: msg));
+      final errorMsg = e.toString().replaceAll('Exception: ', '');
+      if (errorMsg.contains('popup_closed')) {
+        emit(state.copyWith(isLoading: false));
+        return;
       }
+      emit(state.copyWith(isLoading: false, error: errorMsg));
     }
   }
 
@@ -114,11 +210,42 @@ class AuthCubit extends Cubit<AuthState> {
     emit(state.copyWith(
         isLoading: true, clearError: true, githubAwaitingCode: false));
     try {
-      await (authRepository as dynamic).signInWithGithubCode(code.trim());
-      emit(state.copyWith(isLoading: false, isSuccess: true));
-    } catch (e) {
+      final user = await authRepository.signInWithGithubCode(code.trim(), role: state.role.name);
+      UserRole userRole = UserRole.candidat;
+      if (user.role == 'recruteur' || user.role == 'recruiter') {
+        userRole = UserRole.recruteur;
+      } else if (user.role == 'formateur' || user.role == 'trainer') {
+        userRole = UserRole.formateur;
+      }
+
+      String? synchronizedSector;
+      if (userRole == UserRole.candidat) {
+        final fullProfile = await _fetchFullProfile();
+        synchronizedSector = fullProfile?.sector;
+      }
+
       emit(state.copyWith(
-          isLoading: false, error: e.toString().replaceAll('Exception: ', '')));
+        isLoading: false,
+        isSuccess: true,
+        role: userRole,
+        githubAwaitingCode: false,
+        loggedInUser: {
+          'id': user.id,
+          'firstName': user.firstName,
+          'lastName': user.lastName,
+          'email': user.email,
+          'role': user.role,
+          'entreprise': user.entreprise,
+          'sector': synchronizedSector ?? user.sector,
+        },
+      ));
+    } catch (e) {
+      final errorMsg = e.toString().replaceAll('Exception: ', '');
+      if (errorMsg.contains('popup_closed')) {
+        emit(state.copyWith(isLoading: false));
+        return;
+      }
+      emit(state.copyWith(isLoading: false, error: errorMsg));
     }
   }
 
@@ -144,6 +271,42 @@ class AuthCubit extends Cubit<AuthState> {
         isUploadingCv: false,
         error: 'Échec de l\'analyse du CV: ${e.toString()}',
       ));
+    }
+  }
+
+  Future<UserModel?> _fetchFullProfile() async {
+    try {
+      final fullProfile = await authRepository.getProfile();
+      if (state.loggedInUser != null) {
+        final updatedUser = Map<String, dynamic>.from(state.loggedInUser!);
+        updatedUser['sector'] = fullProfile.sector;
+        emit(state.copyWith(loggedInUser: updatedUser));
+        
+        // Persist updated user data to SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_data', jsonEncode(updatedUser));
+      }
+      return fullProfile;
+    } catch (e) {
+      print('Error fetching full profile: $e');
+      return null;
+    }
+  }
+
+  Future<void> updateSector(String sector) async {
+    try {
+      await authRepository.updateProfile({'sector': sector});
+      if (state.loggedInUser != null) {
+        final updatedUser = Map<String, dynamic>.from(state.loggedInUser!);
+        updatedUser['sector'] = sector;
+        emit(state.copyWith(loggedInUser: updatedUser));
+        
+        // Persist to SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_data', jsonEncode(updatedUser));
+      }
+    } catch (e) {
+      print('Error updating sector: $e');
     }
   }
 

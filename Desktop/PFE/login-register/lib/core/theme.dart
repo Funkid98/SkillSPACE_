@@ -35,7 +35,16 @@ class AppTheme {
             borderSide: const BorderSide(color: accent, width: 1.5),
           ),
           hintStyle: const TextStyle(color: textGrey, fontSize: 14),
+          errorStyle: const TextStyle(color: Colors.red, fontSize: 12),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.red, width: 1),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.red, width: 1.5),
+          ),
         ),
       );
 }

@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'package:pfe/core/network/api_client.dart';
+
 class DashboardStats {
   final int offresMatchees;
   final String offresMatcheesSubtitle;
@@ -36,9 +39,11 @@ class RecentOffer {
 
 class UserSkill {
   final String name;
-  final int percent;
+  int percent;
 
-  const UserSkill({required this.name, required this.percent});
+  UserSkill({required this.name, required this.percent});
+
+  Map<String, dynamic> toJson() => {'name': name, 'percent': percent};
 }
 
 class UpcomingInterview {
@@ -75,64 +80,63 @@ class DashboardData {
   });
 
   static Future<DashboardData> fetch() async {
-    await Future.delayed(const Duration(milliseconds: 600));
+    final apiClient = ApiClient();
+
+    // Fetch candidate profile
+    final response = await apiClient.get('/candidat/me');
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode != 200) {
+      throw Exception(data['error'] ?? 'Erreur de chargement du profil');
+    }
+
+    // Extract real user data
+    final prenom = data['prenom'] ?? '';
+    final nom = data['nom'] ?? '';
+    final userName = prenom.isNotEmpty ? prenom : (nom.isNotEmpty ? nom : 'Candidat');
+    final completionPercent = data['completion_percent'] ?? 30;
+
+    // Map skills from backend ({name, percent} objects)
+    final List<dynamic> rawSkills = data['skills'] ?? [];
+    final List<UserSkill> skills = rawSkills.map((s) {
+      if (s is Map<String, dynamic>) {
+        return UserSkill(
+          name: s['name'] ?? '',
+          percent: (s['percent'] ?? 50).toInt().clamp(0, 100),
+        );
+      }
+      // Backward compatibility: if skill is just a string
+      return UserSkill(name: s.toString(), percent: 50);
+    }).toList();
+
+    // Stats derived from profile completion & skills count
     return DashboardData(
-      userName: 'Jean',
-      stats: const DashboardStats(
-        offresMatchees: 24,
-        offresMatcheesSubtitle: '+3 cette semaine',
-        candidaturesEnvoyees: 8,
-        candidaturesSubtitle: '2 en attente',
-        scoreMoyenMatch: 78,
-        scoreSubtitle: '+5% ce mois',
-        entretiensSimules: 12,
-        entretiensSubtitle: 'Dernier: 85/100',
+      userName: userName,
+      stats: DashboardStats(
+        offresMatchees: rawSkills.length * 4,
+        offresMatcheesSubtitle: rawSkills.isEmpty
+            ? 'Ajoutez des compétences'
+            : '+${rawSkills.length} cette semaine',
+        candidaturesEnvoyees: 0,
+        candidaturesSubtitle: 'Aucune pour le moment',
+        scoreMoyenMatch: completionPercent,
+        scoreSubtitle: 'Profil complété à $completionPercent%',
+        entretiensSimules: 0,
+        entretiensSubtitle: 'Commencez un entretien',
       ),
-      recentOffers: [
-        const RecentOffer(
-            title: 'Développeur Frontend React',
-            company: 'TechCorp',
-            city: 'Paris',
-            compatibilityPercent: 92),
-        const RecentOffer(
-            title: 'Data Analyst Junior',
-            company: 'DataFlow',
-            city: 'Lyon',
-            compatibilityPercent: 85),
-        const RecentOffer(
-            title: 'UX Designer',
-            company: 'DesignStudio',
-            city: 'Remote',
-            compatibilityPercent: 78),
-        const RecentOffer(
-            title: 'Chef de projet IT',
-            company: 'ConsultPro',
-            city: 'Marseille',
-            compatibilityPercent: 71),
-      ],
-      skills: [
-        const UserSkill(name: 'React', percent: 85),
-        const UserSkill(name: 'TypeScript', percent: 75),
-        const UserSkill(name: 'Python', percent: 60),
-        const UserSkill(name: 'SQL', percent: 70),
-        const UserSkill(name: 'Communication', percent: 90),
-      ],
-      upcomingInterviews: [
-        UpcomingInterview(
-          role: 'Développeur Frontend React',
-          company: 'TechCorp',
-          date: DateTime.now().add(const Duration(days: 2, hours: 14)),
-          format: 'En ligne',
-        ),
-        UpcomingInterview(
-          role: 'Data Analyst Junior',
-          company: 'DataFlow',
-          date: DateTime.now().add(const Duration(days: 5, hours: 9)),
-          format: 'Présentiel',
-        ),
-      ],
-      profileViewsCount: 342,
-      profileViewsPercentChange: 12,
+      recentOffers: const [],
+      skills: skills,
+      upcomingInterviews: const [],
+      profileViewsCount: 0,
+      profileViewsPercentChange: 0,
     );
+  }
+
+  /// Save updated skill percentages to the backend
+  static Future<void> saveSkills(List<UserSkill> skills) async {
+    final apiClient = ApiClient();
+    await apiClient.put('/candidat/me', {
+      'skills': skills.map((s) => s.toJson()).toList(),
+    });
   }
 }

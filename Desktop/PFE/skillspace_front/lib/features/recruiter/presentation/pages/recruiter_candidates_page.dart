@@ -14,24 +14,6 @@ class RecruiterCandidatesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return BlocBuilder<RecruiterCandidatesCubit, RecruiterCandidatesState>(
-      builder: (context, state) {
-        if (state is RecruiterCandidatesLoading) {
-          return const Center(
-              child: CircularProgressIndicator(color: AppColors.orange));
-        }
-        if (state is RecruiterCandidatesError) {
-          return Center(child: Text(state.message));
-        }
-        final candidates = (state as RecruiterCandidatesLoaded).candidates;
-
-        return _buildContent(context, candidates, l10n);
-      },
-    );
-  }
-
-  Widget _buildContent(BuildContext context, List<CandidateMatch> candidates,
-      AppLocalizations l10n) {
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
           Responsive.hPad(context), 0, Responsive.hPad(context), 32),
@@ -66,44 +48,57 @@ class RecruiterCandidatesPage extends StatelessWidget {
               children: [
                 Expanded(
                   child: TextField(
+                    key: const ValueKey('candidate_search_field'),
+                    onChanged: (value) => context
+                        .read<RecruiterCandidatesCubit>()
+                        .filterCandidates(value),
                     decoration: InputDecoration(
                       hintText: l10n.searchCandidateHint,
+                      hintStyle:
+                          TextStyle(color: AppColors.textGray.withOpacity(0.5)),
                       prefixIcon: const Icon(Icons.search_rounded,
-                          size: 20, color: AppColors.textGray),
+                          size: 22, color: AppColors.textGray),
                       filled: true,
                       fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 18),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: AppColors.border),
+                        borderSide:
+                            const BorderSide(color: AppColors.border, width: 1),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: AppColors.border),
+                        borderSide:
+                            const BorderSide(color: AppColors.border, width: 1),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 16),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide:
+                            const BorderSide(color: AppColors.orange, width: 2),
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 20),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  height: 60, // Match search bar height
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: AppColors.border, width: 1),
                   ),
                   child: Row(
                     children: [
                       const Icon(Icons.star_rounded,
-                          size: 20, color: AppColors.textGray),
-                      const SizedBox(width: 8),
+                          size: 22, color: AppColors.textGray),
+                      const SizedBox(width: 10),
                       Text(
                         '${l10n.savedLabel} (2)',
                         style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
                             color: AppColors.textDark),
                       ),
                     ],
@@ -113,15 +108,42 @@ class RecruiterCandidatesPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 32),
-          ...candidates.asMap().entries.map((entry) {
-            final index = entry.key;
-            final c = entry.value;
-            return AnimatedReveal(
-              delay: Duration(milliseconds: 300 + (index * 100)),
-              direction: RevealDirection.fromBottom,
-              child: _CandidateMatchCard(candidate: c),
-            );
-          }),
+          BlocBuilder<RecruiterCandidatesCubit, RecruiterCandidatesState>(
+            builder: (context, state) {
+              if (state is RecruiterCandidatesLoading) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 100),
+                    child: CircularProgressIndicator(color: AppColors.orange),
+                  ),
+                );
+              }
+              if (state is RecruiterCandidatesError) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 100),
+                    child: Text(state.message),
+                  ),
+                );
+              }
+              if (state is RecruiterCandidatesLoaded) {
+                if (state.candidates.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.only(top: 100),
+                      child: Text('Aucun candidat trouvé'),
+                    ),
+                  );
+                }
+                return Column(
+                  children: state.candidates.map((c) {
+                    return _CandidateMatchCard(candidate: c);
+                  }).toList(),
+                );
+              }
+              return Container();
+            },
+          ),
         ],
       ),
     );
@@ -138,107 +160,111 @@ class _CandidateMatchCard extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border, width: 1),
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CircleAvatar(
-                radius: 30,
-                backgroundColor: AppColors.bg,
-                child: Text(
-                  candidate.initials,
-                  style: const TextStyle(
-                      color: AppColors.navy,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18),
-                ),
+          // Initials circle
+          Container(
+            width: 60,
+            height: 60,
+            decoration: const BoxDecoration(
+              color: AppColors.bg,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              candidate.initials,
+              style: const TextStyle(
+                color: AppColors.navy,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
               ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+          ),
+          const SizedBox(width: 24),
+          // Main Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          candidate.name,
-                          style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textDark),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                            candidate.isSaved
-                                ? Icons.star_rounded
-                                : Icons.star_outline_rounded,
-                            size: 18,
-                            color: candidate.isSaved
-                                ? AppColors.orange
-                                : AppColors.textGray),
-                        const SizedBox(width: 12),
-                        _StatusBadge(status: candidate.status),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
                     Text(
-                      '${candidate.role} · ${candidate.location} · ${candidate.experience}',
+                      candidate.name,
                       style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textGray,
-                          fontWeight: FontWeight.w500),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textDark,
+                      ),
                     ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: candidate.skills
-                          .map((s) => _SkillChip(label: s))
-                          .toList(),
+                    const SizedBox(width: 8),
+                    Icon(
+                      candidate.isSaved ? Icons.star_rounded : Icons.star_outline_rounded,
+                      size: 20,
+                      color: candidate.isSaved ? AppColors.orange : AppColors.textGray,
                     ),
+                    const SizedBox(width: 12),
+                    _StatusBadge(status: candidate.status),
                   ],
                 ),
+                const SizedBox(height: 6),
+                Text(
+                  '${candidate.role} · ${candidate.location} · ${candidate.experience}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textGray,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: candidate.skills.map((s) => _SkillChip(label: s)).toList(),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 24),
+          // Match Score & Action
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${candidate.matchScore}%',
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.orange,
+                  height: 1,
+                ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '${candidate.matchScore}%',
-                    style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.orange),
-                  ),
-                  Text(
-                    l10n.matchLabel,
-                    style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textGray,
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 20),
-                  OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.mail_outline_rounded, size: 16),
-                    label: Text(l10n.contactCandidate),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.navy,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                      side: const BorderSide(color: AppColors.navy),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                    ),
-                  ),
-                ],
+              Text(
+                l10n.matchLabel,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textGray,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.mail_outline_rounded, size: 18),
+                label: Text(l10n.contactCandidate),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.navy,
+                  side: const BorderSide(color: AppColors.navy, width: 1.5),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
               ),
             ],
           ),
@@ -264,13 +290,16 @@ class _StatusBadge extends StatelessWidget {
     } else if (status == 'En revue') {
       bagdeColor = AppColors.navy;
       label = l10n.inReviewStatus;
-    } else {
+    } else if (status == 'Entretien planifié') {
       bagdeColor = AppColors.success;
       label = l10n.interviewPlannedStatus;
+    } else {
+      bagdeColor = AppColors.success;
+      label = status;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: bagdeColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
@@ -278,7 +307,10 @@ class _StatusBadge extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-            color: bagdeColor, fontSize: 10, fontWeight: FontWeight.bold),
+          color: bagdeColor,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

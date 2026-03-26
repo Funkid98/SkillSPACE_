@@ -3,7 +3,6 @@ const express = require('express');
 const cors = require('cors');
 const connectDB = require('./src/config/database');
 const recruiterRoutes = require('./src/routes/recruiter-route');
-const jobRoutes = require('./src/routes/job-route');
 
 const app = express();
 
@@ -21,7 +20,6 @@ app.use('/uploads', express.static('public/uploads'));
 
 // Routes
 app.use('/recruiter', recruiterRoutes);
-app.use('/job', jobRoutes);
 
 // Health check
 app.get('/', (req, res) => {

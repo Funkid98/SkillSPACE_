@@ -4,8 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'models/profile_model.dart';
 
 class ProfileService {
-  static const String _candidatBaseUrl = 'http://localhost:5000';
-  static const String _recruiterBaseUrl = 'http://localhost:5002';
+  static const String _candidatBaseUrl = 'http://127.0.0.1:5000';
+  static const String _recruiterBaseUrl = 'http://127.0.0.1:5002';
 
   static Future<ProfileData> getProfile(String token) async {
     final prefs = await SharedPreferences.getInstance();

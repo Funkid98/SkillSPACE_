@@ -22,7 +22,7 @@ const uploadCv = async (req, res) => {
         jobtitle: cvData.jobTitle,
         localisation: cvData.localisation,
         bio: cvData.bio,
-        skills: cvData.skills?.map(s => typeof s == 'string' ? s : s.name),
+        skills: cvData.skills?.map(s => ({ name: typeof s === 'string' ? s : s.name, percent: 50 })),
         cv_path: req.file.originalname,
         completion_percent: 100
       };

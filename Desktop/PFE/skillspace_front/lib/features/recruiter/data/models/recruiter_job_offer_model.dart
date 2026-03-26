@@ -70,4 +70,22 @@ class CandidateMatch {
     required this.isSaved,
     required this.initials,
   });
+
+  factory CandidateMatch.fromJson(Map<String, dynamic> json) {
+    final name = json['name'] ?? 'Candidat';
+    final initials = json['initials'] ?? name.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase();
+    
+    return CandidateMatch(
+      id: json['_id'] ?? json['id'] ?? '',
+      name: name,
+      role: json['role'] ?? json['poste'] ?? 'Développeur',
+      location: json['localisation'] ?? json['location'] ?? 'Non spécifiée',
+      experience: json['experience'] ?? 'Jeune diplômé',
+      skills: List<String>.from(json['competences'] ?? json['skills'] ?? []),
+      matchScore: json['matchScore'] ?? 90,
+      status: json['status'] ?? 'Nouveau',
+      isSaved: false,
+      initials: initials.isEmpty ? 'CA' : initials,
+    );
+  }
 }

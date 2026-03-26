@@ -17,7 +17,7 @@ class AppLocalizations {
       'simulation': 'Simulation entretien',
       'training': 'Formations',
       'logout': 'Déconnexion',
-      'welcome': 'Bonjour',
+      'welcome': 'Bienvenue',
       'summary': 'Voici un résumé de votre activité',
       'matched_offers': 'Offres matchées',
       'sent_applications': 'Candidatures envoyées',
@@ -147,7 +147,7 @@ class AppLocalizations {
       'trainer_feat_3': 'Suivi des inscriptions',
       'trainer_feat_4': 'Alignement marché du travail',
       // Recruiter Strings
-      'recruiter_dashboard': 'Tableau de bord Recruteur',
+      'recruiter_dashboard': 'Tableau de bord entreprise',
       'publish_offer': 'Publier une offre',
       'active_offers': 'Offres actives',
       'received_applications': 'Candidatures reçues',

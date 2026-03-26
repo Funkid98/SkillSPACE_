@@ -10,6 +10,7 @@ import 'package:skillspace/shared/widgets/app_sidebar.dart';
 import 'package:skillspace/features/recruiter/presentation/pages/recruiter_shell.dart';
 import 'package:skillspace/features/recruiter/presentation/widgets/recruiter_sidebar.dart';
 import 'package:pfe/features/auth/presentation/pages/auth_page.dart';
+import 'package:skillspace/features/auth/presentation/pages/field_selection_page.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -126,34 +127,56 @@ class _HeroText extends StatelessWidget {
                               ? const RecruiterShell(
                                   initialTab: RecruiterTab.profile,
                                 )
-                              : DashboardShell(
-                                  initialTab: DashboardTab.profil,
-                                  initialUserData: user,
-                                ),
+                              : role == UserRole.formateur
+                                  ? DashboardShell(
+                                      initialTab: DashboardTab.profil,
+                                      initialUserData: user,
+                                    )
+                                  : (user?['sector']?.toString().isEmpty ?? true)
+                                      ? const FieldSelectionPage()
+                                      : DashboardShell(
+                                          initialTab: DashboardTab.profil,
+                                          initialUserData: user,
+                                        ),
                         ),
                       );
                     } else {
-                      context.read<AuthCubit>().switchTab(AuthTab.register);
+                      final authCubit = context.read<AuthCubit>();
+                      authCubit.switchTab(AuthTab.register);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (heroContext) => AuthPage(
                             onSuccess: () {
-                              final role = context.read<AuthCubit>().state.role;
-                              final user = context.read<AuthCubit>().state.loggedInUser;
-                              Navigator.pop(heroContext);
-                              Navigator.pushReplacement(
-                                context,
+                              final authState = authCubit.state;
+                              final role = authState.role;
+                              final user = authState.loggedInUser;
+                              
+                              Navigator.of(heroContext).pushAndRemoveUntil(
                                 MaterialPageRoute(
-                                  builder: (context) => role == UserRole.recruteur
-                                      ? const RecruiterShell(
-                                          initialTab: RecruiterTab.profile,
-                                        )
-                                      : DashboardShell(
-                                          initialTab: DashboardTab.profil,
-                                          initialUserData: user,
-                                        ),
+                                  builder: (_) {
+                                    if (role == UserRole.recruteur) {
+                                      return const RecruiterShell(
+                                        initialTab: RecruiterTab.profile,
+                                      );
+                                    } else if (role == UserRole.formateur) {
+                                      return DashboardShell(
+                                        initialTab: DashboardTab.profil,
+                                        initialUserData: user,
+                                      );
+                                    } else {
+                                      final sector = user?['sector'];
+                                      if (sector == null || sector.isEmpty) {
+                                        return const FieldSelectionPage();
+                                      }
+                                      return DashboardShell(
+                                        initialTab: DashboardTab.profil,
+                                        initialUserData: user,
+                                      );
+                                    }
+                                  },
                                 ),
+                                (route) => false,
                               );
                             },
                           ),
