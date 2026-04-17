@@ -9,6 +9,7 @@ import '../cubits/recruiter_profile_cubit.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import '../../../landing/presentation/pages/landing_page.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
+import '../../../../shared/widgets/notification_bell.dart';
 
 enum RecruiterTab { dashboard, profile, offers, candidates }
 
@@ -73,12 +74,13 @@ class RecruiterSidebar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+            padding: const EdgeInsets.fromLTRB(24, 24, 12, 40),
             child: BlocBuilder<RecruiterProfileCubit, RecruiterProfileState>(
               builder: (context, state) {
+                Widget nameWidget;
                 if (state is RecruiterProfileLoaded) {
                   final profile = state.profile;
-                  return Row(
+                  nameWidget = Row(
                     children: [
                       if (profile.logoUrl.isNotEmpty)
                         Padding(
@@ -108,10 +110,13 @@ class RecruiterSidebar extends StatelessWidget {
                       ),
                     ],
                   );
+                } else {
+                  nameWidget = const Text('SkillSpace', style: AppTextStyles.navBrand);
                 }
-                return const Row(
+                return Row(
                   children: [
-                    Text('SkillSpace', style: AppTextStyles.navBrand),
+                    Expanded(child: nameWidget),
+                    const NotificationBell(isRecruiter: true),
                   ],
                 );
               },
@@ -328,7 +333,7 @@ class _LanguageSelector extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.bg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border.withOpacity(0.5)),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
@@ -389,7 +394,7 @@ class _LangBtn extends StatelessWidget {
           boxShadow: isActive
               ? [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   )

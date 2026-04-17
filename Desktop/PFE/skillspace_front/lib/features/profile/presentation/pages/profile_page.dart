@@ -11,6 +11,8 @@ import '../../../../core/app_colors.dart';
 import '../../../../shared/widgets/animated_reveal.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/utils/responsive.dart';
+import 'package:intl_phone_number_input/intl_phone_number_input.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -108,7 +110,7 @@ class _ProfileContent extends StatelessWidget {
           ),
 
           // Main Content Grid
-          Responsive.isMobile(context)
+          (Responsive.isMobile(context) || Responsive.isTablet(context))
               ? Column(
                   children: [
                     const AnimatedReveal(
@@ -149,7 +151,7 @@ class _ProfileContent extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.navy.withOpacity(0.2),
+                    color: AppColors.navy.withValues(alpha: 0.2),
                     blurRadius: 15,
                     offset: const Offset(0, 4),
                   ),
@@ -249,11 +251,12 @@ class _CompletionCard extends StatelessWidget {
       builder: (context, state) {
         final data = state is ProfileLoaded ? state.data : null;
         final isSaved = state is ProfileLoaded ? state.isSaved : false;
+        final isCompact = Responsive.isMobile(context) || Responsive.isTablet(context);
         final percent = data?.completionPercent ?? 0;
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(28),
+          padding: EdgeInsets.all(isCompact ? 20 : 28),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
@@ -265,12 +268,16 @@ class _CompletionCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    l10n.profileCompleted,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textDark,
+                  Expanded(
+                    child: Text(
+                      l10n.profileCompleted,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textDark,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Text(
@@ -333,6 +340,7 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
   late final TextEditingController _location;
   late final TextEditingController _bio;
   late final TextEditingController _poste;
+  PhoneNumber _number = PhoneNumber(isoCode: 'TN');
 
   @override
   void initState() {
@@ -349,6 +357,27 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
     _location = TextEditingController(text: data?.location ?? '');
     _bio = TextEditingController(text: data?.bio ?? '');
     _poste = TextEditingController(text: data?.poste ?? '');
+
+    if (_phone.text.isNotEmpty) {
+      _initPhoneNumber(_phone.text);
+    }
+  }
+
+  Future<void> _initPhoneNumber(String text) async {
+    try {
+      final number = await PhoneNumber.getRegionInfoFromPhoneNumber(text, 'TN');
+      setState(() {
+        _number = number;
+        // If the text starts with the dial code, extract only the national part
+        // to avoid duplication in the InternationalPhoneNumberInput widget
+        if (number.dialCode != null && text.contains(number.dialCode!)) {
+          final national = text.replaceAll(number.dialCode!, '').replaceAll('+', '').trim();
+          _phone.text = national;
+        }
+      });
+    } catch (e) {
+      if (kDebugMode) print('Error parsing phone number: $e');
+    }
   }
 
   @override
@@ -365,12 +394,13 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
 
   void _updateCubit() {
     final cubit = context.read<ProfileCubit>();
+    if (cubit.state is! ProfileLoaded) return;
     final currentData = (cubit.state as ProfileLoaded).data;
     cubit.updateField(currentData.copyWith(
       firstName: _firstName.text,
       lastName: _lastName.text,
       email: _email.text,
-      phone: _phone.text,
+      phone: _number.phoneNumber ?? _phone.text,
       location: _location.text,
       bio: _bio.text,
       poste: _poste.text,
@@ -393,7 +423,13 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
               _lastName.text = state.data.lastName;
             }
             if (_email.text != state.data.email) _email.text = state.data.email;
-            if (_phone.text != state.data.phone) _phone.text = state.data.phone;
+            
+            // Update phone only if it differs from current to avoid conflict with InternationalPhoneNumberInput
+            final currentPhone = _number.phoneNumber ?? _phone.text;
+            if (currentPhone != state.data.phone && state.data.phone.isNotEmpty) {
+              _initPhoneNumber(state.data.phone);
+            }
+
             if (_location.text != state.data.location) {
               _location.text = state.data.location;
             }
@@ -405,7 +441,7 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
         },
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(28),
+          padding: EdgeInsets.all((Responsive.isMobile(context) || Responsive.isTablet(context)) ? 20 : 28),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
@@ -437,13 +473,13 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
                         _Field(
                             label: l10n.firstName,
                             controller: _firstName,
-                            readOnly: true,
+                            readOnly: false,
                             onChanged: (_) => _updateCubit()),
                         const SizedBox(height: 16),
                         _Field(
                             label: l10n.lastName,
                             controller: _lastName,
-                            readOnly: true,
+                            readOnly: false,
                             onChanged: (_) => _updateCubit()),
                         const SizedBox(height: 16),
                       ],
@@ -458,14 +494,14 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
                               child: _Field(
                                   label: l10n.firstName,
                                   controller: _firstName,
-                                  readOnly: true,
+                                  readOnly: false,
                                   onChanged: (_) => _updateCubit())),
                           const SizedBox(width: 20),
                           Expanded(
                               child: _Field(
                                   label: l10n.lastName,
                                   controller: _lastName,
-                                  readOnly: true,
+                                  readOnly: false,
                                   onChanged: (_) => _updateCubit())),
                         ],
                       ),
@@ -483,12 +519,16 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 16),
-                _Field(
+                _PhoneField(
                   label: l10n.phone,
                   controller: _phone,
-                  readOnly: true,
-                  onChanged: (_) => _updateCubit(),
-                  keyboardType: TextInputType.phone,
+                  initialNumber: _number,
+                  onChanged: (PhoneNumber number) {
+                    setState(() {
+                      _number = number;
+                    });
+                    _updateCubit();
+                  },
                 ),
               ] else
                 Row(
@@ -504,12 +544,16 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
                     ),
                     const SizedBox(width: 20),
                     Expanded(
-                      child: _Field(
+                      child: _PhoneField(
                         label: l10n.phone,
                         controller: _phone,
-                        readOnly: true,
-                        onChanged: (_) => _updateCubit(),
-                        keyboardType: TextInputType.phone,
+                        initialNumber: _number,
+                        onChanged: (PhoneNumber number) {
+                          setState(() {
+                            _number = number;
+                          });
+                          _updateCubit();
+                        },
                       ),
                     ),
                   ],
@@ -540,7 +584,7 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
                   label: l10n.bio,
                   controller: _bio,
                   maxLines: 4,
-                  readOnly: true,
+                  readOnly: false,
                   onChanged: (_) => _updateCubit()),
             ],
           ),
@@ -622,6 +666,80 @@ class _Field extends StatelessWidget {
   }
 }
 
+class _PhoneField extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+  final PhoneNumber initialNumber;
+  final ValueChanged<PhoneNumber> onChanged;
+
+  const _PhoneField({
+    required this.label,
+    required this.controller,
+    required this.initialNumber,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textDark,
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.bg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.border, width: 1),
+          ),
+          child: InternationalPhoneNumberInput(
+            onInputChanged: onChanged,
+            textFieldController: controller,
+            initialValue: initialNumber,
+            formatInput: false,
+            selectorConfig: const SelectorConfig(
+              selectorType: PhoneInputSelectorType.DIALOG,
+              setSelectorButtonAsPrefixIcon: true,
+              leadingPadding: 0,
+            ),
+            ignoreBlank: false,
+            autoValidateMode: AutovalidateMode.onUserInteraction,
+            selectorTextStyle: GoogleFonts.inter(
+              color: AppColors.textDark,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+            textStyle: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textDark,
+            ),
+            inputDecoration: const InputDecoration(
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              fillColor: Colors.transparent,
+              filled: true,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // ─── CV Card ───────────────────────────────────────────────────────────────
 class _CvCard extends StatelessWidget {
   final bool hasCv;
@@ -646,9 +764,10 @@ class _CvCard extends StatelessWidget {
         }
       },
       builder: (context, cvState) {
+        final isCompact = Responsive.isMobile(context) || Responsive.isTablet(context);
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(28),
+          padding: EdgeInsets.all(isCompact ? 20 : 28),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
@@ -733,7 +852,7 @@ class _CvUploadArea extends StatelessWidget {
             width: 2,
           ),
           borderRadius: BorderRadius.circular(16),
-          color: AppColors.bg.withOpacity(0.5),
+          color: AppColors.bg.withValues(alpha: 0.5),
         ),
         child: Column(
           children: [
@@ -772,7 +891,7 @@ class _CvUploadedView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       decoration: BoxDecoration(
         color: AppColors.bg,
         borderRadius: BorderRadius.circular(16),
@@ -781,32 +900,40 @@ class _CvUploadedView extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.orange.withOpacity(0.1),
+              color: AppColors.orange.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.picture_as_pdf_rounded,
-                color: AppColors.orange, size: 24),
+                color: AppColors.orange, size: 20),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 8),
           const Expanded(
             child: Text(
-              'CV uploaded',
+              'CV chargé',
               style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
                 color: AppColors.textDark,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           TextButton(
+            style: TextButton.styleFrom(
+              minimumSize: Size.zero,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
             onPressed: onReplace,
             child: Text(
               l10n.replace,
               style: const TextStyle(
                 color: AppColors.orange,
                 fontWeight: FontWeight.bold,
+                fontSize: 12,
               ),
             ),
           ),
@@ -829,9 +956,9 @@ class _CvSuccessView extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.05),
+            color: Colors.green.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.green.withOpacity(0.3)),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
@@ -895,6 +1022,7 @@ class _SkillsCard extends StatefulWidget {
 
 class _SkillsCardState extends State<_SkillsCard> {
   bool _editing = false;
+  bool _showAll = false;
 
   @override
   Widget build(BuildContext context) {
@@ -911,9 +1039,10 @@ class _SkillsCardState extends State<_SkillsCard> {
         // Sort skills by percentage descending
         final skills = List<ProfileSkill>.from(rawSkills)
           ..sort((a, b) => b.percent.compareTo(a.percent));
+        final isCompact = Responsive.isMobile(context) || Responsive.isTablet(context);
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(28),
+          padding: EdgeInsets.all(isCompact ? 20 : 28),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
@@ -925,16 +1054,30 @@ class _SkillsCardState extends State<_SkillsCard> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    l10n.skills,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textDark,
+                  Expanded(
+                    child: Text(
+                      l10n.skills,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textDark,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   TextButton(
-                    onPressed: () => setState(() => _editing = !_editing),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      minimumSize: Size.zero,
+                    ),
+                    onPressed: () {
+                      setState(() => _editing = !_editing);
+                      if (!_editing) {
+                        // Show toast when switching from editing to viewing
+                        AppToast.showSuccess(context, 'Compétences mises à jour');
+                      }
+                    },
                     child: Text(
                       _editing ? 'Terminé' : l10n.edit,
                       style: TextStyle(
@@ -955,12 +1098,49 @@ class _SkillsCardState extends State<_SkillsCard> {
                             TextStyle(color: AppColors.textGray, fontSize: 13)),
                   ),
                 )
-              else
-                ...skills.asMap().entries.map((entry) => _SkillRow(
+              else ...[
+                // Show 5 skills if not expanded and not editing
+                ...( (!_showAll && !_editing && skills.length > 5) 
+                    ? skills.take(5).toList() 
+                    : skills).asMap().entries.map((entry) => _SkillRow(
                       skill: entry.value,
                       index: entry.key,
                       editing: _editing,
                     )),
+                
+                // Toggle button if more than 5 skills
+                if (skills.length > 5 && !_editing)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Center(
+                      child: InkWell(
+                        onTap: () => setState(() => _showAll = !_showAll),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _showAll ? 'Voir moins' : 'Voir les ${skills.length - 5} autres',
+                                style: const TextStyle(
+                                  color: AppColors.textGray,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                _showAll ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                size: 18,
+                                color: AppColors.textGray,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ],
           ),
         );
@@ -986,14 +1166,19 @@ class _SkillRow extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                skill.name.capitalize(),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textDark,
+              Expanded(
+                child: Text(
+                  skill.name.capitalize(),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 8),
               Text(
                 '${skill.percent}%',
                 style: const TextStyle(
@@ -1011,7 +1196,7 @@ class _SkillRow extends StatelessWidget {
                 activeTrackColor: AppColors.navy,
                 inactiveTrackColor: AppColors.border,
                 thumbColor: AppColors.orange,
-                overlayColor: AppColors.orange.withOpacity(0.15),
+                overlayColor: AppColors.orange.withValues(alpha: 0.15),
                 trackHeight: 6,
                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
               ),

@@ -1,12 +1,20 @@
 const nodemailer = require('nodemailer');
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS,
-  },
-});
+// Lazy transporter — only created when GMAIL_USER & GMAIL_PASS are set
+let _transporter = null;
+const getTransporter = () => {
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) return null;
+  if (!_transporter) {
+    _transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS,
+      },
+    });
+  }
+  return _transporter;
+};
 
 const sendOtpEmail = async (toEmail, otp) => {
   const mailOptions = {
@@ -30,6 +38,8 @@ const sendOtpEmail = async (toEmail, otp) => {
     `,
   };
 
+  const transporter = getTransporter();
+  if (!transporter) { console.warn('[Email] GMAIL_USER/GMAIL_PASS not set — skipping OTP email.'); return; }
   await transporter.sendMail(mailOptions);
 };
 
@@ -59,6 +69,8 @@ const sendLoginSuccessEmail = async (toEmail, firstName) => {
   };
 
   try {
+    const transporter = getTransporter();
+    if (!transporter) { console.warn('[Email] GMAIL_USER/GMAIL_PASS not set — skipping login notification.'); return; }
     await transporter.sendMail(mailOptions);
   } catch (error) {
     console.error('Error sending login notification email:', error);

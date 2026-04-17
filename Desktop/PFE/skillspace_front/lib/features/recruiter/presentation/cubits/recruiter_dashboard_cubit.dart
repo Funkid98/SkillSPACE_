@@ -26,11 +26,14 @@ class RecruiterDashboardCubit extends Cubit<RecruiterDashboardState> {
         super(RecruiterDashboardInitial());
 
   void loadDashboard() async {
+    if (isClosed) return;
     emit(RecruiterDashboardLoading());
     try {
       final data = await _recruiterService.getDashboardData();
+      if (isClosed) return;
       emit(RecruiterDashboardLoaded(data));
     } catch (e) {
+      if (isClosed) return;
       emit(
           RecruiterDashboardError('Failed to load dashboard: ${e.toString()}'));
     }

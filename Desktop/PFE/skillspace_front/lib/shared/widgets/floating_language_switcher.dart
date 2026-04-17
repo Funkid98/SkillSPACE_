@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/app_colors.dart';
 import '../../../core/l10n/l10n_cubit.dart';
-
 class FloatingLanguageSwitcher extends StatelessWidget {
   const FloatingLanguageSwitcher({super.key});
 
@@ -20,12 +19,12 @@ class FloatingLanguageSwitcher extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border.withOpacity(0.5)),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -36,18 +35,21 @@ class FloatingLanguageSwitcher extends StatelessWidget {
             children: [
               _LangOption(
                 label: 'FR',
+                countryCode: 'FR',
                 isActive: currentLocale.languageCode == 'fr',
                 onTap: () =>
                     context.read<L10nCubit>().setLocale(const Locale('fr')),
               ),
               _LangOption(
                 label: 'EN',
+                countryCode: 'US',
                 isActive: currentLocale.languageCode == 'en',
                 onTap: () =>
                     context.read<L10nCubit>().setLocale(const Locale('en')),
               ),
               _LangOption(
                 label: 'AR',
+                countryCode: 'TN',
                 isActive: currentLocale.languageCode == 'ar',
                 onTap: () =>
                     context.read<L10nCubit>().setLocale(const Locale('ar')),
@@ -62,11 +64,13 @@ class FloatingLanguageSwitcher extends StatelessWidget {
 
 class _LangOption extends StatelessWidget {
   final String label;
+  final String countryCode;
   final bool isActive;
   final VoidCallback onTap;
 
   const _LangOption({
     required this.label,
+    required this.countryCode,
     required this.isActive,
     required this.onTap,
   });
@@ -82,13 +86,17 @@ class _LangOption extends StatelessWidget {
           color: isActive ? AppColors.navy : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            color: isActive ? Colors.white : AppColors.textGray,
-          ),
+        child: Row(
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: isActive ? Colors.white : AppColors.textGray,
+              ),
+            ),
+          ],
         ),
       ),
     );

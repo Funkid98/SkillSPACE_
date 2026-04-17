@@ -34,7 +34,7 @@ class AppTheme {
                 const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           ).copyWith(
             overlayColor:
-                WidgetStateProperty.all(Colors.white.withOpacity(0.1)),
+                WidgetStateProperty.all(Colors.white.withValues(alpha: 0.1)),
           ),
         ),
         outlinedButtonTheme: OutlinedButtonThemeData(

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:pfe/core/network/api_client.dart';
+import 'dart:convert';
 import '../../../../core/l10n/app_localizations.dart';
 
 enum ContractType { cdi, cdd, freelance, stage }
@@ -24,12 +26,19 @@ class JobOffer {
   final String title;
   final String company;
   final String city;
+  final String? recruiterId;
   final ContractType contractType;
   final String salaryRange;
   final String postedAgo;
   final int compatibilityPercent;
   final int matchingSkills;
   final int totalSkills;
+  final String description;
+  final String matchingAnalysis;
+  final String recommendation;
+  final List<String> matchedSkills;
+  final List<String> missingSkills;
+  final String status;
   final bool isSaved;
 
   const JobOffer({
@@ -37,12 +46,19 @@ class JobOffer {
     required this.title,
     required this.company,
     required this.city,
+    this.recruiterId,
     required this.contractType,
     required this.salaryRange,
     required this.postedAgo,
     required this.compatibilityPercent,
     required this.matchingSkills,
     required this.totalSkills,
+    required this.description,
+    this.matchingAnalysis = '',
+    this.recommendation = '',
+    this.matchedSkills = const [],
+    this.missingSkills = const [],
+    this.status = 'COMPLETED',
     this.isSaved = false,
   });
 
@@ -52,79 +68,69 @@ class JobOffer {
       title: title,
       company: company,
       city: city,
+      recruiterId: recruiterId,
       contractType: contractType,
       salaryRange: salaryRange,
       postedAgo: postedAgo,
       compatibilityPercent: compatibilityPercent,
       matchingSkills: matchingSkills,
       totalSkills: totalSkills,
+      description: description,
+      matchingAnalysis: matchingAnalysis,
+      recommendation: recommendation,
+      matchedSkills: matchedSkills,
+      missingSkills: missingSkills,
+      status: status,
       isSaved: isSaved ?? this.isSaved,
     );
   }
 
   static Future<List<JobOffer>> fetchAll() async {
-    await Future.delayed(const Duration(milliseconds: 700));
-    return const [
-      JobOffer(
-        id: '1',
-        title: 'Développeur Frontend React',
-        company: 'TechCorp',
-        city: 'Paris',
-        contractType: ContractType.cdi,
-        salaryRange: '35–42k€',
-        postedAgo: 'Il y a 2 jours',
-        compatibilityPercent: 92,
-        matchingSkills: 5,
-        totalSkills: 5,
-      ),
-      JobOffer(
-        id: '2',
-        title: 'Data Analyst Junior',
-        company: 'DataFlow',
-        city: 'Lyon',
-        contractType: ContractType.cdi,
-        salaryRange: '30–36k€',
-        postedAgo: 'Il y a 3 jours',
-        compatibilityPercent: 85,
-        matchingSkills: 3,
-        totalSkills: 4,
-      ),
-      JobOffer(
-        id: '3',
-        title: 'UX/UI Designer',
-        company: 'DesignStudio',
-        city: 'Remote',
-        contractType: ContractType.cdd,
-        salaryRange: '28–34k€',
-        postedAgo: 'Il y a 5 jours',
-        compatibilityPercent: 78,
-        matchingSkills: 2,
-        totalSkills: 4,
-      ),
-      JobOffer(
-        id: '4',
-        title: 'Ingénieur DevOps',
-        company: 'CloudNine',
-        city: 'Toulouse',
-        contractType: ContractType.cdi,
-        salaryRange: '40–50k€',
-        postedAgo: 'Il y a 1 jour',
-        compatibilityPercent: 65,
-        matchingSkills: 2,
-        totalSkills: 5,
-      ),
-      JobOffer(
-        id: '5',
-        title: 'Chef de projet IT Junior',
-        company: 'ConsultPro',
-        city: 'Marseille',
-        contractType: ContractType.cdi,
-        salaryRange: '32–38k€',
-        postedAgo: 'Il y a 4 jours',
-        compatibilityPercent: 71,
-        matchingSkills: 3,
-        totalSkills: 5,
-      ),
-    ];
+    try {
+      final client = ApiClient();
+      final response = await client.get('/candidat/matching-offers');
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        return data.map((json) {
+          final contractStr = json['type'] ?? 'Full-time';
+          ContractType mappedType;
+          if (contractStr.toLowerCase().contains('cdd')) {
+            mappedType = ContractType.cdd;
+          } else if (contractStr.toLowerCase().contains('freelance'))
+            mappedType = ContractType.freelance;
+          else if (contractStr.toLowerCase().contains('stage'))
+            mappedType = ContractType.stage;
+          else
+            mappedType = ContractType.cdi;
+
+          return JobOffer(
+            id: json['_id']?.toString() ?? '',
+            title: json['title'] ?? 'Sans titre',
+            company: json['company'] ?? 'Non spécifié',
+            city: json['location'] ?? 'Remote',
+            recruiterId: json['recruiterId']?.toString(),
+            contractType: mappedType,
+            salaryRange: json['salary'] ?? 'N/A',
+            postedAgo: 'Récemment',
+            compatibilityPercent: json['compatibilityPercent'] ?? 0,
+            matchingSkills: json['matchingSkills'] ?? 0,
+            totalSkills: json['totalSkills'] ?? 0,
+            description: json['description'] ?? '',
+            matchingAnalysis: json['matchingAnalysis'] ?? '',
+            recommendation: json['recommendation'] ?? '',
+            matchedSkills: List<String>.from(json['matchedSkills'] ?? []),
+            missingSkills: List<String>.from(json['missingSkills'] ?? []),
+            status: json['status'] ?? 'COMPLETED',
+          );
+        }).toList();
+      }
+    } catch (e) {
+      // ignore: avoid_print
+      print('[JobOffer.fetchAll] Error: $e');
+    }
+
+    // Fallback
+    return [];
   }
 }

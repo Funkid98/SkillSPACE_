@@ -687,7 +687,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
           Container(
             width: 2,
             height: 40,
-            color: Colors.blue.withOpacity(0.5),
+            color: Colors.blue.withValues(alpha: 0.5),
             margin: const EdgeInsets.only(right: 12, top: 4),
           ),
           Expanded(

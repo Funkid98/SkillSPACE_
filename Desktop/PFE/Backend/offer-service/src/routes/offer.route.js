@@ -6,7 +6,8 @@ const {
     deleteOffer, 
     getRecruiterOffers, 
     getMatchingOffers, 
-    getOffers 
+    getOffers,
+    incrementView
 } = require('../controllers/offer.controller');
 const { protect } = require('../middleware/auth-middleware');
 
@@ -20,5 +21,7 @@ router.get('/matches', getMatchingOffers);
 router.route('/:id')
     .put(protect, updateOffer)
     .delete(protect, deleteOffer);
+
+router.put('/:id/view', incrementView);
 
 module.exports = router;

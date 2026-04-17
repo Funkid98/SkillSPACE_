@@ -65,25 +65,27 @@ class _LandingPageState extends State<LandingPage> {
         onKey: _handleKey,
         child: Stack(
           children: [
-            Column(
-              children: [
-                NavBar(scrollTo: _scrollTo), // pass scroll function
-                Expanded(
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    child: Column(
-                      children: [
-                        const HeroSection(),
-                        FeaturesSection(key: SectionKeys.features),
-                        StepsSection(key: SectionKeys.steps),
-                        AudienceSection(key: SectionKeys.audience),
-                        const CtaSection(),
-                        const AppFooter(),
-                      ],
-                    ),
-                  ),
+            Positioned.fill(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 80), // Padding for fixed navbar
+                    const HeroSection(),
+                    FeaturesSection(key: SectionKeys.features),
+                    StepsSection(key: SectionKeys.steps),
+                    AudienceSection(key: SectionKeys.audience),
+                    const CtaSection(),
+                    const AppFooter(),
+                  ],
                 ),
-              ],
+              ),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: NavBar(scrollTo: _scrollTo),
             ),
             const FloatingLanguageSwitcher(),
           ],

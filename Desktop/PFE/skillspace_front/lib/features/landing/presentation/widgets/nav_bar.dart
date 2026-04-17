@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:skillspace/core/app_colors.dart';
 import 'package:skillspace/core/theme/app_text_styles.dart';
 import 'package:skillspace/core/utils/responsive.dart';
@@ -31,12 +32,13 @@ class NavBar extends StatelessWidget {
             final authState = authCubit.state;
             final role = authState.role;
             final userData = authState.loggedInUser;
-            
+
             Navigator.of(navContext).pushAndRemoveUntil(
               MaterialPageRoute(
                 builder: (_) {
                   if (role == UserRole.recruteur) {
-                    return const RecruiterShell(initialTab: RecruiterTab.profile);
+                    return const RecruiterShell(
+                        initialTab: RecruiterTab.profile);
                   } else if (role == UserRole.formateur) {
                     return DashboardShell(
                       initialTab: DashboardTab.profil,
@@ -69,13 +71,16 @@ class NavBar extends StatelessWidget {
 
     return AnimatedReveal(
       duration: const Duration(milliseconds: 500),
-      child: Container(
-        color: Colors.white,
-        padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 16 : 48,
-          vertical: 14,
-        ),
-        child: Row(
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            color: Colors.white.withValues(alpha: 0.4),
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 16 : 48,
+              vertical: 14,
+            ),
+            child: Row(
           children: [
             const Text('SkillSpace', style: AppTextStyles.navBrand),
             const Spacer(),
@@ -110,6 +115,8 @@ class NavBar extends StatelessWidget {
           ],
         ),
       ),
+    ),
+    ),
     );
   }
 }
@@ -172,7 +179,6 @@ class NavDrawer extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Header: brand + close ────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -195,10 +201,7 @@ class NavDrawer extends StatelessWidget {
                   ),
                 ],
               ),
-
               const SizedBox(height: 32),
-
-              // ── Nav links ────────────────────────────────────────
               _DrawerLink(
                 label: l10n.features,
                 onTap: () {
@@ -223,12 +226,8 @@ class NavDrawer extends StatelessWidget {
                 },
               ),
               const Divider(color: AppColors.border, height: 1),
-
               const SizedBox(height: 32),
-
               const Spacer(),
-
-              // ── Action buttons ───────────────────────────────────
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -291,7 +290,9 @@ class _DrawerLinkState extends State<_DrawerLink> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
-        color: _pressed ? AppColors.navy.withOpacity(0.05) : Colors.transparent,
+        color: _pressed
+            ? AppColors.navy.withValues(alpha: 0.05)
+            : Colors.transparent,
         padding: const EdgeInsets.symmetric(vertical: 20),
         child: SizedBox(
           width: double.infinity,

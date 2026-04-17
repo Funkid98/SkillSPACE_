@@ -132,7 +132,8 @@ class _HeroText extends StatelessWidget {
                                       initialTab: DashboardTab.profil,
                                       initialUserData: user,
                                     )
-                                  : (user?['sector']?.toString().isEmpty ?? true)
+                                  : (user?['sector']?.toString().isEmpty ??
+                                          true)
                                       ? const FieldSelectionPage()
                                       : DashboardShell(
                                           initialTab: DashboardTab.profil,
@@ -151,7 +152,7 @@ class _HeroText extends StatelessWidget {
                               final authState = authCubit.state;
                               final role = authState.role;
                               final user = authState.loggedInUser;
-                              
+
                               Navigator.of(heroContext).pushAndRemoveUntil(
                                 MaterialPageRoute(
                                   builder: (_) {
@@ -338,7 +339,7 @@ class _SatisfactionBadgeState extends State<_SatisfactionBadge>
 
     // يقرا الـ state بعد أول frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _startCount(98); // static satisfaction rate
+      _startCount(87); // static satisfaction rate
     });
   }
 
@@ -373,7 +374,7 @@ class _SatisfactionBadgeState extends State<_SatisfactionBadge>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),

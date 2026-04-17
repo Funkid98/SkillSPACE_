@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pfe/core/network/api_client.dart';
 import '../cubits/recruiter_extra_cubits.dart';
 import '../../data/models/recruiter_job_offer_model.dart';
 import '../../../../core/app_colors.dart';
@@ -44,68 +45,22 @@ class RecruiterCandidatesPage extends StatelessWidget {
           const SizedBox(height: 32),
           AnimatedReveal(
             delay: const Duration(milliseconds: 200),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    key: const ValueKey('candidate_search_field'),
-                    onChanged: (value) => context
-                        .read<RecruiterCandidatesCubit>()
-                        .filterCandidates(value),
-                    decoration: InputDecoration(
-                      hintText: l10n.searchCandidateHint,
-                      hintStyle:
-                          TextStyle(color: AppColors.textGray.withOpacity(0.5)),
-                      prefixIcon: const Icon(Icons.search_rounded,
-                          size: 22, color: AppColors.textGray),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 18),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide:
-                            const BorderSide(color: AppColors.border, width: 1),
+            child:
+                (Responsive.isMobile(context) || Responsive.isTablet(context))
+                    ? Column(
+                        children: [
+                          _buildSearchField(context, l10n),
+                          const SizedBox(height: 16),
+                          _buildSavedButton(l10n),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(child: _buildSearchField(context, l10n)),
+                          const SizedBox(width: 20),
+                          _buildSavedButton(l10n),
+                        ],
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide:
-                            const BorderSide(color: AppColors.border, width: 1),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide:
-                            const BorderSide(color: AppColors.orange, width: 2),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 20),
-                Container(
-                  height: 60, // Match search bar height
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border, width: 1),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.star_rounded,
-                          size: 22, color: AppColors.textGray),
-                      const SizedBox(width: 10),
-                      Text(
-                        '${l10n.savedLabel} (2)',
-                        style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textDark),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
           ),
           const SizedBox(height: 32),
           BlocBuilder<RecruiterCandidatesCubit, RecruiterCandidatesState>(
@@ -127,22 +82,133 @@ class RecruiterCandidatesPage extends StatelessWidget {
                 );
               }
               if (state is RecruiterCandidatesLoaded) {
-                if (state.candidates.isEmpty) {
+                if (state.groupedMatches.isEmpty) {
                   return const Center(
                     child: Padding(
                       padding: EdgeInsets.only(top: 100),
-                      child: Text('Aucun candidat trouvé'),
+                      child: Text('Aucune offre ou candidat trouvé'),
                     ),
                   );
                 }
                 return Column(
-                  children: state.candidates.map((c) {
-                    return _CandidateMatchCard(candidate: c);
+                  children: state.groupedMatches.map((group) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.work_outline_rounded,
+                                  color: AppColors.navy, size: 20),
+                              const SizedBox(width: 12),
+                              Text(
+                                group.offer.title,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.navy,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.bg,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '${group.candidates.length}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textGray,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (group.candidates.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.only(left: 32, bottom: 24),
+                            child: Text(
+                              'Aucun match pour cette offre',
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.textGray,
+                                  fontStyle: FontStyle.italic),
+                            ),
+                          )
+                        else
+                          ...group.candidates.map((c) {
+                            return _CandidateMatchCard(candidate: c);
+                          }),
+                        const SizedBox(height: 16),
+                      ],
+                    );
                   }).toList(),
                 );
               }
               return Container();
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchField(BuildContext context, AppLocalizations l10n) {
+    return TextField(
+      key: const ValueKey('candidate_search_field'),
+      onChanged: (value) =>
+          context.read<RecruiterCandidatesCubit>().filterCandidates(value),
+      decoration: InputDecoration(
+        hintText: l10n.searchCandidateHint,
+        hintStyle: TextStyle(color: AppColors.textGray.withValues(alpha: 0.5)),
+        prefixIcon: const Icon(Icons.search_rounded,
+            size: 22, color: AppColors.textGray),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.border, width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.border, width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.orange, width: 2),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSavedButton(AppLocalizations l10n) {
+    return Container(
+      height: 62,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border, width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.star_rounded, size: 22, color: AppColors.textGray),
+          const SizedBox(width: 10),
+          Text(
+            '${l10n.savedLabel} (2)',
+            style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textDark),
           ),
         ],
       ),
@@ -158,117 +224,334 @@ class _CandidateMatchCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
+    // Layout switch for mobile
+    final isCompact =
+        Responsive.isMobile(context) || Responsive.isTablet(context);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(isCompact ? 20 : 28),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.border, width: 1),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Initials circle
-          Container(
-            width: 60,
-            height: 60,
-            decoration: const BoxDecoration(
-              color: AppColors.bg,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              candidate.initials,
-              style: const TextStyle(
-                color: AppColors.navy,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-          const SizedBox(width: 24),
-          // Main Info
-          Expanded(
-            child: Column(
+      child: isCompact
+          ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Text(
-                      candidate.name,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textDark,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      candidate.isSaved ? Icons.star_rounded : Icons.star_outline_rounded,
-                      size: 20,
-                      color: candidate.isSaved ? AppColors.orange : AppColors.textGray,
-                    ),
-                    const SizedBox(width: 12),
-                    _StatusBadge(status: candidate.status),
+                    _buildAvatar(),
+                    const SizedBox(width: 16),
+                    Expanded(child: _buildMainInfo(context)),
                   ],
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  '${candidate.role} · ${candidate.location} · ${candidate.experience}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textGray,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: candidate.skills.map((s) => _SkillChip(label: s)).toList(),
-                ),
+                const SizedBox(height: 20),
+                _buildScoreAndAction(context, isCompact),
+              ],
+            )
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildAvatar(),
+                const SizedBox(width: 24),
+                Expanded(child: _buildMainInfo(context)),
+                const SizedBox(width: 24),
+                _buildScoreAndAction(context, isCompact),
               ],
             ),
+    );
+  }
+
+  Widget _buildAvatar() {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: const BoxDecoration(
+        color: AppColors.bg,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        candidate.initials,
+        style: const TextStyle(
+          color: AppColors.navy,
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainInfo(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Flexible(
+              child: Text(
+                candidate.name,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textDark,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              candidate.isSaved
+                  ? Icons.star_rounded
+                  : Icons.star_outline_rounded,
+              size: 20,
+              color: candidate.isSaved ? AppColors.orange : AppColors.textGray,
+            ),
+            if (!Responsive.isMobile(context)) ...[
+              const SizedBox(width: 12),
+              _StatusBadge(status: candidate.status),
+            ],
+          ],
+        ),
+        if (Responsive.isMobile(context)) ...[
+          const SizedBox(height: 4),
+          _StatusBadge(status: candidate.status),
+        ],
+        const SizedBox(height: 6),
+        Text(
+          '${candidate.role} · ${candidate.location} · ${candidate.experience}',
+          style: const TextStyle(
+            fontSize: 13,
+            color: AppColors.textGray,
+            fontWeight: FontWeight.w500,
           ),
-          const SizedBox(width: 24),
-          // Match Score & Action
-          Column(
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: candidate.skills.map((s) => _SkillChip(label: s)).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScoreAndAction(BuildContext context, bool isCompact) {
+    final l10n = AppLocalizations.of(context);
+    return isCompact
+        ? Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildScore(l10n),
+              _buildActionButton(l10n),
+            ],
+          )
+        : Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                '${candidate.matchScore}%',
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.orange,
-                  height: 1,
-                ),
-              ),
-              Text(
-                l10n.matchLabel,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textGray,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              _buildScore(l10n),
               const SizedBox(height: 24),
-              OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.mail_outline_rounded, size: 18),
-                label: Text(l10n.contactCandidate),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.navy,
-                  side: const BorderSide(color: AppColors.navy, width: 1.5),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                ),
+              _buildActionButton(l10n),
+            ],
+          );
+  }
+
+  Widget _buildScore(AppLocalizations l10n) {
+    if (candidate.matchScore == 0 || candidate.status == 'ANALYSING') {
+      return const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: AppColors.orange),
+              ),
+              SizedBox(width: 12),
+              Text(
+                'Analyse...',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.orange,
+                    fontWeight: FontWeight.bold),
               ),
             ],
           ),
         ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (candidate.matchScore >= 100) ...[
+              Container(
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'PRÊT',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.success,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+            Text(
+              '${candidate.matchScore}%',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w900,
+                color: candidate.matchScore >= 100
+                    ? AppColors.success
+                    : candidate.matchScore >= 70
+                        ? AppColors.success
+                        : candidate.matchScore >= 40
+                            ? AppColors.warning
+                            : AppColors.error,
+                height: 1,
+              ),
+            ),
+          ],
+        ),
+        Text(
+          l10n.matchLabel,
+          style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textGray,
+              fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton(AppLocalizations l10n) {
+    return Builder(
+      builder: (context) => OutlinedButton.icon(
+        onPressed: () async {
+          // Show loading
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const Center(
+              child: CircularProgressIndicator(color: AppColors.navy),
+            ),
+          );
+
+          try {
+            final client = ApiClient();
+            final response = await client.post('/recruiter/contact', {
+              'candidateId': candidate.id,
+              'candidateName': candidate.name,
+            });
+            if (context.mounted) Navigator.of(context).pop(); // close loading
+
+            if (context.mounted) {
+              if (response.statusCode == 200) {
+                showDialog(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: AppColors.navy.withValues(alpha: 0.08),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.check_circle_rounded,
+                              color: AppColors.navy, size: 40),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Contact envoyé !',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w900, fontSize: 17),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${candidate.name} recevra une notification que vous souhaitez le contacter.',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              color: AppColors.textGray,
+                              fontSize: 14,
+                              height: 1.5),
+                        ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.navy,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            child: const Text('Fermer',
+                                style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Erreur (${response.statusCode})'),
+                    backgroundColor: Colors.red.shade600,
+                  ),
+                );
+              }
+            }
+          } catch (e) {
+            if (context.mounted) Navigator.of(context).pop();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Erreur réseau. Veuillez réessayer.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        },
+        icon: const Icon(Icons.mail_outline_rounded, size: 16),
+        label: Text(l10n.contactCandidate),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.navy,
+          side: const BorderSide(color: AppColors.navy, width: 1.2),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          textStyle:
+              const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+        ),
       ),
     );
   }
@@ -301,7 +584,7 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: bagdeColor.withOpacity(0.1),
+        color: bagdeColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(

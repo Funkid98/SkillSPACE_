@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { register, login, getProfile, updateProfile, getRecentCandidatesBySector } = require('../controllers/candidat-controller')
+const { register, login, getProfile, updateProfile, getRecentCandidatesBySector, getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer, applyToOffer, receiveNotification, getNotifications, markNotificationRead } = require('../controllers/candidat-controller')
 const auth = require('../middleware/auth-middleware')
 
 
@@ -10,8 +10,18 @@ router.post('/login', login)
 
 router.get('/me', auth, getProfile)
 router.put('/me', auth, updateProfile)
-router.get('/recent/:sector', getRecentCandidatesBySector)
+router.get('/recent/:sector', auth, getRecentCandidatesBySector)
+router.get('/matching-offers', auth, getMatchingOffersForCandidate)
+router.get('/grouped-matches', auth, getMatchingCandidatesGroupedByOffer)
 
+// Internal route for offer-service to trigger re-matching after job update
+router.post('/trigger-match/offer/:id', reMatchOffer)
+
+// Application & Notifications
+router.post('/apply', auth, applyToOffer)
+router.post('/internal/notify', receiveNotification) // Called by recruter-service (no auth middleware, or internal basic auth)
+router.get('/notifications', auth, getNotifications)
+router.put('/notifications/:id/read', auth, markNotificationRead)
 router.get('/internal/:id', async (req, res) => {
     const User = require('../models/candidat')
     const user = await User.findById(req.params.id).select('-password')

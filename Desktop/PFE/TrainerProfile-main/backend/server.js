@@ -19,9 +19,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/formateur', formateurRoutes);
 
-// Set PORT to 5004 as specified in ApiClient for formateur
-const PORT = 5004;
-
+const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Isolated Test Server running on http://localhost:${PORT}`);
 });

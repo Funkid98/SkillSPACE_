@@ -25,6 +25,34 @@ class AuthCubit extends Cubit<AuthState> {
   void clearError() => emit(state.copyWith(clearError: true));
   void clearSuccess() => emit(state.copyWith(isSuccess: false));
 
+  void restoreSession(Map<String, dynamic> user) {
+    UserRole userRole = UserRole.candidat;
+    if (user['role'] == 'recruteur' || user['role'] == 'recruiter') {
+      userRole = UserRole.recruteur;
+    } else if (user['role'] == 'formateur' || user['role'] == 'trainer') {
+      userRole = UserRole.formateur;
+    }
+    emit(state.copyWith(
+      isSuccess: true,
+      role: userRole,
+      loggedInUser: user,
+    ));
+  }
+
+  Future<void> checkAuthStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final staySignedIn = prefs.getBool('stay_signed_in') ?? true;
+    final token = prefs.getString('jwt_token');
+    final userDataStr = prefs.getString('user_data');
+
+    if (staySignedIn && token != null && userDataStr != null) {
+      try {
+        final Map<String, dynamic> user = jsonDecode(userDataStr);
+        restoreSession(user);
+      } catch (_) {}
+    }
+  }
+
   Future<void> login(String email, String password) async {
     if (email.isEmpty || password.isEmpty) {
       emit(state.copyWith(error: 'Veuillez remplir tous les champs.'));

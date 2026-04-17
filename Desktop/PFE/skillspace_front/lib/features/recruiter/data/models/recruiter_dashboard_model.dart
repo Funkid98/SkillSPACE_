@@ -35,6 +35,8 @@ class RecentCandidate {
   final String role;
   final String status;
   final int matchScore;
+  final String matchingAnalysis;
+  final String recommendation;
   final String initials;
 
   RecentCandidate({
@@ -42,6 +44,8 @@ class RecentCandidate {
     required this.role,
     required this.status,
     required this.matchScore,
+    required this.matchingAnalysis,
+    required this.recommendation,
     required this.initials,
   });
 }

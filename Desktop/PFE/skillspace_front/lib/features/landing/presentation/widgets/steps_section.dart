@@ -120,7 +120,7 @@ class _DotDivider extends StatelessWidget {
             child: Container(
               width: 6,
               height: 2,
-              color: AppColors.orange.withOpacity(0.35),
+              color: AppColors.orange.withValues(alpha: 0.35),
             ),
           ),
         ),
@@ -140,7 +140,7 @@ class _StepCard extends StatelessWidget {
         Text(
           step.number,
           style: AppTextStyles.stepNumber.copyWith(
-            color: AppColors.orange.withOpacity(0.22),
+            color: AppColors.orange.withValues(alpha: 0.22),
           ),
         ),
         const SizedBox(height: 8),

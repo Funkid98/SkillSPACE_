@@ -4,15 +4,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
   static const String baseUrl =
-      'http://127.0.0.1:5001'; // login-register backend
+      'http://localhost:5001'; // login-register backend
   static const String candidatBaseUrl =
-      'http://127.0.0.1:5000'; // candidat-service backend
+      'http://localhost:5000'; // candidat-service backend
   static const String recruiterBaseUrl =
-      'http://127.0.0.1:5002'; // recruiter-service backend
+      'http://localhost:5002'; // recruiter-service backend
   static const String offerBaseUrl =
-      'http://127.0.0.1:5003'; // offer-service backend
+      'http://localhost:5003'; // offer-service backend
   static const String trainerBaseUrl =
-      'http://127.0.0.1:5004'; // trainer-service backend
+      'http://localhost:5004'; // trainer-service backend
 
   final http.Client _client = http.Client();
 

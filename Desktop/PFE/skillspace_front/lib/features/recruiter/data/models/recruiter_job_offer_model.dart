@@ -6,11 +6,13 @@ class RecruiterJobOffer {
   final String status; // Active, Brouillon
   final String description;
   final List<String> requirements;
+  final String recruiter;
   final int candidateCount;
   final int viewCount;
 
   RecruiterJobOffer({
     required this.id,
+    required this.recruiter,
     required this.title,
     required this.location,
     required this.type,
@@ -24,10 +26,11 @@ class RecruiterJobOffer {
   factory RecruiterJobOffer.fromJson(Map<String, dynamic> json) {
     return RecruiterJobOffer(
       id: json['_id'] ?? '',
+      recruiter: json['recruiter'] ?? '',
       title: json['title'] ?? '',
       location: json['location'] ?? '',
       type: json['type'] ?? 'Full-time',
-      status: 'Active', 
+      status: 'Active',
       description: json['description'] ?? '',
       requirements: List<String>.from(json['requirements'] ?? []),
       candidateCount: 0,
@@ -54,6 +57,8 @@ class CandidateMatch {
   final String experience;
   final List<String> skills;
   final int matchScore;
+  final String matchingAnalysis;
+  final String recommendation;
   final String status; // Nouveau, En revue, etc.
   final bool isSaved;
   final String initials;
@@ -66,6 +71,8 @@ class CandidateMatch {
     required this.experience,
     required this.skills,
     required this.matchScore,
+    required this.matchingAnalysis,
+    required this.recommendation,
     required this.status,
     required this.isSaved,
     required this.initials,
@@ -83,9 +90,29 @@ class CandidateMatch {
       experience: json['experience'] ?? 'Jeune diplômé',
       skills: List<String>.from(json['competences'] ?? json['skills'] ?? []),
       matchScore: json['matchScore'] ?? 90,
+      matchingAnalysis: json['matchingAnalysis'] ?? '',
+      recommendation: json['recommendation'] ?? '',
       status: json['status'] ?? 'Nouveau',
       isSaved: false,
       initials: initials.isEmpty ? 'CA' : initials,
+    );
+  }
+}
+class RecruiterOfferWithCandidates {
+  final RecruiterJobOffer offer;
+  final List<CandidateMatch> candidates;
+
+  RecruiterOfferWithCandidates({
+    required this.offer,
+    required this.candidates,
+  });
+
+  factory RecruiterOfferWithCandidates.fromJson(Map<String, dynamic> json) {
+    return RecruiterOfferWithCandidates(
+      offer: RecruiterJobOffer.fromJson(json['offer']),
+      candidates: (json['candidates'] as List)
+          .map((c) => CandidateMatch.fromJson(c))
+          .toList(),
     );
   }
 }

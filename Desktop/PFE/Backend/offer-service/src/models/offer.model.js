@@ -13,6 +13,7 @@ const offerSchema = mongoose.Schema({
     salary: { type: String },
     type: { type: String, enum: ['Full-time', 'Part-time', 'Contract', 'Freelance'], default: 'Full-time' },
     requirements: [String],
+    viewCount: { type: Number, default: 0 },
     date: { type: Date, default: Date.now }
 }, { timestamps: true });
 

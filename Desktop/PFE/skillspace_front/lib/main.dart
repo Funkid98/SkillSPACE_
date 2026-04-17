@@ -9,6 +9,8 @@ import 'package:pfe/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:pfe/features/auth/presentation/cubit/forgot_password_cubit.dart';
 import 'package:skillspace/features/landing/presentation/pages/landing_page.dart';
+import 'package:skillspace/features/dashboard_shell/dashboard_shell.dart';
+import 'package:skillspace/features/recruiter/presentation/pages/recruiter_shell.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -30,7 +32,7 @@ void main() async {
       providers: [
         BlocProvider(create: (context) => L10nCubit()),
         BlocProvider(
-            create: (context) => AuthCubit(authRepository: authRepository)),
+            create: (context) => AuthCubit(authRepository: authRepository)..checkAuthStatus()),
         BlocProvider(
             create: (context) =>
                 ForgotPasswordCubit(authRepository: authRepository)),
@@ -53,7 +55,15 @@ class SkillSpaceApp extends StatelessWidget {
           builder: (context, authState) {
             Widget home;
 
-            home = const LandingPage();
+            if (authState.loggedInUser != null) {
+              if (authState.role == UserRole.recruteur) {
+                home = const RecruiterShell();
+              } else {
+                home = DashboardShell(initialUserData: authState.loggedInUser);
+              }
+            } else {
+              home = const LandingPage();
+            }
 
             return MaterialApp(
               title: 'SkillSpace',

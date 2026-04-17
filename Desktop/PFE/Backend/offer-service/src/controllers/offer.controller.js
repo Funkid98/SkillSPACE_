@@ -49,6 +49,13 @@ const updateOffer = async (req, res) => {
             offer.requirements = requirements || offer.requirements;
 
             const updatedOffer = await offer.save();
+
+            // Trigger re-match in candidat-service
+            const axios = require('axios');
+            const CANDIDAT_SERVICE_URL = process.env.CANDIDAT_SERVICE_URL || 'http://localhost:5000';
+            axios.post(`${CANDIDAT_SERVICE_URL}/candidat/trigger-match/offer/${updatedOffer._id}`, updatedOffer)
+                .catch(err => console.error('[Offer Service] Failed to trigger AI re-match:', err.message));
+
             res.json(updatedOffer);
         } else {
             res.status(404).json({ message: 'Offer not found' });
@@ -128,11 +135,32 @@ const getOffers = async (req, res) => {
     }
 };
 
+// @desc    Increment the view count of an offer
+// @route   PATCH /api/offers/:id/view
+// @access  Public
+const incrementView = async (req, res) => {
+    try {
+        const offer = await Offer.findByIdAndUpdate(
+            req.params.id,
+            { $inc: { viewCount: 1 } },
+            { returnDocument: 'after' }
+        );
+        if (!offer) {
+            return res.status(404).json({ message: 'Offer not found' });
+        }
+        res.json({ message: 'View incremented', viewCount: offer.viewCount });
+    } catch (error) {
+        console.error('Increment view error:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     createOffer,
     updateOffer,
     deleteOffer,
     getRecruiterOffers,
     getMatchingOffers,
-    getOffers
+    getOffers,
+    incrementView
 };

@@ -1,7 +1,7 @@
 const Recruiter = require('../models/recruiter');
+const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
-const axios = require('axios');
 
 const client = new OAuth2Client('1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com');
 
@@ -335,6 +335,79 @@ const githubSignInForRecruiter = async (req, res) => {
     }
 };
 
+// ============== NOTIFICATIONS AND CONTACT =====================
+
+const Notification = require('../models/notification');
+
+// Contact a candidate
+const contactCandidate = async (req, res) => {
+    try {
+        const { candidateId, candidateName } = req.body;
+        const recruiterId = req.user._id;
+
+        if (!candidateId) return res.status(400).json({ error: 'Missing candidateId' });
+
+        const recruiter = await Recruiter.findById(recruiterId).lean();
+
+        // Notify Candidat Service
+        try {
+            await axios.post('http://127.0.0.1:5000/candidat/internal/notify', {
+                candidateId: candidateId,
+                senderId: recruiterId,
+                senderName: recruiter.entreprise || 'Un recruteur',
+                senderEmail: recruiter.email,
+                message: `L'entreprise ${recruiter.entreprise} souhaite vous contacter.`,
+                type: 'CONTACT'
+            });
+        } catch (e) {
+            console.error('Failed to notify candidate:', e.message);
+        }
+
+        res.json({ message: 'Demande de contact envoyée avec succès' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Internal endpoint to receive notification
+const receiveNotification = async (req, res) => {
+    try {
+        const { recruiterId, senderId, senderName, senderEmail, message, type } = req.body;
+        const notif = new Notification({
+            userId: recruiterId,
+            senderId,
+            senderName,
+            senderEmail,
+            message,
+            type
+        });
+        await notif.save();
+        res.json({ message: 'Notification received' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Get notifications
+const getNotifications = async (req, res) => {
+    try {
+        const notifs = await Notification.find({ userId: req.user._id }).sort({ createdAt: -1 }).limit(20);
+        res.json(notifs);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Mark notification as read
+const markNotificationRead = async (req, res) => {
+    try {
+        await Notification.findByIdAndUpdate(req.params.id, { read: true });
+        res.json({ message: 'Read' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
 module.exports = {
     registerRecruiter,
     authRecruiter,
@@ -342,5 +415,9 @@ module.exports = {
     updateRecruiterProfile,
     googleSignInForRecruiter,
     githubSignInForRecruiter,
-    checkRecruiterEmailExists
+    checkRecruiterEmailExists,
+    contactCandidate,
+    receiveNotification,
+    getNotifications,
+    markNotificationRead
 };

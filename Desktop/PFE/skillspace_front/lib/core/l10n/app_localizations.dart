@@ -163,7 +163,7 @@ class AppLocalizations {
       'company_info': 'Informations de l\'entreprise',
       'company_name': 'Nom de l\'entreprise',
       'business_sector': 'Secteur d\'activité',
-      'company_size': 'Taille de l\'entreprise',
+      'company_size': 'Nombre d\'employés',
       'creation_year': 'Année de création',
       'website': 'Site web',
       'company_description': 'Description de l\'entreprise',
@@ -573,13 +573,10 @@ class AppLocalizations {
       'en': 'Expert',
       'ar': 'خبير',
     },
-    'about_job_desc': {
-      'fr':
-          'Ce poste est une excellente opportunité pour rejoindre une équipe dynamique. Vous travaillerez sur des projets innovants avec une équipe talentueuse.',
-      'en':
-          'This position is an excellent opportunity to join a dynamic team. You will work on innovative projects with a talented team.',
-      'ar':
-          'هذا المنصب هو فرصة ممتازة للانضمام إلى فريق ديناميكي. ستعمل على مشاريع مبتكرة مع فريق موهوب.',
+    'About Position': {
+      'fr': 'À propos du poste',
+      'en': 'About the position',
+      'ar': 'حول الوظيفة',
     },
   };
 
@@ -703,7 +700,7 @@ class AppLocalizations {
   String get levelAdvanced => translate('level_advanced');
   String get levelIntermediate => translate('level_intermediate');
   String get levelExpert => translate('level_expert');
-  String get aboutJobDesc => translate('about_job_desc');
+  String get aboutJobDesc => translate('About Position');
 
   String get comingSoon => translate('coming_soon');
   String get recruiterFeat1 => translate('recruiter_feat_1');

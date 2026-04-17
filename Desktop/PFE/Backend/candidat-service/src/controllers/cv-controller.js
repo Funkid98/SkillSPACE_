@@ -1,3 +1,4 @@
+const fs = require('fs');
 const { extractText } = require('../services/extractor');
 const { extractSkillsFromText } = require('../services/ai-service');
 const User = require('../models/candidat');
@@ -6,7 +7,8 @@ const uploadCv = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file' });
 
-    const text = await extractText(req.file.buffer, req.file.originalname);
+    const fileBuffer = fs.readFileSync(req.file.path);
+    const text = await extractText(fileBuffer, req.file.originalname);
     const cvData = await extractSkillsFromText(text);
 
     if (!cvData) throw new Error('AI extraction failed');
@@ -23,7 +25,8 @@ const uploadCv = async (req, res) => {
         localisation: cvData.localisation,
         bio: cvData.bio,
         skills: cvData.skills?.map(s => ({ name: typeof s === 'string' ? s : s.name, percent: 50 })),
-        cv_path: req.file.originalname,
+        cv_path: req.file.path,
+        raw_cv_text: text,
         completion_percent: 100
       };
       console.log('Applying updates to DB:', updates);

@@ -120,7 +120,7 @@ class _FieldSelectionPageState extends State<FieldSelectionPage> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(isSelected ? 0.1 : 0.05),
+                                color: Colors.black.withValues(alpha: isSelected ? 0.1 : 0.05),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -131,7 +131,7 @@ class _FieldSelectionPageState extends State<FieldSelectionPage> {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: (sector['color'] as Color).withOpacity(0.1),
+                                  color: (sector['color'] as Color).withValues(alpha: 0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(

@@ -338,7 +338,7 @@ class _AudienceCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -351,7 +351,7 @@ class _AudienceCard extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: hl ? Colors.white.withOpacity(0.15) : AppColors.iconBg,
+              color: hl ? Colors.white.withValues(alpha: 0.15) : AppColors.iconBg,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(data.icon,
@@ -364,7 +364,7 @@ class _AudienceCard extends StatelessWidget {
           Text(data.subtitle,
               style: TextStyle(
                   color:
-                      hl ? Colors.white.withOpacity(0.7) : AppColors.textGray,
+                      hl ? Colors.white.withValues(alpha: 0.7) : AppColors.textGray,
                   fontSize: 13)),
           const SizedBox(height: 20),
           ...data.features.map(
@@ -382,7 +382,7 @@ class _AudienceCard extends StatelessWidget {
                   child: Text(f,
                       style: TextStyle(
                           color: hl
-                              ? Colors.white.withOpacity(0.9)
+                              ? Colors.white.withValues(alpha: 0.9)
                               : AppColors.textDark,
                           fontSize: 13,
                           height: 1.4)),

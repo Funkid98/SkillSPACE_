@@ -67,7 +67,10 @@ class _DashboardContent extends StatelessWidget {
                                 height: 32,
                                 width: 32,
                                 fit: BoxFit.cover,
-                                errorBuilder: (ctx, _, __) => const Icon(Icons.business, size: 32, color: AppColors.textGray),
+                                errorBuilder: (ctx, _, __) => const Icon(
+                                    Icons.business,
+                                    size: 32,
+                                    color: AppColors.textGray),
                               ),
                             ),
                           ),
@@ -107,7 +110,7 @@ class _DashboardContent extends StatelessWidget {
           const SizedBox(height: 32),
 
           // ─── Recent Candidates + Active Offers ─────────────
-          isMobile
+          (isMobile || Responsive.isTablet(context))
               ? Column(
                   children: [
                     AnimatedReveal(
@@ -183,7 +186,7 @@ class _DashboardContent extends StatelessWidget {
       );
     }).toList();
 
-    if (isMobile) {
+    if (isMobile || Responsive.isTablet(context)) {
       return Column(
         children: stats
             .map((s) => Padding(
@@ -252,15 +255,16 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = Responsive.isMobile(context) || Responsive.isTablet(context);
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isCompact ? 16 : 24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -400,6 +404,8 @@ class _CandidateRow extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     color: AppColors.textDark,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   candidate.role,
@@ -407,6 +413,8 @@ class _CandidateRow extends StatelessWidget {
                     fontSize: 13,
                     color: AppColors.textGray,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -451,7 +459,7 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: bagdeColor.withOpacity(0.1),
+        color: bagdeColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
@@ -522,19 +530,27 @@ class _OfferItem extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              Text(
-                '${offer.applicationCount} ${l10n.receivedApplications.toLowerCase()}',
-                style: const TextStyle(fontSize: 12, color: AppColors.textGray),
+              Flexible(
+                child: Text(
+                  '${offer.applicationCount} ${l10n.receivedApplications.toLowerCase()}',
+                  style: const TextStyle(fontSize: 12, color: AppColors.textGray),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  '· ${offer.viewCount} ${l10n.offerViews.toLowerCase()}',
+                  style: const TextStyle(fontSize: 12, color: AppColors.textGray),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               const SizedBox(width: 8),
               Text(
-                '· ${offer.viewCount} ${l10n.offerViews.toLowerCase()}',
-                style: const TextStyle(fontSize: 12, color: AppColors.textGray),
-              ),
-              const Spacer(),
-              Text(
                 offer.daysAgo,
-                style: const TextStyle(fontSize: 12, color: AppColors.textGray),
+                style: const TextStyle(fontSize: 11, color: AppColors.textGray),
               ),
             ],
           ),

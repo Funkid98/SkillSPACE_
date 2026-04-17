@@ -87,7 +87,7 @@ class RecruiterOffersPage extends StatelessWidget {
               child: Padding(
                 padding: EdgeInsets.all(40.0),
                 child: Text(
-                  "Aucune offre pour le moment.",
+                  "Aucune offre n'est disponible.",
                   style: TextStyle(color: AppColors.textGray, fontSize: 16),
                 ),
               ),
@@ -122,7 +122,7 @@ class RecruiterOffersPage extends StatelessWidget {
 
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.5),
+      barrierColor: Colors.black.withValues(alpha: 0.5),
       builder: (dialogContext) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         child: Container(
@@ -147,7 +147,7 @@ class RecruiterOffersPage extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.orange.withOpacity(0.1),
+                        color: AppColors.orange.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Icon(Icons.business_center_rounded,
@@ -293,7 +293,8 @@ class RecruiterOffersPage extends StatelessWidget {
                             descController.text.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                                content: Text("Veuillez remplir tous les champs obligatoires")),
+                                content: Text(
+                                    "Veuillez remplir tous les champs obligatoires")),
                           );
                           return;
                         }
@@ -306,6 +307,7 @@ class RecruiterOffersPage extends StatelessWidget {
 
                         final jobPayload = RecruiterJobOffer(
                           id: existingOffer?.id ?? '',
+                          recruiter: existingOffer?.recruiter ?? '',
                           title: titleController.text,
                           location: locationController.text,
                           type: selectedType,
@@ -337,7 +339,9 @@ class RecruiterOffersPage extends StatelessWidget {
                         elevation: 0,
                       ),
                       child: Text(
-                        existingOffer == null ? "Publier l'offre" : "Enregistrer les modifications",
+                        existingOffer == null
+                            ? "Publier l'offre"
+                            : "Enregistrer les modifications",
                         style: const TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 15),
                       ),
@@ -376,7 +380,8 @@ class RecruiterOffersPage extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(icon, size: 16, color: AppColors.orange.withOpacity(0.8)),
+            Icon(icon,
+                size: 16, color: AppColors.orange.withValues(alpha: 0.8)),
             const SizedBox(width: 8),
             Text(
               label,
@@ -394,7 +399,8 @@ class RecruiterOffersPage extends StatelessWidget {
           style: const TextStyle(fontSize: 15),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: AppColors.textGray.withOpacity(0.5)),
+            hintStyle:
+                TextStyle(color: AppColors.textGray.withValues(alpha: 0.5)),
             filled: true,
             fillColor: const Color(0xFFF9F9F9),
             contentPadding:
@@ -429,7 +435,8 @@ class RecruiterOffersPage extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(icon, size: 16, color: AppColors.orange.withOpacity(0.8)),
+            Icon(icon,
+                size: 16, color: AppColors.orange.withValues(alpha: 0.8)),
             const SizedBox(width: 8),
             Text(
               label,
@@ -479,16 +486,19 @@ class _OfferCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact =
+        Responsive.isMobile(context) || Responsive.isTablet(context);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isCompact ? 20 : 24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -516,7 +526,8 @@ class _OfferCard extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textGray),
+              const Icon(Icons.location_on_outlined,
+                  size: 14, color: AppColors.textGray),
               const SizedBox(width: 4),
               Text(
                 offer.location,
@@ -530,7 +541,8 @@ class _OfferCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             offer.description,
-            style: const TextStyle(fontSize: 14, color: AppColors.textGray, height: 1.5),
+            style: const TextStyle(
+                fontSize: 14, color: AppColors.textGray, height: 1.5),
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
@@ -544,10 +556,10 @@ class _OfferCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppColors.orange.withOpacity(0.05),
+                          color: AppColors.orange.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                              color: AppColors.orange.withOpacity(0.1)),
+                              color: AppColors.orange.withValues(alpha: 0.1)),
                         ),
                         child: Text(
                           req,
@@ -560,67 +572,101 @@ class _OfferCard extends StatelessWidget {
                   .toList(),
             ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              const Icon(Icons.people_rounded,
-                  size: 18, color: AppColors.textGray),
-              const SizedBox(width: 8),
-              Text(
-                '${offer.candidateCount}',
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, color: AppColors.textDark),
-              ),
-              const SizedBox(width: 24),
-              const Icon(Icons.visibility_rounded,
-                  size: 18, color: AppColors.textGray),
-              const SizedBox(width: 8),
-              Text(
-                '${offer.viewCount}',
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, color: AppColors.textDark),
-              ),
-              const Spacer(),
-              _ActionButton(
-                icon: Icons.edit_outlined,
-                color: AppColors.textGray,
-                onTap: () {
-                  final recruiterOffersPage = context.findAncestorWidgetOfExactType<RecruiterOffersPage>();
-                  if (recruiterOffersPage != null) {
-                    recruiterOffersPage._showOfferForm(context, AppLocalizations.of(context), existingOffer: offer);
-                  }
-                },
-              ),
-              const SizedBox(width: 8),
-              _ActionButton(
-                icon: Icons.delete_outline_rounded,
-                color: AppColors.error,
-                onTap: () async {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                      title: const Text("Supprimer l'offre", style: TextStyle(fontWeight: FontWeight.bold)),
-                      content: const Text("Voulez-vous vraiment supprimer cette offre ? Cette action est irréversible."),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Annuler")),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                          child: const Text("Supprimer")
-                        ),
+          isCompact
+              ? Column(
+                  children: [
+                    Row(
+                      children: [
+                        _buildStat(
+                            Icons.people_rounded, '${offer.candidateCount}'),
+                        const SizedBox(width: 16),
+                        _buildStat(
+                            Icons.visibility_rounded, '${offer.viewCount}'),
                       ],
                     ),
-                  );
-                  if (confirm == true) {
-                    context.read<RecruiterOffersCubit>().deleteOffer(offer.id);
-                  }
-                },
-              ),
-            ],
-          ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: _buildActions(context),
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    _buildStat(Icons.people_rounded, '${offer.candidateCount}'),
+                    const SizedBox(width: 24),
+                    _buildStat(Icons.visibility_rounded, '${offer.viewCount}'),
+                    const Spacer(),
+                    ..._buildActions(context),
+                  ],
+                ),
         ],
       ),
     );
+  }
+
+  Widget _buildStat(IconData icon, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: AppColors.textGray),
+        const SizedBox(width: 8),
+        Text(
+          value,
+          style: const TextStyle(
+              fontWeight: FontWeight.bold, color: AppColors.textDark),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildActions(BuildContext context) {
+    return [
+      _ActionButton(
+        icon: Icons.edit_outlined,
+        color: AppColors.textGray,
+        onTap: () {
+          final recruiterOffersPage =
+              context.findAncestorWidgetOfExactType<RecruiterOffersPage>();
+          if (recruiterOffersPage != null) {
+            recruiterOffersPage._showOfferForm(
+                context, AppLocalizations.of(context),
+                existingOffer: offer);
+          }
+        },
+      ),
+      const SizedBox(width: 8),
+      _ActionButton(
+        icon: Icons.delete_outline_rounded,
+        color: AppColors.error,
+        onTap: () async {
+          final confirm = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15)),
+              title: const Text("Supprimer l'offre",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              content: const Text(
+                  "Voulez-vous vraiment supprimer cette offre ? Cette action est irréversible."),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text("Annuler")),
+                ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white),
+                    child: const Text("Supprimer")),
+              ],
+            ),
+          );
+          if (confirm == true) {
+            context.read<RecruiterOffersCubit>().deleteOffer(offer.id);
+          }
+        },
+      ),
+    ];
   }
 }
 
@@ -634,8 +680,8 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color:
-            (isActive ? AppColors.orange : AppColors.textGray).withOpacity(0.1),
+        color: (isActive ? AppColors.orange : AppColors.textGray)
+            .withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
@@ -659,7 +705,7 @@ class _TypeBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.navy.withOpacity(0.1),
+        color: AppColors.navy.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
@@ -675,7 +721,8 @@ class _ActionButton extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
-  const _ActionButton({required this.icon, required this.color, required this.onTap});
+  const _ActionButton(
+      {required this.icon, required this.color, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -685,7 +732,7 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.05),
+          color: color.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(icon, size: 18, color: color),

@@ -919,41 +919,45 @@ class _ForgotStepEmailState extends State<_ForgotStepEmail> {
   Widget build(BuildContext context) {
     return BlocBuilder<ForgotPasswordCubit, ForgotPasswordState>(
       builder: (context, state) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _StepHeader(
-              emoji: '📬',
-              currentStep: 1,
-              onBack: widget.onBack,
-              title: 'Mot de passe oublié',
-              subtitle: 'Entrez votre e-mail pour recevoir un code.',
-            ),
-            if (state.error != null) ...[
-              _ErrorBanner(state.error!),
-              const SizedBox(height: 10),
+        return Form(
+          key: _formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _StepHeader(
+                emoji: '📬',
+                currentStep: 1,
+                onBack: widget.onBack,
+                title: 'Mot de passe oublié',
+                subtitle: 'Entrez votre e-mail pour recevoir un code.',
+              ),
+              if (state.error != null) ...[
+                _ErrorBanner(state.error!),
+                const SizedBox(height: 10),
+              ],
+              const _Label('Email'),
+              TextFormField(
+                controller: _emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(hintText: 'vous@exemple.com'),
+                validator: ValidationBuilder()
+                    .required('Email requis')
+                    .email('Email invalide')
+                    .build(),
+              ),
+              const SizedBox(height: 28),
+              _SubmitButton(
+                label: 'Envoyer le code',
+                isLoading: state.isLoading,
+                onTap: () {
+                  if (_formKey.currentState?.validate() ?? false) {
+                    context.read<ForgotPasswordCubit>().sendOtp(_emailCtrl.text);
+                  }
+                },
+              ),
             ],
-            const _Label('Email'),
-            TextFormField(
-              controller: _emailCtrl,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(hintText: 'vous@exemple.com'),
-              validator: ValidationBuilder()
-                  .required('Email requis')
-                  .email('Email invalide')
-                  .build(),
-            ),
-            const SizedBox(height: 28),
-            _SubmitButton(
-              label: 'Envoyer le code',
-              isLoading: state.isLoading,
-              onTap: () {
-                if (_formKey.currentState?.validate() ?? false) {
-                  context.read<ForgotPasswordCubit>().sendOtp(_emailCtrl.text);
-                }
-              },
-            ),
-          ],
+          ),
         );
       },
     );

@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../services/formateur_service.dart';
@@ -148,23 +147,12 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
-    final firstName = _firstNameController.text.trim();
-    final lastName = _lastNameController.text.trim();
-
-    if (firstName.length < 4 || lastName.length < 4) {
-      Fluttertoast.showToast(
-          msg: "Le prénom et le nom doivent contenir au moins 4 caractères.",
-          backgroundColor: Colors.red,
-          textColor: Colors.white);
-      setState(() => _isLoading = false);
-      return;
-    }
-
+    setState(() => _isLoading = true);
     final newProfile = FormateurModel(
       id: '',
       userId: _userId,
-      firstName: firstName,
-      lastName: lastName,
+      firstName: _firstNameController.text,
+      lastName: _lastNameController.text,
       email: _emailController.text,
       phone: _phoneController.text,
       jobTitle: _jobTitleController.text,
@@ -446,26 +434,18 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                                 style: TextStyle(
                                     fontSize: 18, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 16),
-                            _buildTextField('Prénom', _firstNameController,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                      RegExp(r'[a-zA-ZÀ-ÿ\s-]')),
-                                ]),
-                            _buildTextField('Nom', _lastNameController,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                      RegExp(r'[a-zA-ZÀ-ÿ\s-]')),
-                                ]),
+                            _buildTextField('Prénom', _firstNameController),
+                            _buildTextField('Nom', _lastNameController),
                             _buildTextField('Email', _emailController,
-                                type: TextInputType.emailAddress),
+                                TextInputType.emailAddress),
                             _buildTextField('Téléphone', _phoneController,
-                                type: TextInputType.phone),
+                                TextInputType.phone),
                             _buildTextField(
                                 'Titre professionnel', _jobTitleController),
                             _buildTextField(
                                 'Localisation', _locationController),
                             _buildTextField('Bio', _bioController,
-                                type: TextInputType.multiline, maxLines: 3),
+                                TextInputType.multiline, 3),
                           ],
                         ),
                       ),
@@ -621,9 +601,9 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                             ),
                             const SizedBox(height: 16),
                             _buildTextField('LinkedIn', _linkedInController,
-                                type: TextInputType.url),
+                                TextInputType.url),
                             _buildTextField('Portfolio / Site web',
-                                _portfolioController, type: TextInputType.url),
+                                _portfolioController, TextInputType.url),
                           ],
                         ),
                       ),
@@ -658,9 +638,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
   }
 
   Widget _buildTextField(String label, TextEditingController controller,
-      {TextInputType type = TextInputType.text,
-      int maxLines = 1,
-      List<TextInputFormatter>? inputFormatters}) {
+      [TextInputType type = TextInputType.text, int maxLines = 1]) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Column(
@@ -672,7 +650,6 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
             controller: controller,
             keyboardType: type,
             maxLines: maxLines,
-            inputFormatters: inputFormatters,
             decoration: const InputDecoration(
               border: OutlineInputBorder(),
               isDense: true,

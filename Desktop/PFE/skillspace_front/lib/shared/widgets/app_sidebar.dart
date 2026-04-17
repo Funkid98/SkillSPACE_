@@ -7,6 +7,7 @@ import '../../../../core/app_text_styles.dart';
 import '../../../../core/l10n/l10n_cubit.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
+import 'notification_bell.dart';
 
 enum DashboardTab { tableau, profil, offres, simulation, formations }
 
@@ -75,11 +76,19 @@ class AppSidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(24, 24, 24, 40),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 16, 40),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('SkillSpace', style: AppTextStyles.navBrand),
+                const Text('SkillSpace', style: AppTextStyles.navBrand),
+                Builder(
+                  builder: (ctx) {
+                    final role = ctx.watch<AuthCubit>().state.role;
+                    final isRecruiter = role == UserRole.recruteur;
+                    return NotificationBell(isRecruiter: isRecruiter);
+                  },
+                ),
               ],
             ),
           ),
@@ -140,7 +149,7 @@ class _LanguageSelector extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.bg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border.withOpacity(0.5)),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
@@ -201,7 +210,7 @@ class _LangBtn extends StatelessWidget {
           boxShadow: isActive
               ? [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   )
@@ -249,6 +258,8 @@ class MobileTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final role = context.watch<AuthCubit>().state.role;
+    final isRecruiter = role == UserRole.recruteur;
     return Container(
       height: 70,
       decoration: const BoxDecoration(
@@ -260,17 +271,23 @@ class MobileTopBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           const Text('SkillSpace', style: AppTextStyles.navBrand),
-          GestureDetector(
-            onTap: () => _openDrawer(context),
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.bg,
-                borderRadius: BorderRadius.circular(12),
+          Row(
+            children: [
+              NotificationBell(isRecruiter: isRecruiter),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => _openDrawer(context),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.bg,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.menu_rounded,
+                      color: AppColors.navy, size: 24),
+                ),
               ),
-              child: const Icon(Icons.menu_rounded,
-                  color: AppColors.navy, size: 24),
-            ),
+            ],
           ),
         ],
       ),

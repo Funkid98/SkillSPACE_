@@ -83,7 +83,7 @@ class _DashboardContent extends StatelessWidget {
             const SizedBox(height: 32),
 
             // ─── Main Grid Layout (Staggered Columns) ────
-            isMobile
+            (Responsive.isMobile(context) || Responsive.isTablet(context))
                 ? Column(
                     children: [
                       AnimatedReveal(
@@ -188,7 +188,7 @@ class _DashboardContent extends StatelessWidget {
       ),
     ];
 
-    if (isMobile) {
+    if (isMobile || Responsive.isTablet(context)) {
       return Column(
         children: stats
             .map((s) => Padding(
@@ -244,16 +244,17 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = Responsive.isMobile(context) || Responsive.isTablet(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.symmetric(horizontal: isCompact ? 16 : 20, vertical: isCompact ? 16 : 24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -319,9 +320,10 @@ class _RecentOffersCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final isCompact = Responsive.isMobile(context) || Responsive.isTablet(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(isCompact ? 20 : 28),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -488,6 +490,7 @@ class _SkillsCardState extends State<_SkillsCard> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final isCompact = Responsive.isMobile(context) || Responsive.isTablet(context);
     
     // Sort skills by percentage descending
     final sortedSkills = List<UserSkill>.from(widget.skills)
@@ -498,7 +501,7 @@ class _SkillsCardState extends State<_SkillsCard> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(isCompact ? 20 : 28),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -510,12 +513,16 @@ class _SkillsCardState extends State<_SkillsCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                l10n.skills,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textDark,
+              Expanded(
+                child: Text(
+                  l10n.skills,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textDark,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (widget.skills.isNotEmpty)
@@ -560,12 +567,16 @@ class _SkillsCardState extends State<_SkillsCard> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        'Voir les ${widget.skills.length - 3} autres',
-                        style: const TextStyle(
-                          color: AppColors.textGray,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                      Flexible(
+                        child: Text(
+                          'Voir les ${widget.skills.length - 3} autres',
+                          style: const TextStyle(
+                            color: AppColors.textGray,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -615,12 +626,16 @@ class _SkillsModalContent extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Toutes mes compétences',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.textDark,
+                  const Expanded(
+                    child: Text(
+                      'Toutes mes compétences',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.textDark,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   IconButton(
@@ -702,12 +717,16 @@ class _SkillRow extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                skill.name,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textDark,
+              Expanded(
+                child: Text(
+                  skill.name,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               Text(
@@ -727,7 +746,7 @@ class _SkillRow extends StatelessWidget {
                 activeTrackColor: AppColors.navy,
                 inactiveTrackColor: AppColors.border,
                 thumbColor: AppColors.orange,
-                overlayColor: AppColors.orange.withOpacity(0.15),
+                overlayColor: AppColors.orange.withValues(alpha: 0.15),
                 trackHeight: 8,
                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
               ),
@@ -765,9 +784,10 @@ class _UpcomingInterviewsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final isCompact = Responsive.isMobile(context) || Responsive.isTablet(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(isCompact ? 20 : 28),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -934,12 +954,16 @@ class _ProfileVisibilityCard extends StatelessWidget {
               const Icon(Icons.visibility_rounded,
                   size: 20, color: AppColors.textGray),
               const SizedBox(width: 12),
-              Text(
-                l10n.profileVisibility,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textDark,
+              Expanded(
+                child: Text(
+                  l10n.profileVisibility,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textDark,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

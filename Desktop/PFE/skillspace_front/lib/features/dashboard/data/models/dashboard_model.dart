@@ -28,12 +28,14 @@ class RecentOffer {
   final String company;
   final String city;
   final int compatibilityPercent;
+  final String status;
 
   const RecentOffer({
     required this.title,
     required this.company,
     required this.city,
     required this.compatibilityPercent,
+    required this.status,
   });
 }
 
@@ -109,14 +111,42 @@ class DashboardData {
       return UserSkill(name: s.toString(), percent: 50);
     }).toList();
 
-    // Stats derived from profile completion & skills count
+    // Fetch matching offers for recent offers and real stats
+    int offresMatcheesReal = 0;
+    List<RecentOffer> realOffers = [];
+    bool hasAnalysing = false;
+
+    try {
+      final offersRes = await apiClient.get('/candidat/matching-offers');
+      if (offersRes.statusCode == 200) {
+        final List offersData = jsonDecode(offersRes.body);
+        
+        final highMatchOffers = offersData.where((o) => (o['compatibilityPercent'] ?? 0) >= 80).toList();
+        offresMatcheesReal = highMatchOffers.length;
+        
+        hasAnalysing = offersData.any((o) => o['status'] == 'ANALYSING');
+
+        // Sort by match score descending to show best offers first
+        offersData.sort((a, b) => (b['compatibilityPercent'] ?? 0).compareTo(a['compatibilityPercent'] ?? 0));
+
+        realOffers = offersData.take(4).map((o) => RecentOffer(
+          title: o['title'] ?? 'Sans titre',
+          company: o['company'] ?? 'Non spécifié',
+          city: o['location'] ?? 'Remote',
+          compatibilityPercent: o['compatibilityPercent'] ?? 0,
+          status: o['status'] ?? 'COMPLETED',
+        )).toList();
+      }
+    } catch (_) {}
+
+    // Stats derived from profile completion & real offers count
     return DashboardData(
       userName: userName,
       stats: DashboardStats(
-        offresMatchees: rawSkills.length * 4,
-        offresMatcheesSubtitle: rawSkills.isEmpty
-            ? 'Ajoutez des compétences'
-            : '+${rawSkills.length} cette semaine',
+        offresMatchees: offresMatcheesReal,
+        offresMatcheesSubtitle: offresMatcheesReal == 0
+            ? 'Aucun match > 80%'
+            : 'Forte compatibilité',
         candidaturesEnvoyees: 0,
         candidaturesSubtitle: 'Aucune pour le moment',
         scoreMoyenMatch: completionPercent,
@@ -124,10 +154,10 @@ class DashboardData {
         entretiensSimules: 0,
         entretiensSubtitle: 'Commencez un entretien',
       ),
-      recentOffers: const [],
+      recentOffers: realOffers,
       skills: skills,
       upcomingInterviews: const [],
-      profileViewsCount: 0,
+      profileViewsCount: hasAnalysing ? -1 : 0, // Hack to pass analysing state to Cubit without rewriting whole model
       profileViewsPercentChange: 0,
     );
   }

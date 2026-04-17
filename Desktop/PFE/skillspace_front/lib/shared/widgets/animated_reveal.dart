@@ -28,6 +28,8 @@ class _AnimatedRevealState extends State<AnimatedReveal>
   late final Animation<Offset> _slide;
   bool _triggered = false;
 
+  late final Key _visibilityKey;
+
   Offset _getBeginOffset() {
     switch (widget.direction) {
       case RevealDirection.fromBottom:
@@ -46,6 +48,7 @@ class _AnimatedRevealState extends State<AnimatedReveal>
   @override
   void initState() {
     super.initState();
+    _visibilityKey = widget.key ?? UniqueKey();
     _ctrl = AnimationController(vsync: this, duration: widget.duration);
     _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
     _slide = Tween<Offset>(begin: _getBeginOffset(), end: Offset.zero)
@@ -70,7 +73,7 @@ class _AnimatedRevealState extends State<AnimatedReveal>
   @override
   Widget build(BuildContext context) {
     return VisibilityDetector(
-      key: widget.key ?? UniqueKey(),
+      key: _visibilityKey,
       onVisibilityChanged: _onVisibilityChanged,
       child: FadeTransition(
         opacity: _fade,

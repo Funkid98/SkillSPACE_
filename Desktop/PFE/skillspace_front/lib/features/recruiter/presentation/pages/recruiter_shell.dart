@@ -10,12 +10,14 @@ import '../../data/repositories/recruiter_repository.dart';
 import 'package:pfe/core/network/api_client.dart';
 import '../cubits/recruiter_extra_cubits.dart';
 import '../../data/repositories/recruiter_job_repository.dart';
+import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 
 import '../pages/recruiter_offers_page.dart';
 import '../pages/recruiter_candidates_page.dart';
 import '../../../../core/app_colors.dart';
 import '../../../../core/app_text_styles.dart';
 import '../../../../shared/widgets/animated_reveal.dart';
+import '../../../../shared/widgets/notification_bell.dart';
 
 class RecruiterShell extends StatefulWidget {
   final RecruiterTab initialTab;
@@ -98,25 +100,24 @@ class _RecruiterShellState extends State<RecruiterShell> {
         page = const RecruiterProfilePage(key: ValueKey('profile'));
         break;
       case RecruiterTab.offers:
+        final authState = context.read<AuthCubit>().state;
+        final userId = authState.loggedInUser?['id']?.toString() ?? '';
+        
         page = BlocProvider(
           key: const ValueKey('offers'),
           create: (_) => RecruiterOffersCubit(
             repository: RecruiterJobRepository(apiClient: ApiClient()),
+            userId: userId,
           )..loadOffers(),
           child: const RecruiterOffersPage(),
         );
         break;
       case RecruiterTab.candidates:
-        final profileState = context.read<RecruiterProfileCubit>().state;
-        String sector = 'Informatique';
-        if (profileState is RecruiterProfileLoaded) {
-          sector = profileState.profile.secteur;
-        }
         page = BlocProvider(
           key: const ValueKey('candidates'),
           create: (_) => RecruiterCandidatesCubit(
             repository: RecruiterRepository(apiClient: ApiClient()),
-          )..loadCandidates(sector),
+          )..loadCandidates(),
           child: const RecruiterCandidatesPage(),
         );
         break;
@@ -151,31 +152,36 @@ class _RecruiterMobileTopBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           const Text('SkillSpace', style: AppTextStyles.navBrand),
-          GestureDetector(
-            onTap: () {
-              // Same as DashboardShell's drawer but with RecruiterTabs
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: Colors.transparent,
-                isScrollControlled: true,
-                builder: (_) => _RecruiterMobileDrawer(
-                  activeTab: activeTab,
-                  onTabSelected: (tab) {
-                    Navigator.pop(context);
-                    onTabSelected(tab);
-                  },
+          Row(
+            children: [
+              const NotificationBell(isRecruiter: true),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    backgroundColor: Colors.transparent,
+                    isScrollControlled: true,
+                    builder: (_) => _RecruiterMobileDrawer(
+                      activeTab: activeTab,
+                      onTabSelected: (tab) {
+                        Navigator.pop(context);
+                        onTabSelected(tab);
+                      },
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.bg,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.menu_rounded,
+                      color: AppColors.navy, size: 24),
                 ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.bg,
-                borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.menu_rounded,
-                  color: AppColors.navy, size: 24),
-            ),
+            ],
           ),
         ],
       ),

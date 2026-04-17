@@ -38,11 +38,11 @@ class RecruiterRepository {
     }
   }
 
-  Future<List<CandidateMatch>> getCandidatesBySector(String sector) async {
-    final response = await apiClient.get('/candidat/recent/$sector');
+  Future<List<RecruiterOfferWithCandidates>> getGroupedMatchingCandidates() async {
+    final response = await apiClient.get('/candidat/grouped-matches');
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
-      return data.map((item) => CandidateMatch.fromJson(item)).toList();
+      return data.map((item) => RecruiterOfferWithCandidates.fromJson(item)).toList();
     } else {
       throw Exception('Failed to load matching candidates: ${response.statusCode}');
     }

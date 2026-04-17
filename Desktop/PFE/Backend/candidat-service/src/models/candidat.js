@@ -20,10 +20,12 @@ const userSchema = new mongoose.Schema({
     telephone: { type: String, default: '' },
     localisation: { type: String, default: '' },
     bio: { type: String, default: '' },
-    skills: { type: [{
-        name: { type: String, required: true },
-        percent: { type: Number, default: 50, min: 0, max: 100 }
-    }], default: [] },
+    skills: {
+        type: [{
+            name: { type: String, required: true },
+            percent: { type: Number, default: 50, min: 0, max: 100 }
+        }], default: []
+    },
     cv_path: { type: String, default: '' },
     completion_percent: { type: Number, default: 30 },
     resetOtp: {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:country_picker/country_picker.dart';
+import 'package:country_flags/country_flags.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart'; // for kIsWeb
 import '../cubits/recruiter_profile_cubit.dart';
@@ -30,6 +31,7 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
   String? _selectedYear;
   String? _selectedSector;
   String? _selectedCountry;
+  String? _selectedCountryCode;
 
   // Logo upload
   Uint8List? _logoBytes;
@@ -108,6 +110,16 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
       final parts = profile.localisation.split(', ');
       if (parts.isNotEmpty) {
         _selectedCountry = parts[0];
+        _selectedCountryCode = null;
+        if (_selectedCountry != null) {
+          try {
+            final country = CountryService().getAll().firstWhere(
+                (c) => c.name == _selectedCountry || c.displayName == _selectedCountry);
+            _selectedCountryCode = country.countryCode;
+          } catch (_) {
+            _selectedCountryCode = null;
+          }
+        }
         if (parts.length > 1) {
           _cityController.text = parts[1];
         }
@@ -145,6 +157,9 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
           _cityController.text.trim(),
         ].where((s) => s != null && s.isNotEmpty).join(', ');
 
+        final cubit = context.read<RecruiterProfileCubit>();
+        final logoUrl = finalLogoUrl ?? (cubit.state as RecruiterProfileLoaded).profile.logoUrl;
+
         final profile = CompanyProfile(
           entreprise: _entrepriseController.text,
           siteWeb: _websiteController.text,
@@ -152,12 +167,14 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
           anneeCreation: int.tryParse(_selectedYear ?? '') ?? 0,
           secteur: _selectedSector ?? '',
           localisation: locationString,
-          logoUrl: finalLogoUrl ?? (context.read<RecruiterProfileCubit>().state as RecruiterProfileLoaded).profile.logoUrl,
+          logoUrl: logoUrl,
         );
 
-        context.read<RecruiterProfileCubit>().updateProfile(profile);
+        cubit.updateProfile(profile);
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red));
+        }
       } finally {
         setState(() => _isUploading = false);
       }
@@ -290,9 +307,26 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                                 showCountryPicker(
                                   context: context,
                                   showPhoneCode: false,
+                                  customFlagBuilder: (country) => CountryFlag.fromCountryCode(
+                                    country.countryCode,
+                                    height: 18,
+                                    width: 24,
+                                  ),
+                                  countryListTheme: CountryListThemeData(
+                                    borderRadius: BorderRadius.circular(20),
+                                    inputDecoration: InputDecoration(
+                                      prefixIcon: const Icon(Icons.search),
+                                      hintText: 'Rechercher un pays...',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
                                   onSelect: (Country country) {
-                                    setState(
-                                        () => _selectedCountry = "${country.flagEmoji} ${country.name}");
+                                    setState(() {
+                                      _selectedCountry = country.name;
+                                      _selectedCountryCode = country.countryCode;
+                                    });
                                   },
                                 );
                               },
@@ -306,13 +340,26 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                        _selectedCountry ??
-                                            "Choisir un pays...",
-                                        style: TextStyle(
-                                            color: _selectedCountry != null
-                                                ? AppColors.textDark
-                                                : AppColors.textGray)),
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          if (_selectedCountryCode != null) ...[
+                                            CountryFlag.fromCountryCode(_selectedCountryCode!, height: 16, width: 24),
+                                            const SizedBox(width: 12),
+                                          ],
+                                          Expanded(
+                                            child: Text(
+                                                _selectedCountry ??
+                                                    "Choisir un pays...",
+                                                style: TextStyle(
+                                                    color: _selectedCountry != null
+                                                        ? AppColors.textDark
+                                                        : AppColors.textGray),
+                                                overflow: TextOverflow.ellipsis),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                     const Icon(Icons.arrow_drop_down,
                                         color: AppColors.textGray),
                                   ],
@@ -480,7 +527,7 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
         decoration: BoxDecoration(
           color: AppColors.bg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.orange.withOpacity(0.3)),
+          border: Border.all(color: AppColors.orange.withValues(alpha: 0.3)),
         ),
         child: Column(
           children: [
