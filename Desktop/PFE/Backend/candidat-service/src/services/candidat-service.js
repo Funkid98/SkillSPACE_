@@ -13,7 +13,7 @@ const createToken = (userId) => jwt.sign(
 )
 
 const calculateCompletion = (user) => {
-    let score = 30
+    let score = 0
     if (user.telephone) score += 10
     if (user.localisation) score += 10
     if (user.bio) score += 20

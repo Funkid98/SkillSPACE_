@@ -98,7 +98,9 @@ class AppSidebar extends StatelessWidget {
               return tab == DashboardTab.tableau || tab == DashboardTab.profil;
             }
             if (role == UserRole.formateur) {
-              return tab == DashboardTab.profil;
+              return tab == DashboardTab.tableau ||
+                  tab == DashboardTab.profil ||
+                  tab == DashboardTab.formations;
             }
             return true;
           }).map(
@@ -338,7 +340,9 @@ class _MobileDrawer extends StatelessWidget {
               return tab == DashboardTab.tableau || tab == DashboardTab.profil;
             }
             if (role == UserRole.formateur) {
-              return tab == DashboardTab.profil;
+              return tab == DashboardTab.tableau ||
+                  tab == DashboardTab.profil ||
+                  tab == DashboardTab.formations;
             }
             return true;
           }).map(

@@ -1,16 +1,29 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 const formateurRoutes = require('./routes/formateurRoutes');
 
+// Load environment variables from the root directory
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors());
 
-const MONGODB_URI = 'mongodb+srv://tunirideadmin:TuniridePassword2024@cluster0.lsy8lni.mongodb.net/skillspace_formateur_test?retryWrites=true&w=majority';
+const mongo_uri = process.env.MONGODB_URI;
 
-mongoose.connect(MONGODB_URI)
-  .then(() => console.log('✅ Connected to isolated local MongoDB (skillspace_test)'))
+if (!mongo_uri) {
+  console.error('❌ MONGODB_URI is not defined in .env file');
+  process.exit(1);
+}
+
+mongoose.connect(mongo_uri)
+  .then(() => {
+    const dbName = mongoose.connection.name;
+    console.log(`✅ Connected to MongoDB Database: ${dbName}`);
+  })
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 app.get('/', (req, res) => {
@@ -19,7 +32,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/formateur', formateurRoutes);
 
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Isolated Test Server running on http://localhost:${PORT}`);
 });

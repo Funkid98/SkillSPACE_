@@ -2,11 +2,17 @@ class Certification {
   String name;
   String issuer;
   String year;
+  String? image;
+  String fileType;
+  String? fullFile;
 
   Certification({
     required this.name,
     required this.issuer,
     required this.year,
+    this.image,
+    this.fileType = 'image',
+    this.fullFile,
   });
 
   factory Certification.fromJson(Map<String, dynamic> json) {
@@ -14,6 +20,9 @@ class Certification {
       name: json['name'] ?? '',
       issuer: json['issuer'] ?? '',
       year: json['year'] ?? '',
+      image: json['image'],
+      fileType: json['fileType'] ?? 'image',
+      fullFile: json['fullFile'],
     );
   }
 
@@ -22,6 +31,9 @@ class Certification {
       'name': name,
       'issuer': issuer,
       'year': year,
+      if (image != null) 'image': image,
+      'fileType': fileType,
+      if (fullFile != null) 'fullFile': fullFile,
     };
   }
 }

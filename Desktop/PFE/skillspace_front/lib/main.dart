@@ -11,6 +11,7 @@ import 'package:pfe/features/auth/presentation/cubit/forgot_password_cubit.dart'
 import 'package:skillspace/features/landing/presentation/pages/landing_page.dart';
 import 'package:skillspace/features/dashboard_shell/dashboard_shell.dart';
 import 'package:skillspace/features/recruiter/presentation/pages/recruiter_shell.dart';
+import 'package:trainer_profile/screens/main_navigation_screen.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -58,6 +59,20 @@ class SkillSpaceApp extends StatelessWidget {
             if (authState.loggedInUser != null) {
               if (authState.role == UserRole.recruteur) {
                 home = const RecruiterShell();
+              } else if (authState.role == UserRole.formateur) {
+                home = Builder(
+                  builder: (ctx) => MainNavigationScreen(
+                    onLogout: () {
+                      if (ctx.mounted) {
+                        Navigator.of(ctx).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                              builder: (_) => const LandingPage()),
+                          (route) => false,
+                        );
+                      }
+                    },
+                  ),
+                );
               } else {
                 home = DashboardShell(initialUserData: authState.loggedInUser);
               }

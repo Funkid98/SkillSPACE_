@@ -518,7 +518,7 @@ const getMatchingCandidatesGroupedByOffer = async (req, res) => {
                     const newMatch = await Match.findOneAndUpdate(
                         { candidateId: c._id, offerId: offer._id },
                         updatePayload,
-                        { upsert: true, new: true }
+                        { upsert: true, returnDocument: 'after' }
                     );
 
                     matches.push({

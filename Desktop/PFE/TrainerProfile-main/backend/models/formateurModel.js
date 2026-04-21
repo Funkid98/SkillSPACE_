@@ -4,6 +4,9 @@ const certificationSchema = new mongoose.Schema({
   name: { type: String, required: true },
   issuer: { type: String, required: true },
   year: { type: String, required: true },
+  image: { type: String }, // Base64 thumbnail image
+  fileType: { type: String, default: 'image' }, // 'image' or 'pdf'
+  fullFile: { type: String }, // Base64 of the original document
 });
 
 const formateurSchema = new mongoose.Schema({

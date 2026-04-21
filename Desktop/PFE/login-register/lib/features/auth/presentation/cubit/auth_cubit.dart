@@ -338,6 +338,21 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  Future<void> updateUserLocal(Map<String, dynamic> updates) async {
+    if (state.loggedInUser != null) {
+      final updatedUser = Map<String, dynamic>.from(state.loggedInUser!);
+      updates.forEach((key, value) {
+        if (value != null) {
+          updatedUser[key] = value;
+        }
+      });
+      emit(state.copyWith(loggedInUser: updatedUser));
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_data', jsonEncode(updatedUser));
+    }
+  }
+
   Future<void> logout() async {
     await authRepository.logout();
     emit(const AuthState()); // Reset to initial state

@@ -30,7 +30,7 @@ const uploadCv = async (req, res) => {
         completion_percent: 100
       };
       console.log('Applying updates to DB:', updates);
-      const updatedUser = await User.findByIdAndUpdate(req.userId, { $set: updates }, { new: true });
+      const updatedUser = await User.findByIdAndUpdate(req.userId, { $set: updates }, { returnDocument: 'after' });
       console.log('Update result:', updatedUser ? 'User updated successfully' : 'User not found');
     }
 

@@ -18,6 +18,7 @@ const extractSkillsFromText = async (cvText) => {
           "localisation": "city, country",
           "bio": "short professional summary",
           "skills": ["React", "Python", "MongoDB"],
+          "projects": ["Project 1", "Project 2", "Project 3"],
           "education": "highest degree",
           "experience_years": 0,
           "languages": ["French", "English"]

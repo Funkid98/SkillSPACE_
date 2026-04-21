@@ -13,6 +13,7 @@ import 'package:skillspace/features/dashboard_shell/dashboard_shell.dart';
 import 'package:skillspace/shared/widgets/app_sidebar.dart';
 import 'package:skillspace/features/recruiter/presentation/pages/recruiter_shell.dart';
 import 'package:skillspace/features/recruiter/presentation/widgets/recruiter_sidebar.dart';
+import 'package:trainer_profile/screens/main_navigation_screen.dart';
 import '../pages/landing_page.dart';
 
 class NavBar extends StatelessWidget {
@@ -40,9 +41,16 @@ class NavBar extends StatelessWidget {
                     return const RecruiterShell(
                         initialTab: RecruiterTab.profile);
                   } else if (role == UserRole.formateur) {
-                    return DashboardShell(
-                      initialTab: DashboardTab.profil,
-                      initialUserData: userData,
+                    return MainNavigationScreen(
+                      onLogout: () {
+                        if (navContext.mounted) {
+                          Navigator.of(navContext).pushAndRemoveUntil(
+                            MaterialPageRoute(
+                                builder: (_) => const LandingPage()),
+                            (route) => false,
+                          );
+                        }
+                      },
                     );
                   } else {
                     final sector = userData?['sector'];
