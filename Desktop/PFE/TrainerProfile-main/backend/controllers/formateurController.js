@@ -287,14 +287,7 @@ const seedDummyData = async (req, res) => {
     let formateur = await Formateur.findById(userId);
 
     if (!formateur) {
-      // Auto-create basic profile so we can attach formations to it
-      formateur = await Formateur.create({
-        firstName: 'Nouveau',
-        lastName: 'Formateur',
-        email: 'formateur@skillspace.com',
-        password: 'password123',
-        profileCompleteness: 10
-      });
+      return res.status(404).json({ message: 'Trainer not found. Cannot seed data.' });
     }
 
     const dummyFormations = [
@@ -407,6 +400,7 @@ const seedDummyData = async (req, res) => {
 
     res.status(201).json({ message: 'Dummy data seeded', count: created.length });
   } catch (error) {
+    console.error('Seed Data Error:', error);
     res.status(500).json({ error: error.message });
   }
 };

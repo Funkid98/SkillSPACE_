@@ -45,6 +45,8 @@ dependencies:
   file_picker: ^8.3.7
   pdfx: ^2.9.2
   awesome_dialog: ^3.3.0
+  animate_do: ^3.3.4
+  flutter_staggered_animations: ^1.0.0
 
 dev_dependencies:
   flutter_test:

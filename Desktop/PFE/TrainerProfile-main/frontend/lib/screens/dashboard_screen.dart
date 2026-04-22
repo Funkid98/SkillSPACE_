@@ -5,11 +5,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:animate_do/animate_do.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import '../cubits/trainer_cubit.dart';
 import '../cubits/trainer_state.dart';
 import '../services/dashboard_service.dart';
 import '../widgets/formation_card.dart';
 import '../models/formation_model.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -20,7 +24,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  // No local state needed anymore
+  bool _showBottomSection = false;
 
   @override
   void initState() {
@@ -105,38 +109,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildHeader(dashboardData),
+                    FadeInDown(
+                        duration: const Duration(milliseconds: 1200),
+                        child: _buildHeader(dashboardData)),
                     const SizedBox(height: 32),
                     _buildStatCards(dashboardData),
                     const SizedBox(height: 32),
-                    _buildFormationsHeader(),
+                    FadeIn(
+                        delay: const Duration(milliseconds: 400),
+                        child: _buildFormationsHeader()),
                     const SizedBox(height: 24),
                     _buildFormationsGrid(dashboardData),
                     const SizedBox(height: 32),
-                    LayoutBuilder(builder: (context, constraints) {
-                      if (constraints.maxWidth < 800) {
-                        return Column(
+                    VisibilityDetector(
+                      key: const Key('dashboard-bottom-section'),
+                      onVisibilityChanged: (info) {
+                        if (info.visibleFraction > 0.1 && !_showBottomSection) {
+                          if (mounted) {
+                            setState(() => _showBottomSection = true);
+                          }
+                        }
+                      },
+                      child: LayoutBuilder(builder: (context, constraints) {
+                        if (constraints.maxWidth < 800) {
+                          return Column(
+                            children: [
+                              FadeInUp(
+                                  animate: _showBottomSection,
+                                  child:
+                                      _buildRecentParticipants(dashboardData)),
+                              const SizedBox(height: 32),
+                              FadeInUp(
+                                  animate: _showBottomSection,
+                                  delay: const Duration(milliseconds: 200),
+                                  child: _buildGrowthChart(dashboardData)),
+                            ],
+                          );
+                        }
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildRecentParticipants(dashboardData),
-                            const SizedBox(height: 32),
-                            _buildGrowthChart(dashboardData),
+                            Expanded(
+                                flex: 1,
+                                child: FadeInLeft(
+                                    animate: _showBottomSection,
+                                    duration:
+                                        const Duration(milliseconds: 1500),
+                                    child: _buildRecentParticipants(
+                                        dashboardData))),
+                            const SizedBox(width: 32),
+                            Expanded(
+                                flex: 2,
+                                child: FadeInRight(
+                                    animate: _showBottomSection,
+                                    duration:
+                                        const Duration(milliseconds: 1500),
+                                    child: _buildGrowthChart(dashboardData))),
                           ],
                         );
-                      }
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                              flex: 1,
-                              child: _buildRecentParticipants(dashboardData)),
-                          const SizedBox(width: 32),
-                          Expanded(
-                              flex: 2, child: _buildGrowthChart(dashboardData)),
-                        ],
-                      );
-                    }),
+                      }),
+                    ),
                     const SizedBox(height: 32),
-                    _buildTopSkills(dashboardData),
+                    FadeInUp(
+                        animate: _showBottomSection,
+                        child: _buildTopSkills(dashboardData)),
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -364,32 +400,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return Row(
         children: [
           Expanded(
-              child: _buildStatCard(
-                  'Formations créées',
-                  '${stats['totalFormations']}',
-                  Icons.menu_book,
-                  const Color(0xFFE8F2FF),
-                  Colors.blue)),
+              child: FadeInLeft(
+            delay: const Duration(milliseconds: 100),
+            child: _buildStatCard(
+                'Formations créées',
+                '${stats['totalFormations']}',
+                Icons.menu_book,
+                const Color(0xFFE8F2FF),
+                Colors.blue),
+          )),
           const SizedBox(width: 24),
           Expanded(
-              child: _buildStatCard(
-                  'Étudiants inscrits',
-                  '${stats['totalStudents']}',
-                  Icons.people_outline,
-                  const Color(0xFFFFF1EB),
-                  const Color(0xFFE9652B))),
+              child: FadeInLeft(
+            delay: const Duration(milliseconds: 200),
+            child: _buildStatCard(
+                'Étudiants inscrits',
+                '${stats['totalStudents']}',
+                Icons.people_outline,
+                const Color(0xFFFFF1EB),
+                const Color(0xFFE9652B)),
+          )),
           const SizedBox(width: 24),
           Expanded(
-              child: _buildStatCard('Note moyenne', '${stats['avgRating']} / 5',
-                  Icons.star_border, const Color(0xFFFFF8E5), Colors.amber)),
+              child: FadeInLeft(
+            delay: const Duration(milliseconds: 300),
+            child: _buildStatCard('Note moyenne', '${stats['avgRating']} / 5',
+                Icons.star_border, const Color(0xFFFFF8E5), Colors.amber),
+          )),
           const SizedBox(width: 24),
           Expanded(
-              child: _buildStatCard(
-                  'Inscriptions ce mois',
-                  '+${stats['monthlyInscriptions']}',
-                  Icons.trending_up,
-                  const Color(0xFFEBFAF2),
-                  Colors.green)),
+              child: FadeInLeft(
+            delay: const Duration(milliseconds: 400),
+            child: _buildStatCard(
+                'Inscriptions ce mois',
+                '+${stats['monthlyInscriptions']}',
+                Icons.trending_up,
+                const Color(0xFFEBFAF2),
+                Colors.green),
+          )),
         ],
       );
     });
@@ -488,18 +536,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildFormationsGrid(DashboardData dashboardData) {
     final formations = dashboardData.formations;
-    return Wrap(
-      spacing: 24,
-      runSpacing: 24,
-      children: [
-        ...formations.map((f) => FormationCard(
-              formation: f,
-              width: 380,
-              onEdit: () => _showFormationDialog(f),
-              onDelete: () => _confirmDelete(f),
-            )),
-        _buildNewFormationCard(),
-      ],
+    return AnimationLimiter(
+      child: Wrap(
+        spacing: 24,
+        runSpacing: 24,
+        children: AnimationConfiguration.toStaggeredList(
+          duration: const Duration(milliseconds: 375),
+          childAnimationBuilder: (widget) => ScaleAnimation(
+            scale: 0.9,
+            child: FadeInAnimation(child: widget),
+          ),
+          children: [
+            ...formations.map((f) => FormationCard(
+                  formation: f,
+                  width: 380,
+                  onEdit: () => _showFormationDialog(f),
+                  onDelete: () => _confirmDelete(f),
+                )),
+            _buildNewFormationCard(),
+          ],
+        ),
+      ),
     );
   }
 
@@ -550,8 +607,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         TextEditingController(text: formation?.description ?? '');
     final tagsController =
         TextEditingController(text: formation?.tags.join(', ') ?? '');
-    final durationController =
-        TextEditingController(text: formation?.duration ?? '');
+    final durationController = TextEditingController(
+        text: (formation?.duration ?? '').replaceAll(RegExp(r'[^0-9]'), ''));
     String selectedLevel = formation?.level ?? 'Débutant';
 
     final trainerCubit = context.read<TrainerCubit>();
@@ -672,8 +729,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Row(
                         children: [
                           Expanded(
-                              child: _buildTextField(
-                                  'Durée *', 'Ex : 12h', durationController)),
+                              child: _buildTextField('Durée (en heures) *',
+                                  'Ex : 12', durationController,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly
+                              ])),
                           const SizedBox(width: 20),
                           Expanded(
                             child: Column(
@@ -732,7 +793,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ElevatedButton(
                             onPressed: () async {
                               final title = titleController.text.trim();
-                              final duration = durationController.text.trim();
+                              final duration =
+                                  "${durationController.text.trim()} heures";
                               final tagsString = tagsController.text.trim();
 
                               if (title.isEmpty) {
@@ -818,7 +880,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildTextField(
       String label, String hint, TextEditingController controller,
-      {int maxLines = 1}) {
+      {int maxLines = 1,
+      TextInputType keyboardType = TextInputType.text,
+      List<TextInputFormatter>? inputFormatters}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24.0),
       child: Column(
@@ -831,6 +895,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           TextField(
             controller: controller,
             maxLines: maxLines,
+            keyboardType: keyboardType,
+            inputFormatters: inputFormatters,
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
@@ -979,6 +1045,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   )
                 : BarChart(
+                    swapAnimationDuration: const Duration(milliseconds: 1000),
+                    swapAnimationCurve: Curves.easeOutQuart,
                     BarChartData(
                       alignment: BarChartAlignment.spaceAround,
                       maxY: (growth
@@ -1044,7 +1112,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 x: i,
                                 barRods: [
                                   BarChartRodData(
-                                    toY: growth[i]['count'].toDouble(),
+                                    toY: _showBottomSection
+                                        ? growth[i]['count'].toDouble()
+                                        : 0,
                                     color: const Color(0xFFE9652B),
                                     width: 32,
                                     borderRadius: const BorderRadius.vertical(
@@ -1093,12 +1163,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  LinearProgressIndicator(
-                    value: maxCount > 0 ? (f['count'] as num) / maxCount : 0,
-                    backgroundColor: Colors.blue[50],
-                    color: const Color(0xFF1A1C1E),
-                    minHeight: 8,
-                    borderRadius: BorderRadius.circular(4),
+                  TweenAnimationBuilder<double>(
+                    duration: const Duration(milliseconds: 1500),
+                    curve: Curves.easeOutQuart,
+                    tween: Tween<double>(
+                      begin: 0,
+                      end: _showBottomSection
+                          ? (maxCount > 0 ? (f['count'] as num) / maxCount : 0)
+                          : 0,
+                    ),
+                    builder: (context, value, child) {
+                      return LinearProgressIndicator(
+                        value: value,
+                        backgroundColor: Colors.blue[50],
+                        color: const Color(0xFF1A1C1E),
+                        minHeight: 8,
+                        borderRadius: BorderRadius.circular(4),
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
                 ],

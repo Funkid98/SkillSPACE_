@@ -19,25 +19,20 @@ class TrainerCubit extends Cubit<TrainerState> {
     emit(state.copyWith(status: TrainerStatus.loading));
 
     try {
-      // Fetch both in parallel for speed
-      final results = await Future.wait([
-        _dashboardService.getDashboardData(userId),
-        _formateurService.getProfile(userId),
-      ]);
+      // Optimized: getDashboardData already returns the formateur (profile) info
+      // We don't need to fetch getProfile separately
+      final dashboardData = await _dashboardService.getDashboardData(userId);
 
-      final dashboardData = results[0] as DashboardData?;
-      final profileData = results[1] as FormateurModel?;
-
-      if (dashboardData == null && profileData == null) {
+      if (dashboardData == null) {
         emit(state.copyWith(
           status: TrainerStatus.failure,
-          errorMessage: 'Impossible de charger les données.',
+          errorMessage: 'Impossible de charger les données du dashboard.',
         ));
       } else {
         emit(state.copyWith(
           status: TrainerStatus.success,
           dashboardData: dashboardData,
-          profileData: profileData,
+          profileData: dashboardData.formateur, // Use the profile from the same response
         ));
       }
     } catch (e) {

@@ -13,6 +13,7 @@ import '../cubits/trainer_cubit.dart';
 import '../cubits/trainer_state.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:pdfx/pdfx.dart';
+import 'package:animate_do/animate_do.dart';
 
 class FormateurProfileScreen extends StatefulWidget {
   const FormateurProfileScreen({super.key});
@@ -38,7 +39,8 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
   bool _isLoading = true;
   bool _isGeneratingBio = false;
   String? _lastValidatedPortfolioUrl;
-  Map<String, String> _originalProfile = {}; // tracks what was loaded from server
+  Map<String, String> _originalProfile =
+      {}; // tracks what was loaded from server
 
   String _profilePictureBase64 = '';
   List<Certification> certificationsList = [];
@@ -363,8 +365,8 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
 
     // --- Fast path: only simple text fields changed ---
     final changedFields = _getChangedSimpleFields();
-    final expertiseChanged = expertiseTags.join(',') !=
-        (_originalProfile['expertise'] ?? '');
+    final expertiseChanged =
+        expertiseTags.join(',') != (_originalProfile['expertise'] ?? '');
     final pictureChanged =
         _profilePictureBase64 != (_originalProfile['profilePicture'] ?? '');
     final certsChanged = certificationsList.length.toString() !=
@@ -376,8 +378,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
         !certsChanged) {
       if (changedFields.isEmpty) {
         Fluttertoast.showToast(
-            msg: "Aucune modification détectée",
-            backgroundColor: Colors.grey);
+            msg: "Aucune modification détectée", backgroundColor: Colors.grey);
         return;
       }
 
@@ -540,166 +541,182 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
         }
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF8F9FA),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(32.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Mon profil formateur',
-                    style: GoogleFonts.outfit(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: darkColor)),
-                const SizedBox(height: 8),
-                Text('Gérez vos informations et domaines d\'expertise',
-                    style: GoogleFonts.outfit(color: Colors.grey[600])),
-                const SizedBox(height: 32),
-                _buildCompletenessCard(),
-                const SizedBox(height: 32),
-                _buildSectionCard('Informations personnelles', [
-                  _buildResponsiveRow([
-                    _buildInputField('Prénom', _firstNameController),
-                    _buildInputField('Nom', _lastNameController),
-                  ]),
-                  _buildResponsiveRow([
-                    _buildInputField('Email', _emailController),
-                    _buildInputField('Téléphone', _phoneController),
-                  ]),
-                  _buildResponsiveRow([
-                    _buildInputField(
-                        'Titre professionnel', _jobTitleController),
-                    _buildInputField('Localisation', _locationController),
-                  ]),
-                  _buildInputField(
-                    'Bio',
-                    _bioController,
-                    maxLines: 4,
-                    labelSuffix: GestureDetector(
-                      onTap: _isGeneratingBio ? null : _handleGenerateBio,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_isGeneratingBio)
-                            const SizedBox(
-                              width: 12,
-                              height: 12,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Color(0xFFE9652B)),
-                            )
-                          else
-                            const Icon(Icons.auto_awesome,
-                                size: 14, color: Color(0xFFE9652B)),
-                          const SizedBox(width: 4),
-                          Text(
-                            _isGeneratingBio
-                                ? 'Génération...'
-                                : 'Générer avec IA',
-                            style: const TextStyle(
-                              color: Color(0xFFE9652B),
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ]),
-                const SizedBox(height: 32),
-                _buildSectionCard('Photo de profil', [
-                  _buildPhotoUpload(),
-                ]),
-                const SizedBox(height: 32),
-                _buildSectionCard('Domaines d\'expertise', [
-                  const SizedBox(height: 8),
-                  BlocBuilder<ExpertiseCubit, ExpertiseState>(
-                    builder: (context, expertiseState) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Wrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            children: expertiseState.tags
-                                .map((e) => _buildExpertiseTag(e))
-                                .toList(),
-                          ),
-                          const SizedBox(height: 24),
-                          _buildAddExpertiseField(expertiseState),
-                        ],
-                      );
-                    },
-                  ),
-                ]),
-                const SizedBox(height: 32),
-                _buildSectionCard('Certifications & Diplômes', [
-                  ...certificationsList.map((c) => _buildCertificationItem(c)),
-                  const SizedBox(height: 16),
-                  TextButton.icon(
-                    onPressed: _showAddCertificationDialog,
-                    icon: const Icon(Icons.add,
-                        size: 20, color: Color(0xFFE9652B)),
-                    label: Text('Ajouter une certification',
-                        style: TextStyle(
-                            color: primaryColor, fontWeight: FontWeight.bold)),
-                  )
-                ]),
-                const SizedBox(height: 32),
-                _buildSectionCard('Liens professionnels', [
-                  _buildResponsiveRow([
-                    _buildInputField('LinkedIn', _linkedInController),
-                    _buildInputField(
-                        'Portfolio / Site web', _portfolioController,
-                        isRequired: false),
-                  ]),
-                ]),
-                const SizedBox(height: 40),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+            backgroundColor: const Color(0xFFF8F9FA),
+            body: FadeInUp(
+              duration: const Duration(milliseconds: 600),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 32, vertical: 16),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        side: const BorderSide(color: Color(0xFF1E293B)),
-                      ),
-                      child: const Text('Annuler',
-                          style: TextStyle(
-                              color: Color(0xFF1E293B),
-                              fontWeight: FontWeight.bold)),
+                    FadeInDown(
+                      delay: const Duration(milliseconds: 100),
+                      child: Text('Mon profil formateur',
+                          style: GoogleFonts.outfit(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: darkColor)),
                     ),
-                    const SizedBox(width: 16),
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _saveProfile,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: primaryColor.withOpacity(0.6),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 32, vertical: 16),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
+                    const SizedBox(height: 8),
+                    FadeInDown(
+                      delay: const Duration(milliseconds: 200),
+                      child: Text(
+                          'Gérez vos informations et domaines d\'expertise',
+                          style: GoogleFonts.outfit(color: Colors.grey[600])),
+                    ),
+                    const SizedBox(height: 32),
+                    FadeInUp(
+                        delay: const Duration(milliseconds: 300),
+                        child: _buildCompletenessCard()),
+                    const SizedBox(height: 32),
+                    _buildSectionCard('Informations personnelles', [
+                      _buildResponsiveRow([
+                        _buildInputField('Prénom', _firstNameController),
+                        _buildInputField('Nom', _lastNameController),
+                      ]),
+                      _buildResponsiveRow([
+                        _buildInputField('Email', _emailController),
+                        _buildInputField('Téléphone', _phoneController),
+                      ]),
+                      _buildResponsiveRow([
+                        _buildInputField(
+                            'Titre professionnel', _jobTitleController),
+                        _buildInputField('Localisation', _locationController),
+                      ]),
+                      _buildInputField(
+                        'Bio',
+                        _bioController,
+                        maxLines: 4,
+                        labelSuffix: GestureDetector(
+                          onTap: _isGeneratingBio ? null : _handleGenerateBio,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_isGeneratingBio)
+                                const SizedBox(
+                                  width: 12,
+                                  height: 12,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Color(0xFFE9652B)),
+                                )
+                              else
+                                const Icon(Icons.auto_awesome,
+                                    size: 14, color: Color(0xFFE9652B)),
+                              const SizedBox(width: 4),
+                              Text(
+                                _isGeneratingBio
+                                    ? 'Génération...'
+                                    : 'Générer avec IA',
+                                style: const TextStyle(
+                                  color: Color(0xFFE9652B),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            )
-                          : const Text('Enregistrer',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 32),
+                    _buildSectionCard('Photo de profil', [
+                      _buildPhotoUpload(),
+                    ]),
+                    const SizedBox(height: 32),
+                    _buildSectionCard('Domaines d\'expertise', [
+                      const SizedBox(height: 8),
+                      BlocBuilder<ExpertiseCubit, ExpertiseState>(
+                        builder: (context, expertiseState) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: expertiseState.tags
+                                    .map((e) => _buildExpertiseTag(e))
+                                    .toList(),
+                              ),
+                              const SizedBox(height: 24),
+                              _buildAddExpertiseField(expertiseState),
+                            ],
+                          );
+                        },
+                      ),
+                    ]),
+                    const SizedBox(height: 32),
+                    _buildSectionCard('Certifications & Diplômes', [
+                      ...certificationsList
+                          .map((c) => _buildCertificationItem(c)),
+                      const SizedBox(height: 16),
+                      TextButton.icon(
+                        onPressed: _showAddCertificationDialog,
+                        icon: const Icon(Icons.add,
+                            size: 20, color: Color(0xFFE9652B)),
+                        label: Text('Ajouter une certification',
+                            style: TextStyle(
+                                color: primaryColor,
+                                fontWeight: FontWeight.bold)),
+                      )
+                    ]),
+                    const SizedBox(height: 32),
+                    _buildSectionCard('Liens professionnels', [
+                      _buildResponsiveRow([
+                        _buildInputField('LinkedIn', _linkedInController),
+                        _buildInputField(
+                            'Portfolio / Site web', _portfolioController,
+                            isRequired: false),
+                      ]),
+                    ]),
+                    const SizedBox(height: 40),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 32, vertical: 16),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            side: const BorderSide(color: Color(0xFF1E293B)),
+                          ),
+                          child: const Text('Annuler',
+                              style: TextStyle(
+                                  color: Color(0xFF1E293B),
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                        const SizedBox(width: 16),
+                        ElevatedButton(
+                          onPressed: _isLoading ? null : _saveProfile,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryColor,
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor:
+                                primaryColor.withOpacity(0.6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 32, vertical: 16),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text('Enregistrer',
+                                  style:
+                                      TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 60),
-              ],
+                    const SizedBox(height: 60),
+                ],
+              ),
             ),
           ),
         );
