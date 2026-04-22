@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+
 
 const certificationSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -10,10 +12,11 @@ const certificationSchema = new mongoose.Schema({
 });
 
 const formateurSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
+
+  password: { 
+    type: String, 
+    required: [true, 'Le mot de passe est requis'],
+    minlength: 6 
   },
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
@@ -29,10 +32,33 @@ const formateurSchema = new mongoose.Schema({
   socialLinks: {
     linkedIn: { type: String },
     portfolio: { type: String }
-  }
+  },
+  resetOtp: {
+    type: String,
+    default: null,
+  },
+  resetOtpExpires: {
+    type: Date,
+    default: null,
+  },
 }, {
   timestamps: true
 });
+
+// Hash password before saving
+formateurSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) {
+    return next();
+  }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+});
+
+// Compare password
+formateurSchema.methods.matchPassword = async function (enteredPassword) {
+  if (!this.password) return false;
+  return await bcrypt.compare(enteredPassword, this.password);
+};
 
 const Formateur = mongoose.model('Formateur', formateurSchema);
 module.exports = Formateur;

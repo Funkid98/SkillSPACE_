@@ -45,7 +45,19 @@ services:
       - ./Backend/offer-service/.env
     restart: always
 
+  # ─── Backend: Trainer Service ─────
+  trainer:
+    image: funkid99/skillspace-trainer:latest
+    build:
+      context: ./TrainerProfile-main/backend
+    ports:
+      - "5004:5004"
+    env_file:
+      - ./TrainerProfile-main/backend/.env
+    restart: always
+
   # ─── Frontend: SkillSpace App ─────
+
   frontend:
     image: funkid99/skillspace-frontend:latest
     build:

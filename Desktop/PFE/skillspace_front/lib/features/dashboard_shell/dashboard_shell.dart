@@ -14,10 +14,12 @@ import '../../core/l10n/app_localizations.dart';
 class DashboardShell extends StatefulWidget {
   final DashboardTab initialTab;
   final Map<String, dynamic>? initialUserData;
+  final VoidCallback? onLogout;
   const DashboardShell({
     super.key,
     this.initialTab = DashboardTab.tableau,
     this.initialUserData,
+    this.onLogout,
   });
 
   @override
@@ -61,6 +63,7 @@ class _DashboardShellState extends State<DashboardShell> {
                 MobileTopBar(
                   activeTab: _activeTab,
                   onTabSelected: _onTabChanged,
+                  onLogout: widget.onLogout,
                 ),
                 Container(height: 1, color: const Color(0xFFEAE8E3)),
                 Expanded(child: _buildContent()),
@@ -73,6 +76,7 @@ class _DashboardShellState extends State<DashboardShell> {
                 AppSidebar(
                   activeTab: _activeTab,
                   onTabSelected: _onTabChanged,
+                  onLogout: widget.onLogout,
                 ),
                 Container(width: 1, color: const Color(0xFFEAE8E3)),
                 Expanded(

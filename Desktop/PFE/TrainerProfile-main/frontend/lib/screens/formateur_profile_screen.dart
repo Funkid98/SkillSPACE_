@@ -9,6 +9,8 @@ import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import '../cubits/expertise_cubit.dart';
 import '../services/formateur_service.dart';
 import '../models/formateur_model.dart';
+import '../cubits/trainer_cubit.dart';
+import '../cubits/trainer_state.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:pdfx/pdfx.dart';
 
@@ -35,6 +37,8 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
   final FormateurService _formateurService = FormateurService();
   bool _isLoading = true;
   bool _isGeneratingBio = false;
+  String? _lastValidatedPortfolioUrl;
+  Map<String, String> _originalProfile = {}; // tracks what was loaded from server
 
   String _profilePictureBase64 = '';
   List<Certification> certificationsList = [];
@@ -48,6 +52,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
   final _bioController = TextEditingController();
   final _linkedInController = TextEditingController();
   final _portfolioController = TextEditingController();
+  final _expertiseController = TextEditingController();
 
   final Color primaryColor = const Color(0xFFE9652B);
   final Color darkColor = const Color(0xFF1A1C1E);
@@ -69,6 +74,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
     _bioController.dispose();
     _linkedInController.dispose();
     _portfolioController.dispose();
+    _expertiseController.dispose();
     super.dispose();
   }
 
@@ -76,15 +82,26 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
     final userId = context.read<AuthCubit>().state.loggedInUser?['id'] ?? '';
     if (userId.isEmpty) return;
 
-    setState(() => _isLoading = true);
-    final profile = await _formateurService.getProfile(userId);
+    // Check if we already have it in TrainerCubit
+    final trainerState = context.read<TrainerCubit>().state;
+    FormateurModel? profile;
+
+    if (trainerState.profileData != null) {
+      profile = trainerState.profileData;
+      _isLoading = false; // Don't show spinner if we have cache
+    } else {
+      setState(() => _isLoading = true);
+      profile = await _formateurService.getProfile(userId);
+    }
 
     if (!mounted) return;
 
     if (profile != null) {
       context.read<ExpertiseCubit>().setInitialTags(profile.expertise.toList());
+      _lastValidatedPortfolioUrl = profile.portfolio; // Initial cache
+      if (!mounted) return;
       setState(() {
-        _firstNameController.text = profile.firstName;
+        _firstNameController.text = profile!.firstName;
         _lastNameController.text = profile.lastName;
         _emailController.text = profile.email;
         _phoneController.text = profile.phone;
@@ -96,6 +113,17 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
         _profilePictureBase64 = profile.profilePicture;
         certificationsList = profile.certifications;
         _isLoading = false;
+        // Snapshot original values for change detection
+        _originalProfile = {
+          'firstName': profile.firstName,
+          'lastName': profile.lastName,
+          'phone': profile.phone,
+          'jobTitle': profile.jobTitle,
+          'location': profile.location,
+          'bio': profile.bio,
+          'linkedIn': profile.linkedIn,
+          'portfolio': profile.portfolio,
+        };
       });
     } else {
       // Defaults if not found
@@ -130,11 +158,16 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile =
-        await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 50,
+      maxWidth: 400,
+      maxHeight: 400,
+    );
 
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
+      if (!mounted) return;
       setState(() {
         _profilePictureBase64 = base64Encode(bytes);
       });
@@ -217,10 +250,10 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
       final document = await PdfDocument.openData(pdfBytes);
       final page = await document.getPage(1);
 
-      // Ensure dimensions are valid and strictly typed for Web interop
-      final double renderWidth = 400.0;
-      final double renderHeight = page.width > 0 
-          ? (page.height / page.width * renderWidth) 
+      // Smaller thumbnail for faster upload
+      final double renderWidth = 220.0;
+      final double renderHeight = page.width > 0
+          ? (page.height / page.width * renderWidth)
           : renderWidth;
 
       final pageImage = await page.render(
@@ -261,21 +294,20 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
       expertise,
     );
 
-    if (mounted) {
-      setState(() {
-        _isGeneratingBio = false;
-        if (generatedBio != null && generatedBio.isNotEmpty) {
-          _bioController.text = generatedBio;
-          Fluttertoast.showToast(
-              msg: "Bio générée ! Vous pouvez la modifier.",
-              backgroundColor: Colors.blue);
-        } else {
-          Fluttertoast.showToast(
-              msg: "Échec de la génération de la bio",
-              backgroundColor: Colors.red);
-        }
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      _isGeneratingBio = false;
+      if (generatedBio != null && generatedBio.isNotEmpty) {
+        _bioController.text = generatedBio;
+        Fluttertoast.showToast(
+            msg: "Bio générée ! Vous pouvez la modifier.",
+            backgroundColor: Colors.blue);
+      } else {
+        Fluttertoast.showToast(
+            msg: "Échec de la génération de la bio",
+            backgroundColor: Colors.red);
+      }
+    });
   }
 
   int _calculateCompleteness() {
@@ -300,11 +332,87 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
     return score > 100 ? 100 : score;
   }
 
+  /// Returns only the simple text fields that differ from the original snapshot.
+  /// Returns null if anything heavy changed (picture, certifications, expertise).
+  Map<String, String>? _getChangedSimpleFields() {
+    final current = {
+      'firstName': _firstNameController.text.trim(),
+      'lastName': _lastNameController.text.trim(),
+      'phone': _phoneController.text.trim(),
+      'jobTitle': _jobTitleController.text.trim(),
+      'location': _locationController.text.trim(),
+      'bio': _bioController.text.trim(),
+      'linkedIn': _linkedInController.text.trim(),
+      'portfolio': _portfolioController.text.trim(),
+    };
+
+    final changed = <String, String>{};
+    current.forEach((key, value) {
+      if (_originalProfile[key] != value) changed[key] = value;
+    });
+
+    return changed.isEmpty ? {} : changed;
+  }
+
   Future<void> _saveProfile() async {
+    if (_isLoading) return;
     final userId = context.read<AuthCubit>().state.loggedInUser?['id'] ?? '';
     if (userId.isEmpty) return;
 
     final expertiseTags = context.read<ExpertiseCubit>().state.tags;
+
+    // --- Fast path: only simple text fields changed ---
+    final changedFields = _getChangedSimpleFields();
+    final expertiseChanged = expertiseTags.join(',') !=
+        (_originalProfile['expertise'] ?? '');
+    final pictureChanged =
+        _profilePictureBase64 != (_originalProfile['profilePicture'] ?? '');
+    final certsChanged = certificationsList.length.toString() !=
+        (_originalProfile['certCount'] ?? '0');
+
+    if (changedFields != null &&
+        !expertiseChanged &&
+        !pictureChanged &&
+        !certsChanged) {
+      if (changedFields.isEmpty) {
+        Fluttertoast.showToast(
+            msg: "Aucune modification détectée",
+            backgroundColor: Colors.grey);
+        return;
+      }
+
+      // Validate LinkedIn only if it was changed
+      if (changedFields.containsKey('linkedIn')) {
+        final linkedInRegex = RegExp(
+            r'^https:\/\/(www\.|[a-z]{2}\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+\/?$');
+        if (!linkedInRegex.hasMatch(changedFields['linkedIn']!)) {
+          Fluttertoast.showToast(
+              msg: "Veuillez entrer un lien LinkedIn valide",
+              backgroundColor: Colors.red);
+          return;
+        }
+      }
+
+      setState(() => _isLoading = true);
+      final patched =
+          await _formateurService.patchProfile(userId, changedFields);
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (patched != null) {
+        // Update snapshot
+        changedFields.forEach((k, v) => _originalProfile[k] = v);
+        context.read<TrainerCubit>().syncProfileWithDashboard(patched);
+        Fluttertoast.showToast(
+            msg: "Profil mis à jour !", backgroundColor: Colors.green);
+      } else {
+        Fluttertoast.showToast(
+            msg: "Échec de la mise à jour", backgroundColor: Colors.red);
+      }
+      return;
+    }
+
+    // --- Full path: expertise / picture / certifications changed ---
     final currentCompleteness = _calculateCompleteness();
 
     if (_firstNameController.text.trim().isEmpty ||
@@ -347,16 +455,21 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
         return;
       }
 
-      // Call AI Validation
-      final validation = await _formateurService.validateUrl(portfolioUrl);
-      if (validation['isValid'] == false) {
-        setState(() => _isLoading = false);
-        Fluttertoast.showToast(
-            msg: validation['reason'] ??
-                "Lien de portfolio invalide ou générique.",
-            backgroundColor: Colors.orange,
-            toastLength: Toast.LENGTH_LONG);
-        return;
+      // Call AI Validation only if URL changed
+      if (portfolioUrl != _lastValidatedPortfolioUrl) {
+        final validation = await _formateurService.validateUrl(portfolioUrl);
+        if (!mounted) return;
+
+        if (validation['isValid'] == false) {
+          setState(() => _isLoading = false);
+          Fluttertoast.showToast(
+              msg: validation['reason'] ??
+                  "Lien de portfolio invalide ou générique.",
+              backgroundColor: Colors.orange,
+              toastLength: Toast.LENGTH_LONG);
+          return;
+        }
+        _lastValidatedPortfolioUrl = portfolioUrl; // Cache result
       }
     }
 
@@ -388,6 +501,24 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
     });
 
     if (updatedProfile != null) {
+      // Update the snapshot for future change detection
+      _originalProfile = {
+        'firstName': updatedProfile.firstName,
+        'lastName': updatedProfile.lastName,
+        'phone': updatedProfile.phone,
+        'jobTitle': updatedProfile.jobTitle,
+        'location': updatedProfile.location,
+        'bio': updatedProfile.bio,
+        'linkedIn': updatedProfile.linkedIn,
+        'portfolio': updatedProfile.portfolio,
+        'expertise': updatedProfile.expertise.join(','),
+        'profilePicture': updatedProfile.profilePicture,
+        'certCount': updatedProfile.certifications.length.toString(),
+      };
+
+      // Sync with TrainerCubit
+      context.read<TrainerCubit>().syncProfileWithDashboard(updatedProfile);
+
       context.read<AuthCubit>().updateUserLocal({
         'firstName': updatedProfile.firstName,
         'lastName': updatedProfile.lastName,
@@ -401,180 +532,178 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(
-          child: CircularProgressIndicator(color: Color(0xFFE9652B)));
-    }
+    return BlocBuilder<TrainerCubit, TrainerState>(
+      builder: (context, state) {
+        if (_isLoading && state.profileData == null) {
+          return const Center(
+              child: CircularProgressIndicator(color: Color(0xFFE9652B)));
+        }
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Mon profil formateur',
-                style: GoogleFonts.outfit(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: darkColor)),
-            const SizedBox(height: 8),
-            Text('Gérez vos informations et domaines d\'expertise',
-                style: GoogleFonts.outfit(color: Colors.grey[600])),
-            const SizedBox(height: 32),
-            _buildCompletenessCard(),
-            const SizedBox(height: 32),
-            _buildSectionCard('Informations personnelles', [
-              Row(
-                children: [
-                  Expanded(
-                      child: _buildInputField('Prénom', _firstNameController)),
-                  const SizedBox(width: 24),
-                  Expanded(child: _buildInputField('Nom', _lastNameController)),
-                ],
-              ),
-              Row(
-                children: [
-                  Expanded(child: _buildInputField('Email', _emailController)),
-                  const SizedBox(width: 24),
-                  Expanded(
-                      child: _buildInputField('Téléphone', _phoneController)),
-                ],
-              ),
-              Row(
-                children: [
-                  Expanded(
-                      child: _buildInputField(
-                          'Titre professionnel', _jobTitleController)),
-                  const SizedBox(width: 24),
-                  Expanded(
-                      child: _buildInputField(
-                          'Localisation', _locationController)),
-                ],
-              ),
-              _buildInputField(
-                'Bio',
-                _bioController,
-                maxLines: 4,
-                labelSuffix: GestureDetector(
-                  onTap: _isGeneratingBio ? null : _handleGenerateBio,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_isGeneratingBio)
-                        const SizedBox(
-                          width: 12,
-                          height: 12,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Color(0xFFE9652B)),
-                        )
-                      else
-                        const Icon(Icons.auto_awesome,
-                            size: 14, color: Color(0xFFE9652B)),
-                      const SizedBox(width: 4),
-                      Text(
-                        _isGeneratingBio ? 'Génération...' : 'Générer avec IA',
-                        style: const TextStyle(
-                          color: Color(0xFFE9652B),
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ]),
-            const SizedBox(height: 32),
-            _buildSectionCard('Photo de profil', [
-              _buildPhotoUpload(),
-            ]),
-            const SizedBox(height: 32),
-            _buildSectionCard('Domaines d\'expertise', [
-              const SizedBox(height: 8),
-              BlocBuilder<ExpertiseCubit, ExpertiseState>(
-                builder: (context, expertiseState) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: expertiseState.tags
-                            .map((e) => _buildExpertiseTag(e))
-                            .toList(),
-                      ),
-                      const SizedBox(height: 24),
-                      _buildAddExpertiseField(expertiseState),
-                    ],
-                  );
-                },
-              ),
-            ]),
-            const SizedBox(height: 32),
-            _buildSectionCard('Certifications & Diplômes', [
-              ...certificationsList.map((c) => _buildCertificationItem(c)),
-              const SizedBox(height: 16),
-              TextButton.icon(
-                onPressed: _showAddCertificationDialog,
-                icon: const Icon(Icons.add, size: 20, color: Color(0xFFE9652B)),
-                label: Text('Ajouter une certification',
-                    style: TextStyle(
-                        color: primaryColor, fontWeight: FontWeight.bold)),
-              )
-            ]),
-            const SizedBox(height: 32),
-            _buildSectionCard('Liens professionnels', [
-              Row(
-                children: [
-                  Expanded(
-                      child: _buildInputField('LinkedIn', _linkedInController)),
-                  const SizedBox(width: 24),
-                  Expanded(
-                      child: _buildInputField(
-                          'Portfolio / Site web', _portfolioController,
-                          isRequired: false)),
-                ],
-              ),
-            ]),
-            const SizedBox(height: 40),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+        return Scaffold(
+          backgroundColor: const Color(0xFFF8F9FA),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    side: const BorderSide(color: Color(0xFF1E293B)),
+                Text('Mon profil formateur',
+                    style: GoogleFonts.outfit(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: darkColor)),
+                const SizedBox(height: 8),
+                Text('Gérez vos informations et domaines d\'expertise',
+                    style: GoogleFonts.outfit(color: Colors.grey[600])),
+                const SizedBox(height: 32),
+                _buildCompletenessCard(),
+                const SizedBox(height: 32),
+                _buildSectionCard('Informations personnelles', [
+                  _buildResponsiveRow([
+                    _buildInputField('Prénom', _firstNameController),
+                    _buildInputField('Nom', _lastNameController),
+                  ]),
+                  _buildResponsiveRow([
+                    _buildInputField('Email', _emailController),
+                    _buildInputField('Téléphone', _phoneController),
+                  ]),
+                  _buildResponsiveRow([
+                    _buildInputField(
+                        'Titre professionnel', _jobTitleController),
+                    _buildInputField('Localisation', _locationController),
+                  ]),
+                  _buildInputField(
+                    'Bio',
+                    _bioController,
+                    maxLines: 4,
+                    labelSuffix: GestureDetector(
+                      onTap: _isGeneratingBio ? null : _handleGenerateBio,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_isGeneratingBio)
+                            const SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Color(0xFFE9652B)),
+                            )
+                          else
+                            const Icon(Icons.auto_awesome,
+                                size: 14, color: Color(0xFFE9652B)),
+                          const SizedBox(width: 4),
+                          Text(
+                            _isGeneratingBio
+                                ? 'Génération...'
+                                : 'Générer avec IA',
+                            style: const TextStyle(
+                              color: Color(0xFFE9652B),
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  child: const Text('Annuler',
-                      style: TextStyle(
-                          color: Color(0xFF1E293B),
-                          fontWeight: FontWeight.bold)),
-                ),
-                const SizedBox(width: 16),
-                ElevatedButton(
-                  onPressed: _saveProfile,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                ]),
+                const SizedBox(height: 32),
+                _buildSectionCard('Photo de profil', [
+                  _buildPhotoUpload(),
+                ]),
+                const SizedBox(height: 32),
+                _buildSectionCard('Domaines d\'expertise', [
+                  const SizedBox(height: 8),
+                  BlocBuilder<ExpertiseCubit, ExpertiseState>(
+                    builder: (context, expertiseState) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: expertiseState.tags
+                                .map((e) => _buildExpertiseTag(e))
+                                .toList(),
+                          ),
+                          const SizedBox(height: 24),
+                          _buildAddExpertiseField(expertiseState),
+                        ],
+                      );
+                    },
                   ),
-                  child: const Text('Enregistrer',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ]),
+                const SizedBox(height: 32),
+                _buildSectionCard('Certifications & Diplômes', [
+                  ...certificationsList.map((c) => _buildCertificationItem(c)),
+                  const SizedBox(height: 16),
+                  TextButton.icon(
+                    onPressed: _showAddCertificationDialog,
+                    icon: const Icon(Icons.add,
+                        size: 20, color: Color(0xFFE9652B)),
+                    label: Text('Ajouter une certification',
+                        style: TextStyle(
+                            color: primaryColor, fontWeight: FontWeight.bold)),
+                  )
+                ]),
+                const SizedBox(height: 32),
+                _buildSectionCard('Liens professionnels', [
+                  _buildResponsiveRow([
+                    _buildInputField('LinkedIn', _linkedInController),
+                    _buildInputField(
+                        'Portfolio / Site web', _portfolioController,
+                        isRequired: false),
+                  ]),
+                ]),
+                const SizedBox(height: 40),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 32, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        side: const BorderSide(color: Color(0xFF1E293B)),
+                      ),
+                      child: const Text('Annuler',
+                          style: TextStyle(
+                              color: Color(0xFF1E293B),
+                              fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _saveProfile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: primaryColor.withOpacity(0.6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 32, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text('Enregistrer',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 60),
               ],
             ),
-            const SizedBox(height: 60),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -761,10 +890,8 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
     );
   }
 
-  // Now accepts ExpertiseState — driven purely by the cubit, no parent setState
   Widget _buildAddExpertiseField(ExpertiseState expertiseState) {
     final cubit = context.read<ExpertiseCubit>();
-    final _controller = TextEditingController();
     return StatefulBuilder(
       builder: (context, localSetState) {
         return Column(
@@ -774,10 +901,11 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
               children: [
                 Expanded(
                   child: TextField(
+                    controller: _expertiseController,
                     onChanged: (value) => cubit.fetchSuggestions(value),
                     onSubmitted: (value) {
                       cubit.addTag(value);
-                      _controller.clear();
+                      _expertiseController.clear();
                     },
                     decoration: InputDecoration(
                       hintText: 'Saisir Votre Expertise ...',
@@ -816,8 +944,8 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                 const SizedBox(width: 12),
                 GestureDetector(
                   onTap: () {
-                    cubit.addTag(_controller.text);
-                    _controller.clear();
+                    cubit.addTag(_expertiseController.text);
+                    _expertiseController.clear();
                   },
                   child: Container(
                     padding: const EdgeInsets.all(14),
@@ -1037,186 +1165,153 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                       style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
                 ],
               ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildPopupField('Nom', nameController, 'ex: Master Cloud'),
-                    _buildPopupField('Organisme', issuerController, 'ex: AWS'),
-                    _buildPopupField('Année', yearController, 'ex: 2024',
-                        keyboard: TextInputType.number),
-                    const SizedBox(height: 16),
-                    RepaintBoundary(
-                      child: Container(
-                        height: 140,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF9FAFB),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey[200]!),
-                        ),
-                        child: GestureDetector(
-                          onTap: () async {
-                            FilePickerResult? result =
-                                await FilePicker.platform.pickFiles(
-                              type: FileType.custom,
-                              allowedExtensions: ['jpg', 'png', 'pdf'],
-                            );
+              content: SizedBox(
+                width: 500, // Fixed width helps IntrinsicWidth in AlertDialog
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildPopupField(
+                          'Nom', nameController, 'ex: Master Cloud'),
+                      _buildPopupField(
+                          'Organisme', issuerController, 'ex: AWS'),
+                      _buildPopupField('Année', yearController, 'ex: 2024',
+                          keyboard: TextInputType.number),
+                      const SizedBox(height: 16),
+                      RepaintBoundary(
+                        child: Container(
+                          height: 140,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF9FAFB),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.grey[200]!),
+                          ),
+                          child: GestureDetector(
+                            onTap: () async {
+                              FilePickerResult? result =
+                                  await FilePicker.platform.pickFiles(
+                                type: FileType.custom,
+                                allowedExtensions: ['jpg', 'png', 'pdf'],
+                              );
 
-                            if (result != null) {
-                              final file = result.files.first;
-                              Uint8List? actualBytes;
+                              if (result != null) {
+                                final file = result.files.first;
+                                Uint8List? actualBytes = file.bytes;
 
-                              if (file.bytes != null) {
-                                actualBytes = file.bytes;
-                              }
-
-                              if (actualBytes != null) {
-                                setDialogState(() {
-                                  isGeneratingThumbnail = true;
-                                  selectedFullFileBase64 =
-                                      base64Encode(actualBytes!);
-                                  fileType = file.extension == 'pdf'
-                                      ? 'pdf'
-                                      : 'image';
-                                });
-
-                                if (fileType == 'pdf') {
-                                  final thumb = await _generateThumbnailFromPdf(
-                                      actualBytes!);
+                                if (actualBytes != null) {
                                   setDialogState(() {
-                                    selectedThumbnailBase64 = thumb;
-                                    isGeneratingThumbnail = false;
+                                    isGeneratingThumbnail = true;
+                                    selectedFullFileBase64 =
+                                        base64Encode(actualBytes);
+                                    fileType = file.extension == 'pdf'
+                                        ? 'pdf'
+                                        : 'image';
                                   });
-                                } else {
-                                  setDialogState(() {
-                                    selectedThumbnailBase64 =
-                                        selectedFullFileBase64;
-                                    isGeneratingThumbnail = false;
-                                  });
+
+                                  if (fileType == 'pdf') {
+                                    final thumb =
+                                        await _generateThumbnailFromPdf(
+                                            actualBytes);
+                                    setDialogState(() {
+                                      selectedThumbnailBase64 = thumb;
+                                      isGeneratingThumbnail = false;
+                                    });
+                                  } else {
+                                    setDialogState(() {
+                                      selectedThumbnailBase64 =
+                                          selectedFullFileBase64;
+                                      isGeneratingThumbnail = false;
+                                    });
+                                  }
                                 }
                               }
-                            }
-                          },
-                          child: Center(
-                            child: isGeneratingThumbnail
-                                ? const CircularProgressIndicator(
-                                    color: Color(0xFFE9652B))
-                                : selectedThumbnailBase64 != null
-                                    ? Stack(
-                                        children: [
-                                          Center(
-                                            child: ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(16),
-                                              child: Image.memory(
-                                                base64Decode(
-                                                    selectedThumbnailBase64!),
-                                                fit: BoxFit.cover,
-                                                width: double.infinity,
-                                                height: 140,
-                                                errorBuilder: (context, error,
-                                                        stackTrace) =>
-                                                    const Icon(
-                                                        Icons.workspace_premium,
-                                                        color:
-                                                            Color(0xFFE9652B),
-                                                        size: 32),
-                                              ),
-                                            ),
-                                          ),
-                                          if (fileType == 'pdf')
-                                            Positioned(
-                                              bottom: 8,
-                                              left: 8,
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 4),
-                                                decoration: BoxDecoration(
-                                                    color: Colors.black54,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            4)),
-                                                child: const Row(
-                                                  children: [
-                                                    Icon(Icons.picture_as_pdf,
-                                                        color: Colors.white,
-                                                        size: 14),
-                                                    SizedBox(width: 4),
-                                                    Text('PDF',
-                                                        style: TextStyle(
-                                                            color: Colors.white,
-                                                            fontSize: 10,
-                                                            fontWeight:
-                                                                FontWeight
-                                                                    .bold)),
-                                                  ],
+                            },
+                            child: Center(
+                              child: isGeneratingThumbnail
+                                  ? const CircularProgressIndicator(
+                                      color: Color(0xFFE9652B))
+                                  : selectedThumbnailBase64 != null
+                                      ? Stack(
+                                          children: [
+                                            Center(
+                                              child: ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                                child: Image.memory(
+                                                  base64Decode(
+                                                      selectedThumbnailBase64!),
+                                                  fit: BoxFit.cover,
+                                                  width: double.infinity,
+                                                  height: 140,
+                                                  errorBuilder: (context, error,
+                                                          stackTrace) =>
+                                                      const Icon(
+                                                          Icons
+                                                              .workspace_premium,
+                                                          color:
+                                                              Color(0xFFE9652B),
+                                                          size: 32),
                                                 ),
                                               ),
                                             ),
-                                          Positioned(
-                                            top: 8,
-                                            right: 8,
-                                            child: Container(
-                                              padding: const EdgeInsets.all(4),
-                                              decoration: const BoxDecoration(
-                                                color: Colors.black54,
-                                                shape: BoxShape.circle,
+                                            Positioned(
+                                              top: 8,
+                                              right: 8,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.all(4),
+                                                decoration: const BoxDecoration(
+                                                  color: Colors.black54,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(Icons.edit,
+                                                    color: Colors.white,
+                                                    size: 14),
                                               ),
-                                              child: const Icon(Icons.edit,
-                                                  color: Colors.white,
-                                                  size: 14),
                                             ),
-                                          ),
-                                        ],
-                                      )
-                                    : Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.cloud_upload_outlined,
-                                              color: Colors.grey[400],
-                                              size: 32),
-                                          const SizedBox(height: 8),
-                                          Text('Certificat (JPG, PNG, PDF)',
-                                              style: TextStyle(
-                                                  color: Colors.grey[500],
-                                                  fontSize: 12)),
-                                        ],
-                                      ),
+                                            Positioned(
+                                              bottom: 8,
+                                              right: 8,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.all(4),
+                                                decoration: const BoxDecoration(
+                                                  color: Colors.white,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(Icons.check,
+                                                    color: Colors.green,
+                                                    size: 16),
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.cloud_upload_outlined,
+                                                color: Colors.grey[400],
+                                                size: 32),
+                                            const SizedBox(height: 8),
+                                            Text('Cliquer pour télécharger',
+                                                style: GoogleFonts.outfit(
+                                                    color: Colors.grey[700],
+                                                    fontWeight:
+                                                        FontWeight.w600)),
+                                            Text('JPG, PNG, PDF (max 10MB)',
+                                                style: TextStyle(
+                                                    color: Colors.grey[500],
+                                                    fontSize: 12)),
+                                          ],
+                                        ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                                              color: Colors.white,
-                                              shape: BoxShape.circle),
-                                          child: const Icon(Icons.check,
-                                              color: Colors.green, size: 16),
-                                        ),
-                                      )
-                                    ],
-                                  )
-                                : Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.cloud_upload_outlined,
-                                          color: Colors.grey[400], size: 32),
-                                      const SizedBox(height: 8),
-                                      Text('Cliquer pour télécharger',
-                                          style: GoogleFonts.outfit(
-                                              color: darkColor,
-                                              fontWeight: FontWeight.w600)),
-                                      Text('JPG, PNG, PDF (max 10MB)',
-                                          style: TextStyle(
-                                              color: Colors.grey[500],
-                                              fontSize: 12)),
-                                    ],
-                                  ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               actions: [
@@ -1230,9 +1325,6 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                     if (nameController.text.trim().isEmpty ||
                         issuerController.text.trim().isEmpty ||
                         yearController.text.trim().isEmpty) {
-                      Fluttertoast.showToast(
-                          msg: 'Veuillez remplir tous les champs',
-                          backgroundColor: Colors.red);
                       return;
                     }
                     setState(() {
@@ -1304,6 +1396,23 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
       ),
     );
   }
+
+  Widget _buildResponsiveRow(List<Widget> children) {
+    return LayoutBuilder(builder: (context, constraints) {
+      if (constraints.maxWidth < 600) {
+        return Column(children: children);
+      }
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children
+            .expand((w) => [
+                  Expanded(child: w),
+                  if (w != children.last) const SizedBox(width: 24),
+                ])
+            .toList(),
+      );
+    });
+  }
 }
 
 class _PdfViewer extends StatefulWidget {
@@ -1348,8 +1457,9 @@ class _PdfViewerState extends State<_PdfViewer> {
       builder: (context, constraints) {
         // Force finite dimensions for Web renderer
         final width = constraints.maxWidth > 0 ? constraints.maxWidth : 400.0;
-        final height = constraints.maxHeight > 0 ? constraints.maxHeight : 600.0;
-        
+        final height =
+            constraints.maxHeight > 0 ? constraints.maxHeight : 600.0;
+
         return RepaintBoundary(
           child: SizedBox(
             width: width,

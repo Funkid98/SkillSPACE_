@@ -4,8 +4,16 @@ const cors = require('cors');
 const path = require('path');
 const formateurRoutes = require('./routes/formateurRoutes');
 
-// Load environment variables from the root directory
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+// Load environment variables
+const dotenvPaths = [
+  path.join(__dirname, '.env'),
+  path.join(__dirname, '../.env'),
+  path.join(process.cwd(), '.env')
+];
+
+dotenvPaths.forEach(p => {
+  require('dotenv').config({ path: p });
+});
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
@@ -15,7 +23,7 @@ app.use(cors());
 const mongo_uri = process.env.MONGODB_URI;
 
 if (!mongo_uri) {
-  console.error('❌ MONGODB_URI is not defined in .env file');
+  console.error('❌ MONGODB_URI is not defined (checked .env files and system environment)');
   process.exit(1);
 }
 

@@ -10,6 +10,7 @@ class FormationModel {
   final double price;
   final String duration;
   final String category;
+  final String level;
   final String imageUrl;
 
   FormationModel({
@@ -24,6 +25,7 @@ class FormationModel {
     this.price = 0.0,
     this.duration = '',
     this.category = '',
+    this.level = 'Débutant',
     this.imageUrl = '',
   });
 
@@ -40,6 +42,7 @@ class FormationModel {
       price: (json['price'] ?? 0.0).toDouble(),
       duration: json['duration'] ?? '',
       category: json['category'] ?? '',
+      level: json['level'] ?? 'Débutant',
       imageUrl: json['imageUrl'] ?? '',
     );
   }
@@ -56,6 +59,7 @@ class FormationModel {
       'price': price,
       'duration': duration,
       'category': category,
+      'level': level,
       'imageUrl': imageUrl,
     };
   }

@@ -121,8 +121,47 @@ const validatePortfolioUrlAI = async (url) => {
   }
 };
 
+/**
+ * Suggest formation details (description, tags) based on title using Groq AI.
+ * @param {string} title - The formation title.
+ * @returns {Promise<{description: string, tags: string[]}>}
+ */
+const suggestFormationContent = async (title) => {
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+  const response = await groq.chat.completions.create({
+    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+    messages: [
+      {
+        role: 'system',
+        content: `You are an expert e-learning content creator for SkillSpace.
+        Based on a formation title, generate a professional, engaging description (max 250 characters) and a list of 5 relevant technical tags.
+        Return ONLY a JSON object in French: {"description": "...", "tags": ["...", "..."]}.
+        No introduction or additional text before or after the JSON.`,
+      },
+      {
+        role: 'user',
+        content: `Titre de la formation: "${title}"`,
+      },
+    ],
+    temperature: 0.6,
+    max_tokens: 400,
+  });
+
+  const raw = response.choices[0].message.content.trim();
+  const clean = raw.replace(/```json|```/g, '').trim();
+  try {
+    return JSON.parse(clean);
+  } catch (e) {
+    console.error('AI Suggestion parse error:', e.message);
+    return { description: '', tags: [] };
+  }
+};
+
 module.exports = {
   suggestExpertiseDomains,
   generateBio: generateBioValue,
-  validatePortfolioUrlAI
+  validatePortfolioUrlAI,
+  suggestFormationContent
 };
+

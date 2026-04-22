@@ -14,6 +14,11 @@ const formationSchema = new mongoose.Schema({
   reviewCount: { type: Number, default: 0 },
   price: { type: Number, default: 0 },
   duration: { type: String, required: true }, // e.g., "12h"
+  level: { 
+    type: String, 
+    enum: ['Débutant', 'Intermédiaire', 'Avancé'], 
+    default: 'Débutant' 
+  },
   category: { type: String, required: true },
   imageUrl: { type: String },
 }, {

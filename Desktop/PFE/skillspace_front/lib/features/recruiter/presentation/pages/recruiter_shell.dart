@@ -21,10 +21,12 @@ import '../../../../shared/widgets/notification_bell.dart';
 
 class RecruiterShell extends StatefulWidget {
   final RecruiterTab initialTab;
+  final VoidCallback? onLogout;
 
   const RecruiterShell({
     super.key,
     this.initialTab = RecruiterTab.dashboard,
+    this.onLogout,
   });
 
   @override
@@ -63,6 +65,7 @@ class _RecruiterShellState extends State<RecruiterShell> {
                     _RecruiterMobileTopBar(
                       activeTab: _activeTab,
                       onTabSelected: (tab) => _onTabChanged(tab, context),
+                      onLogout: widget.onLogout,
                     ),
                     Container(height: 1, color: const Color(0xFFEAE8E3)),
                     Expanded(child: _buildContent(context)),
@@ -74,6 +77,7 @@ class _RecruiterShellState extends State<RecruiterShell> {
                     RecruiterSidebar(
                       activeTab: _activeTab,
                       onTabSelected: (tab) => _onTabChanged(tab, context),
+                      onLogout: widget.onLogout,
                     ),
                     Container(width: 1, color: const Color(0xFFEAE8E3)),
                     Expanded(
@@ -133,10 +137,12 @@ class _RecruiterShellState extends State<RecruiterShell> {
 class _RecruiterMobileTopBar extends StatelessWidget {
   final RecruiterTab activeTab;
   final ValueChanged<RecruiterTab> onTabSelected;
+  final VoidCallback? onLogout;
 
   const _RecruiterMobileTopBar({
     required this.activeTab,
     required this.onTabSelected,
+    this.onLogout,
   });
 
   @override
@@ -164,6 +170,7 @@ class _RecruiterMobileTopBar extends StatelessWidget {
                     isScrollControlled: true,
                     builder: (_) => _RecruiterMobileDrawer(
                       activeTab: activeTab,
+                      onLogout: onLogout,
                       onTabSelected: (tab) {
                         Navigator.pop(context);
                         onTabSelected(tab);
@@ -192,10 +199,12 @@ class _RecruiterMobileTopBar extends StatelessWidget {
 class _RecruiterMobileDrawer extends StatelessWidget {
   final RecruiterTab activeTab;
   final ValueChanged<RecruiterTab> onTabSelected;
+  final VoidCallback? onLogout;
 
   const _RecruiterMobileDrawer({
     required this.activeTab,
     required this.onTabSelected,
+    this.onLogout,
   });
 
   @override
@@ -244,6 +253,25 @@ class _RecruiterMobileDrawer extends StatelessWidget {
                   onTap: () => onTabSelected(tab),
                 ),
               );
+            },
+          ),
+          const Divider(height: 40),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.logout_rounded,
+                color: AppColors.error, size: 22),
+            title: const Text(
+              'Déconnexion',
+              style: TextStyle(
+                  color: AppColors.error,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600),
+            ),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+              if (onLogout != null) {
+                onLogout!();
+              }
             },
           ),
         ],

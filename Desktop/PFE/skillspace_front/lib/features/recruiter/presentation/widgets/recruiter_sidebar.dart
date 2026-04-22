@@ -45,11 +45,13 @@ extension RecruiterTabInfo on RecruiterTab {
 class RecruiterSidebar extends StatelessWidget {
   final RecruiterTab activeTab;
   final ValueChanged<RecruiterTab> onTabSelected;
+  final VoidCallback? onLogout;
 
   const RecruiterSidebar({
     super.key,
     required this.activeTab,
     required this.onTabSelected,
+    this.onLogout,
   });
 
   @override
@@ -146,7 +148,7 @@ class RecruiterSidebar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             child: TextButton.icon(
-              onPressed: () => _showLogoutConfirmation(context),
+              onPressed: () => _showLogoutConfirmation(context, onLogout),
               icon: const Icon(Icons.logout_rounded,
                   size: 18, color: AppColors.textGray),
               label: Text(
@@ -165,7 +167,7 @@ class RecruiterSidebar extends StatelessWidget {
     );
   }
 
-  void _showLogoutConfirmation(BuildContext context) {
+  void _showLogoutConfirmation(BuildContext context, [VoidCallback? onLogout]) {
     final l10n = AppLocalizations.of(context);
     AwesomeDialog(
       context: context,
@@ -241,11 +243,15 @@ class RecruiterSidebar extends StatelessWidget {
                       onPressed: () async {
                         await context.read<AuthCubit>().logout();
                         if (context.mounted) {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(
-                                builder: (_) => const LandingPage()),
-                            (route) => false,
-                          );
+                          if (onLogout != null) {
+                            onLogout();
+                          } else {
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                  builder: (_) => const LandingPage()),
+                              (route) => false,
+                            );
+                          }
                         }
                       },
                       child: Text(

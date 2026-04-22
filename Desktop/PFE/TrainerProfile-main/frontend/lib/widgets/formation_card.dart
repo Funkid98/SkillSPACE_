@@ -1,114 +1,208 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/formation_model.dart';
 
 class FormationCard extends StatelessWidget {
   final FormationModel formation;
-  final double? width;
-  final double height;
-  final EdgeInsetsGeometry? margin;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+  final double width;
 
   const FormationCard({
     super.key,
     required this.formation,
-    this.width,
-    this.height = 250, // Fixed height for a stable grid layout
-    this.margin,
+    this.onEdit,
+    this.onDelete,
+    this.width = 340,
   });
 
   @override
   Widget build(BuildContext context) {
+    Color levelColor;
+    switch (formation.level) {
+      case 'Intermédiaire':
+        levelColor = Colors.orange;
+        break;
+      case 'Avancé':
+        levelColor = Colors.redAccent;
+        break;
+      default:
+        levelColor = const Color(0xFF4ADE80); // Green for Débutant
+    }
+
     return Container(
       width: width,
-      height: height,
-      margin: margin ?? EdgeInsets.zero,
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween, // Distribute space evenly
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // Header with background and Level
+          Stack(
             children: [
-              Text(
-                formation.title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              Container(
+                height: 100,
+                decoration: const BoxDecoration(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFF97316), Color(0xFFFB923C)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
               ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: formation.tags.take(3).map((t) => Chip(
-                  label: Text(t, style: const TextStyle(fontSize: 11)),
-                  padding: EdgeInsets.zero,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  backgroundColor: const Color(0xFFE8F2FF),
-                )).toList(),
+              Positioned(
+                top: 16,
+                right: 16,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    formation.level,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -20,
+                left: 20,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                      )
+                    ],
+                  ),
+                  child: const Icon(Icons.school_outlined,
+                      color: Color(0xFFF97316), size: 28),
+                ),
               ),
             ],
           ),
-          Column(
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.people_outline, size: 16, color: Colors.grey[400]),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${formation.studentCount}',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 13),
+          const SizedBox(height: 32),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  formation.title,
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: const Color(0xFF1E293B),
                   ),
-                  const Spacer(),
-                  ...List.generate(5, (i) => Icon(
-                    Icons.star,
-                    size: 14,
-                    color: i < formation.rating ? Colors.orange : Colors.grey[200],
-                  )),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${formation.rating}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  formation.description,
+                  style: TextStyle(
+                    color: Colors.grey[500],
+                    fontSize: 13,
+                    height: 1.4,
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.edit_outlined, size: 16),
-                      label: const Text('Modifier'),
-                      style: OutlinedButton.styleFrom(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 16),
+                // Tags
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: formation.tags.take(3).map((t) => Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(t, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                  )).toList(),
+                ),
+                const SizedBox(height: 20),
+                const Divider(height: 1),
+                const SizedBox(height: 20),
+                // Stats
+                Row(
+                  children: [
+                    const Icon(Icons.access_time, size: 16, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(formation.duration, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                    const SizedBox(width: 16),
+                    const Icon(Icons.people_outline, size: 16, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text('${formation.studentCount}', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                    const Spacer(),
+                    ...List.generate(5, (i) => Icon(
+                      Icons.star,
+                      size: 14,
+                      color: i < (formation.rating.round()) ? Colors.orange : Colors.grey[300],
+                    )),
+                    const SizedBox(width: 4),
+                    Text('${formation.rating}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // Actions
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: onEdit,
+                        icon: const Icon(Icons.edit_outlined, size: 16),
+                        label: const Text('Modifier'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF1E293B),
+                          side: BorderSide(color: Colors.grey[200]!),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.red[50],
-                      borderRadius: BorderRadius.circular(8),
+                    const SizedBox(width: 12),
+                    InkWell(
+                      onTap: onDelete,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF2F2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.delete_outline, color: Color(0xFFEF4444), size: 20),
+                      ),
                     ),
-                    child: Icon(Icons.delete_outline, color: Colors.red[300], size: 20),
-                  ),
-                ],
-              ),
-            ],
-          )
+                  ],
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
         ],
       ),
     );

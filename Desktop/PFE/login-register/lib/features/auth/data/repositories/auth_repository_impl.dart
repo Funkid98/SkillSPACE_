@@ -36,7 +36,17 @@ class AuthRepositoryImpl implements AuthRepository {
     String? entreprise,
   }) async {
     final isRecruiter = role == 'recruteur' || role == 'recruiter';
-    final endpoint = isRecruiter ? '/recruiter/register' : '/api/auth/register';
+    final isFormateur = role == 'formateur' || role == 'trainer';
+    
+    final String endpoint;
+    if (isRecruiter) {
+      endpoint = '/recruiter/register';
+    } else if (isFormateur) {
+      endpoint = '/api/formateur/register';
+    } else {
+      endpoint = '/api/auth/register';
+    }
+
 
     final body = isRecruiter
         ? {
@@ -88,7 +98,17 @@ class AuthRepositoryImpl implements AuthRepository {
     String? role,
   }) async {
     final isRecruiter = role == 'recruteur' || role == 'recruiter';
-    final endpoint = isRecruiter ? '/recruiter/login' : '/api/auth/login';
+    final isFormateur = role == 'formateur' || role == 'trainer';
+    
+    final String endpoint;
+    if (isRecruiter) {
+      endpoint = '/recruiter/login';
+    } else if (isFormateur) {
+      endpoint = '/api/formateur/login';
+    } else {
+      endpoint = '/api/auth/login';
+    }
+
 
     final response = await _apiClient.post(endpoint, {
       'email': email,

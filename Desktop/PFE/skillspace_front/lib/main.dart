@@ -58,13 +58,13 @@ class SkillSpaceApp extends StatelessWidget {
 
             if (authState.loggedInUser != null) {
               if (authState.role == UserRole.recruteur) {
-                home = const RecruiterShell();
-              } else if (authState.role == UserRole.formateur) {
                 home = Builder(
-                  builder: (ctx) => MainNavigationScreen(
-                    onLogout: () {
+                  builder: (ctx) => RecruiterShell(
+                    onLogout: () async {
+                      await ctx.read<AuthCubit>().logout();
                       if (ctx.mounted) {
-                        Navigator.of(ctx).pushAndRemoveUntil(
+                        Navigator.of(ctx, rootNavigator: true)
+                            .pushAndRemoveUntil(
                           MaterialPageRoute(
                               builder: (_) => const LandingPage()),
                           (route) => false,
@@ -73,8 +73,39 @@ class SkillSpaceApp extends StatelessWidget {
                     },
                   ),
                 );
+              } else if (authState.role == UserRole.formateur) {
+                home = Builder(
+                  builder: (ctx) => MainNavigationScreen(
+                    onLogout: () {
+                      // Navigate FIRST (before logout emits null state which unmounts ctx)
+                      Navigator.of(ctx, rootNavigator: true)
+                          .pushAndRemoveUntil(
+                        MaterialPageRoute(
+                            builder: (_) => const LandingPage()),
+                        (route) => false,
+                      );
+                      // Clear token after navigation is scheduled
+                      ctx.read<AuthCubit>().logout();
+                    },
+                  ),
+                );
               } else {
-                home = DashboardShell(initialUserData: authState.loggedInUser);
+                home = Builder(
+                  builder: (ctx) => DashboardShell(
+                    initialUserData: authState.loggedInUser,
+                    onLogout: () async {
+                      await ctx.read<AuthCubit>().logout();
+                      if (ctx.mounted) {
+                        Navigator.of(ctx, rootNavigator: true)
+                            .pushAndRemoveUntil(
+                          MaterialPageRoute(
+                              builder: (_) => const LandingPage()),
+                          (route) => false,
+                        );
+                      }
+                    },
+                  ),
+                );
               }
             } else {
               home = const LandingPage();

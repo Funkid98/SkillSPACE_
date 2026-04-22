@@ -1,0 +1,149 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import '../models/formation_model.dart';
+import '../services/dashboard_service.dart';
+import '../services/formateur_service.dart';
+import '../models/formateur_model.dart';
+import 'trainer_state.dart';
+
+class TrainerCubit extends Cubit<TrainerState> {
+  final DashboardService _dashboardService;
+  final FormateurService _formateurService;
+
+  TrainerCubit(this._dashboardService, this._formateurService)
+      : super(TrainerState());
+
+  Future<void> fetchAllData(String userId) async {
+    if (userId.isEmpty) return;
+
+    emit(state.copyWith(status: TrainerStatus.loading));
+
+    try {
+      // Fetch both in parallel for speed
+      final results = await Future.wait([
+        _dashboardService.getDashboardData(userId),
+        _formateurService.getProfile(userId),
+      ]);
+
+      final dashboardData = results[0] as DashboardData?;
+      final profileData = results[1] as FormateurModel?;
+
+      if (dashboardData == null && profileData == null) {
+        emit(state.copyWith(
+          status: TrainerStatus.failure,
+          errorMessage: 'Impossible de charger les données.',
+        ));
+      } else {
+        emit(state.copyWith(
+          status: TrainerStatus.success,
+          dashboardData: dashboardData,
+          profileData: profileData,
+        ));
+      }
+    } catch (e) {
+      emit(state.copyWith(
+        status: TrainerStatus.failure,
+        errorMessage: e.toString(),
+      ));
+    }
+  }
+
+  void updateProfile(FormateurModel newProfile) {
+    emit(state.copyWith(profileData: newProfile));
+  }
+
+  Future<void> seedData(String userId) async {
+    emit(state.copyWith(status: TrainerStatus.loading));
+    final success = await _dashboardService.seedData(userId);
+    if (success) {
+      await fetchAllData(userId);
+      Fluttertoast.showToast(msg: "Données de démo initialisées !");
+    } else {
+      emit(state.copyWith(
+        status: TrainerStatus.failure,
+        errorMessage: 'Échec de l\'initialisation des données.',
+      ));
+    }
+  }
+
+  // Optimize: also update the dashboard's formateur info when profile changes
+  void syncProfileWithDashboard(FormateurModel newProfile) {
+    if (state.dashboardData != null) {
+      final updatedDashboard = DashboardData(
+        formateur: newProfile,
+        formations: state.dashboardData!.formations,
+        stats: state.dashboardData!.stats,
+      );
+      emit(state.copyWith(
+        profileData: newProfile,
+        dashboardData: updatedDashboard,
+      ));
+    } else {
+      emit(state.copyWith(profileData: newProfile));
+    }
+  }
+
+  Future<bool> addFormation(String userId, FormationModel formation) async {
+    final newFormation =
+        await _dashboardService.createFormation(userId, formation);
+    if (newFormation != null && state.dashboardData != null) {
+      final updatedList = [newFormation, ...state.dashboardData!.formations];
+      
+      // Update local stats card
+      final updatedStats = Map<String, dynamic>.from(state.dashboardData!.stats);
+      updatedStats['totalFormations'] = (updatedStats['totalFormations'] ?? 0) + 1;
+
+      final updatedDashboard = DashboardData(
+        formateur: state.dashboardData!.formateur,
+        formations: updatedList,
+        stats: updatedStats,
+      );
+      emit(state.copyWith(dashboardData: updatedDashboard));
+      return true;
+    }
+    return false;
+  }
+
+  Future<bool> editFormation(String id, FormationModel formation) async {
+    final updated = await _dashboardService.updateFormation(id, formation);
+    if (updated != null && state.dashboardData != null) {
+      final updatedList = state.dashboardData!.formations.map((f) {
+        return f.id == id ? updated : f;
+      }).toList();
+
+      final updatedDashboard = DashboardData(
+        formateur: state.dashboardData!.formateur,
+        formations: updatedList,
+        stats: state.dashboardData!.stats,
+      );
+      emit(state.copyWith(dashboardData: updatedDashboard));
+      return true;
+    }
+    return false;
+  }
+
+  Future<bool> removeFormation(String id) async {
+    final success = await _dashboardService.deleteFormation(id);
+    if (success && state.dashboardData != null) {
+      final updatedList =
+          state.dashboardData!.formations.where((f) => f.id != id).toList();
+
+      // Update local stats card
+      final updatedStats = Map<String, dynamic>.from(state.dashboardData!.stats);
+      updatedStats['totalFormations'] = (updatedStats['totalFormations'] ?? 0) - 1;
+
+      final updatedDashboard = DashboardData(
+        formateur: state.dashboardData!.formateur,
+        formations: updatedList,
+        stats: updatedStats,
+      );
+      emit(state.copyWith(dashboardData: updatedDashboard));
+      return true;
+    }
+    return false;
+  }
+
+  Future<Map<String, dynamic>?> generateFormationContent(String title) async {
+    return await _dashboardService.enhanceFormation(title);
+  }
+}

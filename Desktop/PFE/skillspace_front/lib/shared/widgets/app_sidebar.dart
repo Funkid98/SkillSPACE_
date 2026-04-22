@@ -48,11 +48,13 @@ extension DashboardTabInfo on DashboardTab {
 class AppSidebar extends StatelessWidget {
   final DashboardTab activeTab;
   final ValueChanged<DashboardTab> onTabSelected;
+  final VoidCallback? onLogout;
 
   const AppSidebar({
     super.key,
     required this.activeTab,
     required this.onTabSelected,
+    this.onLogout,
   });
 
   @override
@@ -119,7 +121,7 @@ class AppSidebar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             child: TextButton.icon(
-              onPressed: () => _showLogoutConfirmation(context),
+              onPressed: () => _showLogoutConfirmation(context, onLogout),
               icon: const Icon(Icons.logout_rounded,
                   size: 18, color: AppColors.textGray),
               label: Text(
@@ -236,11 +238,13 @@ class _LangBtn extends StatelessWidget {
 class MobileTopBar extends StatelessWidget {
   final DashboardTab activeTab;
   final ValueChanged<DashboardTab> onTabSelected;
+  final VoidCallback? onLogout;
 
   const MobileTopBar({
     super.key,
     required this.activeTab,
     required this.onTabSelected,
+    this.onLogout,
   });
 
   void _openDrawer(BuildContext context) {
@@ -250,6 +254,7 @@ class MobileTopBar extends StatelessWidget {
       isScrollControlled: true,
       builder: (_) => _MobileDrawer(
         activeTab: activeTab,
+        onLogout: onLogout,
         onTabSelected: (tab) {
           Navigator.pop(context);
           onTabSelected(tab);
@@ -301,10 +306,12 @@ class MobileTopBar extends StatelessWidget {
 class _MobileDrawer extends StatelessWidget {
   final DashboardTab activeTab;
   final ValueChanged<DashboardTab> onTabSelected;
+  final VoidCallback? onLogout;
 
   const _MobileDrawer({
     required this.activeTab,
     required this.onTabSelected,
+    this.onLogout,
   });
 
   @override
@@ -368,7 +375,7 @@ class _MobileDrawer extends StatelessWidget {
             ),
             onTap: () {
               Navigator.pop(context); // Close drawer
-              _showLogoutConfirmation(context);
+              _showLogoutConfirmation(context, onLogout);
             },
           ),
         ],
@@ -483,7 +490,7 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-void _showLogoutConfirmation(BuildContext context) {
+void _showLogoutConfirmation(BuildContext context, [VoidCallback? onLogout]) {
   final l10n = AppLocalizations.of(context);
   AwesomeDialog(
     context: context,
@@ -557,11 +564,15 @@ void _showLogoutConfirmation(BuildContext context) {
                     onPressed: () async {
                       await context.read<AuthCubit>().logout();
                       if (context.mounted) {
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                              builder: (_) => const LandingPage()),
-                          (route) => false,
-                        );
+                        if (onLogout != null) {
+                          onLogout();
+                        } else {
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(
+                                builder: (_) => const LandingPage()),
+                            (route) => false,
+                          );
+                        }
                       }
                     },
                     child: Text(

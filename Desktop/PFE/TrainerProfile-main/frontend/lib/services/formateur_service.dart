@@ -38,6 +38,28 @@ class FormateurService {
     }
   }
 
+  /// Quick partial update — only send the fields that changed.
+  /// e.g. patchProfile(userId, {'bio': 'new bio text'})
+  Future<FormateurModel?> patchProfile(
+      String userId, Map<String, dynamic> fields) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl/profile/$userId'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(fields),
+      );
+      if (response.statusCode == 200) {
+        return FormateurModel.fromJson(json.decode(response.body));
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print('Error patching profile: $e');
+      return null;
+    }
+  }
+
+
   Future<List<String>> suggestExpertise(
       String query, List<String> existing) async {
     try {
