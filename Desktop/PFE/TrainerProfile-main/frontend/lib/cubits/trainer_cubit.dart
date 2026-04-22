@@ -99,6 +99,10 @@ class TrainerCubit extends Cubit<TrainerState> {
         stats: updatedStats,
       );
       emit(state.copyWith(dashboardData: updatedDashboard));
+
+      // Refresh everything from backend to keep charts and other stats in sync
+      fetchAllData(userId);
+
       return true;
     }
     return false;
@@ -117,6 +121,12 @@ class TrainerCubit extends Cubit<TrainerState> {
         stats: state.dashboardData!.stats,
       );
       emit(state.copyWith(dashboardData: updatedDashboard));
+
+      // Refresh to update rankings and stats
+      if (state.profileData != null) {
+        fetchAllData(state.profileData!.id);
+      }
+
       return true;
     }
     return false;
@@ -138,6 +148,12 @@ class TrainerCubit extends Cubit<TrainerState> {
         stats: updatedStats,
       );
       emit(state.copyWith(dashboardData: updatedDashboard));
+
+      // Trigger a full fetch to update rankings, students count, and charts
+      if (state.profileData != null) {
+        fetchAllData(state.profileData!.id);
+      }
+
       return true;
     }
     return false;

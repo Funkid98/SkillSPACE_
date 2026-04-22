@@ -435,13 +435,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildFormationsHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Wrap(
+      spacing: 16,
+      runSpacing: 16,
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Text('Mes formations',
             style:
                 GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold)),
-        Row(
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
           children: [
             OutlinedButton.icon(
               onPressed: () {
@@ -455,13 +460,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   style: TextStyle(color: Color(0xFF64748B))),
               style: OutlinedButton.styleFrom(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 side: BorderSide(color: Colors.grey[300]!),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
             ),
-            const SizedBox(width: 16),
             ElevatedButton.icon(
               onPressed: () => _showFormationDialog(null),
               icon: const Icon(Icons.add, size: 20),
@@ -470,7 +474,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 backgroundColor: const Color(0xFFE9652B),
                 foregroundColor: Colors.white,
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
