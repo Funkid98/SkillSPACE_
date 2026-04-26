@@ -693,6 +693,8 @@ const applyToOffer = async (req, res) => {
                 senderName: `${candidate.prenom} ${candidate.nom}`,
                 senderEmail: candidate.email,
                 message: `Le candidat ${candidate.prenom} ${candidate.nom} a postulé à l'offre: ${offerTitle || "N/A"}`,
+                offerId: offerId,
+                offerTitle: offerTitle,
                 type: 'APPLICATION'
             });
         } catch (e) {
@@ -744,8 +746,60 @@ const markNotificationRead = async (req, res) => {
     }
 };
 
+// Internal endpoint to finalize decision
+const internalUpdateApplication = async (req, res) => {
+    try {
+        const { candidateId, offerId, status, interviewDate, interviewTime, meetingLink, rejectionReason, recruiterName, recruiterEmail } = req.body;
+
+        const application = await Application.findOneAndUpdate(
+            { candidateId, offerId },
+            { 
+                $set: { 
+                    status, 
+                    interviewDate, 
+                    interviewTime, 
+                    meetingLink, 
+                    rejectionReason 
+                } 
+            },
+            { new: true }
+        );
+
+        if (!application) return res.status(404).json({ error: 'Application not found' });
+
+        // Notify Candidate
+        let message = '';
+        let type = '';
+
+        if (status === 'ACCEPTED') {
+            message = `Félicitations ! Votre candidature pour "${req.body.offerTitle}" a été acceptée. Un entretien est prévu le ${interviewDate} à ${interviewTime}.`;
+            type = 'INTERVIEW_SCHEDULED';
+        } else {
+            message = `Votre candidature pour "${req.body.offerTitle}" a été refusée. Motif : ${rejectionReason || 'Non spécifié'}`;
+            type = 'APPLICATION_REJECTED';
+        }
+
+        const notif = new Notification({
+            userId: candidateId,
+            senderId: application.recruiterId,
+            senderName: recruiterName || 'Un recruteur',
+            senderEmail: recruiterEmail,
+            message,
+            offerId,
+            offerTitle: req.body.offerTitle,
+            type
+        });
+        await notif.save();
+
+        res.json({ message: 'Application updated and candidate notified' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
 module.exports = {
     register, login, getProfile, updateProfile, getRecentCandidatesBySector,
     getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer,
-    applyToOffer, receiveNotification, getNotifications, markNotificationRead
+    applyToOffer, receiveNotification, getNotifications, markNotificationRead,
+    internalUpdateApplication
 };

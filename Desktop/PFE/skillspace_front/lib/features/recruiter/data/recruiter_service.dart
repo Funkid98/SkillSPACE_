@@ -96,7 +96,7 @@ class RecruiterService {
                   name: c['name'] ?? 'Inconnu',
                   role: c['role'] ?? 'Candidat',
                   status: c['status'] ?? 'Nouveau',
-                  matchScore: c['matchScore'] ?? 85,
+                  matchScore: (c['matchScore'] as num?)?.round() ?? 85,
                   matchingAnalysis: c['matchingAnalysis'] ?? '',
                   recommendation: c['recommendation'] ?? '',
                   initials: c['initials'] ?? '??',

@@ -372,17 +372,60 @@ const contactCandidate = async (req, res) => {
 // Internal endpoint to receive notification
 const receiveNotification = async (req, res) => {
     try {
-        const { recruiterId, senderId, senderName, senderEmail, message, type } = req.body;
+        const { recruiterId, senderId, senderName, senderEmail, message, type, offerId, offerTitle } = req.body;
         const notif = new Notification({
             userId: recruiterId,
             senderId,
             senderName,
             senderEmail,
             message,
-            type
+            type,
+            offerId,
+            offerTitle
         });
         await notif.save();
         res.json({ message: 'Notification received' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+const handleApplicationDecision = async (req, res) => {
+    try {
+        const { notificationId, decision, interviewDate, interviewTime, meetingLink, rejectionReason } = req.body;
+        const recruiterId = req.user._id;
+
+        const notification = await Notification.findById(notificationId);
+        if (!notification) return res.status(404).json({ error: 'Notification not found' });
+        if (notification.decisionMade) return res.status(400).json({ error: 'Decision already made for this application' });
+
+        const recruiter = await Recruiter.findById(recruiterId);
+
+        // Call Candidat Service to update application status
+        try {
+            await axios.post('http://127.0.0.1:5000/candidat/internal/application/update', {
+                candidateId: notification.senderId,
+                offerId: notification.offerId,
+                offerTitle: notification.offerTitle,
+                status: decision === 'ACCEPT' ? 'ACCEPTED' : 'REJECTED',
+                interviewDate,
+                interviewTime,
+                meetingLink,
+                rejectionReason,
+                recruiterName: recruiter.entreprise,
+                recruiterEmail: recruiter.email
+            });
+        } catch (e) {
+            console.error('Failed to update candidate application:', e.message);
+            return res.status(500).json({ error: 'Failed to sync decision with candidate service' });
+        }
+
+        // Mark decision as made
+        notification.decisionMade = true;
+        notification.read = true;
+        await notification.save();
+
+        res.json({ message: `Application ${decision === 'ACCEPT' ? 'accepted' : 'rejected'} successfully` });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -419,5 +462,6 @@ module.exports = {
     contactCandidate,
     receiveNotification,
     getNotifications,
-    markNotificationRead
+    markNotificationRead,
+    handleApplicationDecision
 };

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const { registerRecruiter, authRecruiter, getRecruiterProfile, updateRecruiterProfile, googleSignInForRecruiter, githubSignInForRecruiter, checkRecruiterEmailExists, listEmails, contactCandidate, receiveNotification, getNotifications, markNotificationRead } = require('../controllers/recruiter.controller');
+const { registerRecruiter, authRecruiter, getRecruiterProfile, updateRecruiterProfile, googleSignInForRecruiter, githubSignInForRecruiter, checkRecruiterEmailExists, listEmails, contactCandidate, receiveNotification, getNotifications, markNotificationRead, handleApplicationDecision } = require('../controllers/recruiter.controller');
 const { protect } = require('../middleware/auth-middleware');
 
 // Multer Storage Configuration
@@ -42,5 +42,6 @@ router.post('/contact', protect, contactCandidate);
 router.post('/internal/notify', receiveNotification);
 router.get('/notifications', protect, getNotifications);
 router.put('/notifications/:id/read', protect, markNotificationRead);
+router.post('/notifications/decision', protect, handleApplicationDecision);
 
 module.exports = router;

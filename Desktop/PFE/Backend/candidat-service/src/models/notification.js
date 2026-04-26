@@ -6,7 +6,9 @@ const notificationSchema = mongoose.Schema({
     senderName: { type: String, default: 'Un recruteur' },
     senderEmail: { type: String },
     message: { type: String, required: true },
-    type: { type: String, enum: ['CONTACT', 'SYSTEM'], default: 'CONTACT' },
+    offerId: { type: String },
+    offerTitle: { type: String },
+    type: { type: String, enum: ['CONTACT', 'SYSTEM', 'INTERVIEW_SCHEDULED', 'APPLICATION_REJECTED'], default: 'CONTACT' },
     read: { type: Boolean, default: false }
 }, { timestamps: true });
 

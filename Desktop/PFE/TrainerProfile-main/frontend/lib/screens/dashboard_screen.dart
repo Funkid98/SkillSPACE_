@@ -1063,8 +1063,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           sideTitles: SideTitles(
                             showTitles: true,
                             getTitlesWidget: (value, meta) {
-                              if (value.toInt() >= growth.length)
+                              if (value.toInt() >= growth.length) {
                                 return const SizedBox.shrink();
+                              }
                               return Padding(
                                 padding: const EdgeInsets.only(top: 8.0),
                                 child: Text(growth[value.toInt()]['month'],

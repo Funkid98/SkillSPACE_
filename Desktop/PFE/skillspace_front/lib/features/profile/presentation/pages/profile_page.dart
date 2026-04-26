@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/utils/string_extension.dart';
 import '../../../../core/utils/app_toast.dart';
@@ -11,6 +13,8 @@ import '../../../../core/app_colors.dart';
 import '../../../../shared/widgets/animated_reveal.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/utils/responsive.dart';
+import '../../data/models/skill_level.dart';
+import '../widgets/quiz_modal.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -251,7 +255,8 @@ class _CompletionCard extends StatelessWidget {
       builder: (context, state) {
         final data = state is ProfileLoaded ? state.data : null;
         final isSaved = state is ProfileLoaded ? state.isSaved : false;
-        final isCompact = Responsive.isMobile(context) || Responsive.isTablet(context);
+        final isCompact =
+            Responsive.isMobile(context) || Responsive.isTablet(context);
         final percent = data?.completionPercent ?? 0;
 
         return Container(
@@ -371,7 +376,8 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
         // If the text starts with the dial code, extract only the national part
         // to avoid duplication in the InternationalPhoneNumberInput widget
         if (number.dialCode != null && text.contains(number.dialCode!)) {
-          final national = text.replaceAll(number.dialCode!, '').replaceAll('+', '').trim();
+          final national =
+              text.replaceAll(number.dialCode!, '').replaceAll('+', '').trim();
           _phone.text = national;
         }
       });
@@ -423,10 +429,11 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
               _lastName.text = state.data.lastName;
             }
             if (_email.text != state.data.email) _email.text = state.data.email;
-            
+
             // Update phone only if it differs from current to avoid conflict with InternationalPhoneNumberInput
             final currentPhone = _number.phoneNumber ?? _phone.text;
-            if (currentPhone != state.data.phone && state.data.phone.isNotEmpty) {
+            if (currentPhone != state.data.phone &&
+                state.data.phone.isNotEmpty) {
               _initPhoneNumber(state.data.phone);
             }
 
@@ -441,7 +448,10 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
         },
         child: Container(
           width: double.infinity,
-          padding: EdgeInsets.all((Responsive.isMobile(context) || Responsive.isTablet(context)) ? 20 : 28),
+          padding: EdgeInsets.all(
+              (Responsive.isMobile(context) || Responsive.isTablet(context))
+                  ? 20
+                  : 28),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
@@ -760,11 +770,13 @@ class _CvCard extends StatelessWidget {
         }
         if (cvState is CvExtractionSuccess) {
           context.read<ProfileCubit>().updateFromExtractedData(cvState.data);
+          context.read<ProfileCubit>().saveProfile(); // auto-save so Beginner level is persisted
           AppToast.showSuccess(context, 'CV analysé avec succès !');
         }
       },
       builder: (context, cvState) {
-        final isCompact = Responsive.isMobile(context) || Responsive.isTablet(context);
+        final isCompact =
+            Responsive.isMobile(context) || Responsive.isTablet(context);
         return Container(
           width: double.infinity,
           padding: EdgeInsets.all(isCompact ? 20 : 28),
@@ -1039,7 +1051,8 @@ class _SkillsCardState extends State<_SkillsCard> {
         // Sort skills by percentage descending
         final skills = List<ProfileSkill>.from(rawSkills)
           ..sort((a, b) => b.percent.compareTo(a.percent));
-        final isCompact = Responsive.isMobile(context) || Responsive.isTablet(context);
+        final isCompact =
+            Responsive.isMobile(context) || Responsive.isTablet(context);
         return Container(
           width: double.infinity,
           padding: EdgeInsets.all(isCompact ? 20 : 28),
@@ -1066,26 +1079,6 @@ class _SkillsCardState extends State<_SkillsCard> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      minimumSize: Size.zero,
-                    ),
-                    onPressed: () {
-                      setState(() => _editing = !_editing);
-                      if (!_editing) {
-                        // Show toast when switching from editing to viewing
-                        AppToast.showSuccess(context, 'Compétences mises à jour');
-                      }
-                    },
-                    child: Text(
-                      _editing ? 'Terminé' : l10n.edit,
-                      style: TextStyle(
-                          color: _editing ? AppColors.navy : AppColors.orange,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 20),
@@ -1100,14 +1093,17 @@ class _SkillsCardState extends State<_SkillsCard> {
                 )
               else ...[
                 // Show 5 skills if not expanded and not editing
-                ...( (!_showAll && !_editing && skills.length > 5) 
-                    ? skills.take(5).toList() 
-                    : skills).asMap().entries.map((entry) => _SkillRow(
-                      skill: entry.value,
-                      index: entry.key,
-                      editing: _editing,
-                    )),
-                
+                ...((!_showAll && !_editing && skills.length > 5)
+                        ? skills.take(5).toList()
+                        : skills)
+                    .asMap()
+                    .entries
+                    .map((entry) => _SkillRow(
+                          skill: entry.value,
+                          index: entry.key,
+                          editing: _editing,
+                        )),
+
                 // Toggle button if more than 5 skills
                 if (skills.length > 5 && !_editing)
                   Padding(
@@ -1116,12 +1112,15 @@ class _SkillsCardState extends State<_SkillsCard> {
                       child: InkWell(
                         onTap: () => setState(() => _showAll = !_showAll),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 8, horizontal: 16),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                _showAll ? 'Voir moins' : 'Voir les ${skills.length - 5} autres',
+                                _showAll
+                                    ? 'Voir moins'
+                                    : 'Voir les ${skills.length - 5} autres',
                                 style: const TextStyle(
                                   color: AppColors.textGray,
                                   fontSize: 13,
@@ -1130,7 +1129,9 @@ class _SkillsCardState extends State<_SkillsCard> {
                               ),
                               const SizedBox(width: 4),
                               Icon(
-                                _showAll ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                _showAll
+                                    ? Icons.keyboard_arrow_up
+                                    : Icons.keyboard_arrow_down,
                                 size: 18,
                                 color: AppColors.textGray,
                               ),
@@ -1156,10 +1157,43 @@ class _SkillRow extends StatelessWidget {
   const _SkillRow(
       {required this.skill, required this.index, required this.editing});
 
+  void _showQuizModal(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) =>
+          QuizModal(skill: skill, skillIndex: index, parentContext: context),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final level = skill.level;
+
+    Widget buildLevelChip(String label, SkillLevel chipLevel) {
+      final isSelected = level == chipLevel;
+      return Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.navy : AppColors.bgAlt,
+          borderRadius: BorderRadius.circular(12),
+          border:
+              Border.all(color: isSelected ? AppColors.navy : AppColors.border),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? Colors.white : AppColors.textGray,
+          ),
+        ),
+      );
+    }
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1170,57 +1204,68 @@ class _SkillRow extends StatelessWidget {
                 child: Text(
                   skill.name.capitalize(),
                   style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
                     color: AppColors.textDark,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                '${skill.percent}%',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.navy,
+              if (!editing)
+                TextButton.icon(
+                  onPressed: () => _showQuizModal(context),
+                  icon: const Icon(Icons.psychology,
+                      size: 18, color: AppColors.orange),
+                  label: const Text(
+                    'Check my level',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.orange),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    backgroundColor: AppColors.orange.withOpacity(0.1),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
-              ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 10),
           if (editing)
-            SliderTheme(
-              data: SliderThemeData(
-                activeTrackColor: AppColors.navy,
-                inactiveTrackColor: AppColors.border,
-                thumbColor: AppColors.orange,
-                overlayColor: AppColors.orange.withValues(alpha: 0.15),
-                trackHeight: 6,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-              ),
-              child: Slider(
-                value: skill.percent.toDouble(),
-                min: 0,
-                max: 100,
-                divisions: 20,
-                onChanged: (val) {
-                  context
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: () => context
                       .read<ProfileCubit>()
-                      .updateSkillPercent(index, val.round());
-                },
-              ),
+                      .updateSkillPercent(skill.name, 33),
+                  child: buildLevelChip('Beginner', SkillLevel.beginner),
+                ),
+                GestureDetector(
+                  onTap: () => context
+                      .read<ProfileCubit>()
+                      .updateSkillPercent(skill.name, 66),
+                  child:
+                      buildLevelChip('Intermediate', SkillLevel.intermediate),
+                ),
+                GestureDetector(
+                  onTap: () => context
+                      .read<ProfileCubit>()
+                      .updateSkillPercent(skill.name, 100),
+                  child: buildLevelChip('Advanced', SkillLevel.advanced),
+                ),
+              ],
             )
           else
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: LinearProgressIndicator(
-                value: skill.percent / 100,
-                minHeight: 6,
-                backgroundColor: AppColors.border,
-                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.navy),
-              ),
+            Row(
+              children: [
+                buildLevelChip('Beginner', SkillLevel.beginner),
+                buildLevelChip('Intermediate', SkillLevel.intermediate),
+                buildLevelChip('Advanced', SkillLevel.advanced),
+              ],
             ),
         ],
       ),

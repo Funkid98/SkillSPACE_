@@ -121,19 +121,19 @@ class DashboardData {
       if (offersRes.statusCode == 200) {
         final List offersData = jsonDecode(offersRes.body);
         
-        final highMatchOffers = offersData.where((o) => (o['compatibilityPercent'] ?? 0) >= 80).toList();
+        final highMatchOffers = offersData.where((o) => ((o['compatibilityPercent'] as num?)?.round() ?? 0) >= 80).toList();
         offresMatcheesReal = highMatchOffers.length;
         
         hasAnalysing = offersData.any((o) => o['status'] == 'ANALYSING');
 
         // Sort by match score descending to show best offers first
-        offersData.sort((a, b) => (b['compatibilityPercent'] ?? 0).compareTo(a['compatibilityPercent'] ?? 0));
+        offersData.sort((a, b) => ((b['compatibilityPercent'] as num?)?.round() ?? 0).compareTo((a['compatibilityPercent'] as num?)?.round() ?? 0));
 
         realOffers = offersData.take(4).map((o) => RecentOffer(
           title: o['title'] ?? 'Sans titre',
           company: o['company'] ?? 'Non spécifié',
           city: o['location'] ?? 'Remote',
-          compatibilityPercent: o['compatibilityPercent'] ?? 0,
+          compatibilityPercent: (o['compatibilityPercent'] as num?)?.round() ?? 0,
           status: o['status'] ?? 'COMPLETED',
         )).toList();
       }

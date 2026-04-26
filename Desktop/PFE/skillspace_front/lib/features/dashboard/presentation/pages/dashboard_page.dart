@@ -27,7 +27,8 @@ class DashboardPage extends StatelessWidget {
         } else {
           data = (state as DashboardLoaded).data;
         }
-        return _DashboardContent(data: data, isSaving: state is DashboardSaving);
+        return _DashboardContent(
+            data: data, isSaving: state is DashboardSaving);
       },
     );
   }
@@ -92,8 +93,8 @@ class _DashboardContent extends StatelessWidget {
                       const SizedBox(height: 20),
                       AnimatedReveal(
                           delay: const Duration(milliseconds: 800),
-                          child:
-                              _SkillsCard(skills: data.skills, isSaving: isSaving)),
+                          child: _SkillsCard(
+                              skills: data.skills, isSaving: isSaving)),
                       const SizedBox(height: 20),
                       AnimatedReveal(
                           delay: const Duration(milliseconds: 900),
@@ -173,13 +174,6 @@ class _DashboardContent extends StatelessWidget {
         delay: 400,
       ),
       _StatItem(
-        icon: Icons.track_changes_rounded,
-        label: l10n.avgMatchScore,
-        value: '${data.stats.scoreMoyenMatch}%',
-        subtitle: data.stats.scoreSubtitle,
-        delay: 500,
-      ),
-      _StatItem(
         icon: Icons.trending_up_rounded,
         label: l10n.simulatedInterviews,
         value: data.stats.entretiensSimules.toString(),
@@ -244,10 +238,12 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = Responsive.isMobile(context) || Responsive.isTablet(context);
+    final isCompact =
+        Responsive.isMobile(context) || Responsive.isTablet(context);
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: isCompact ? 16 : 20, vertical: isCompact ? 16 : 24),
+      padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 16 : 20, vertical: isCompact ? 16 : 24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -320,7 +316,8 @@ class _RecentOffersCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final isCompact = Responsive.isMobile(context) || Responsive.isTablet(context);
+    final isCompact =
+        Responsive.isMobile(context) || Responsive.isTablet(context);
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(isCompact ? 20 : 28),
@@ -364,13 +361,13 @@ class _RecentOffersCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           if (offers.isEmpty)
-             const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(
-                    child: Text('Aucune offre récente',
-                        style: TextStyle(color: AppColors.textGray, fontSize: 14)),
-                  ),
-                )
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text('Aucune offre récente',
+                    style: TextStyle(color: AppColors.textGray, fontSize: 14)),
+              ),
+            )
           else
             ...offers.map((o) => _OfferRow(offer: o)),
         ],
@@ -490,12 +487,13 @@ class _SkillsCardState extends State<_SkillsCard> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final isCompact = Responsive.isMobile(context) || Responsive.isTablet(context);
-    
+    final isCompact =
+        Responsive.isMobile(context) || Responsive.isTablet(context);
+
     // Sort skills by percentage descending
     final sortedSkills = List<UserSkill>.from(widget.skills)
       ..sort((a, b) => b.percent.compareTo(a.percent));
-    
+
     final displaySkills = sortedSkills.take(3).toList();
     final hasMore = sortedSkills.length > 3;
 
@@ -545,10 +543,12 @@ class _SkillsCardState extends State<_SkillsCard> {
               child: Center(
                 child: Column(
                   children: [
-                    Icon(Icons.auto_awesome, size: 40, color: Colors.grey.shade300),
+                    Icon(Icons.auto_awesome,
+                        size: 40, color: Colors.grey.shade300),
                     const SizedBox(height: 8),
                     const Text('Aucune compétence ajoutée',
-                        style: TextStyle(color: AppColors.textGray, fontSize: 14)),
+                        style:
+                            TextStyle(color: AppColors.textGray, fontSize: 14)),
                   ],
                 ),
               ),
@@ -580,8 +580,8 @@ class _SkillsCardState extends State<_SkillsCard> {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(Icons.keyboard_arrow_down_rounded, 
-                        size: 18, color: AppColors.textGray),
+                      const Icon(Icons.keyboard_arrow_down_rounded,
+                          size: 18, color: AppColors.textGray),
                     ],
                   ),
                 ),
@@ -654,11 +654,15 @@ class _SkillsModalContent extends StatelessWidget {
                 ),
                 child: SingleChildScrollView(
                   child: Column(
-                    children: data.skills.asMap().entries.map((entry) => _SkillRow(
-                          skill: entry.value,
-                          index: entry.key,
-                          editing: true,
-                        )).toList(),
+                    children: data.skills
+                        .asMap()
+                        .entries
+                        .map((entry) => _SkillRow(
+                              skill: entry.value,
+                              index: entry.key,
+                              editing: true,
+                            ))
+                        .toList(),
                   ),
                 ),
               ),
@@ -705,7 +709,8 @@ class _SkillRow extends StatelessWidget {
   final UserSkill skill;
   final int index;
   final bool editing;
-  const _SkillRow({required this.skill, required this.index, required this.editing});
+  const _SkillRow(
+      {required this.skill, required this.index, required this.editing});
 
   @override
   Widget build(BuildContext context) {
@@ -756,7 +761,9 @@ class _SkillRow extends StatelessWidget {
                 max: 100,
                 divisions: 20,
                 onChanged: (val) {
-                  context.read<DashboardCubit>().updateSkillPercent(index, val.round());
+                  context
+                      .read<DashboardCubit>()
+                      .updateSkillPercent(index, val.round());
                 },
               ),
             )
@@ -784,7 +791,8 @@ class _UpcomingInterviewsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final isCompact = Responsive.isMobile(context) || Responsive.isTablet(context);
+    final isCompact =
+        Responsive.isMobile(context) || Responsive.isTablet(context);
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(isCompact ? 20 : 28),
@@ -990,7 +998,9 @@ class _ProfileVisibilityCard extends StatelessWidget {
                   Row(
                     children: [
                       Icon(
-                        isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                        isPositive
+                            ? Icons.trending_up_rounded
+                            : Icons.trending_down_rounded,
                         size: 16,
                         color: isPositive ? AppColors.success : AppColors.error,
                       ),
@@ -1000,7 +1010,8 @@ class _ProfileVisibilityCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: isPositive ? AppColors.success : AppColors.error,
+                          color:
+                              isPositive ? AppColors.success : AppColors.error,
                         ),
                       ),
                     ],

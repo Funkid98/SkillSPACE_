@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { register, login, getProfile, updateProfile, getRecentCandidatesBySector, getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer, applyToOffer, receiveNotification, getNotifications, markNotificationRead } = require('../controllers/candidat-controller')
+const { register, login, getProfile, updateProfile, getRecentCandidatesBySector, getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer, applyToOffer, receiveNotification, getNotifications, markNotificationRead, internalUpdateApplication } = require('../controllers/candidat-controller')
 const auth = require('../middleware/auth-middleware')
 
 
@@ -19,7 +19,8 @@ router.post('/trigger-match/offer/:id', reMatchOffer)
 
 // Application & Notifications
 router.post('/apply', auth, applyToOffer)
-router.post('/internal/notify', receiveNotification) // Called by recruter-service (no auth middleware, or internal basic auth)
+router.post('/internal/application/update', internalUpdateApplication)
+router.post('/internal/notify', receiveNotification) // Called by recruter-service
 router.get('/notifications', auth, getNotifications)
 router.put('/notifications/:id/read', auth, markNotificationRead)
 router.get('/internal/:id', async (req, res) => {

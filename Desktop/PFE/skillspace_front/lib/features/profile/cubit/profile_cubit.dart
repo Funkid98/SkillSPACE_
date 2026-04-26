@@ -76,7 +76,8 @@ class ProfileCubit extends Cubit<ProfileState> {
   ProfileData _calculateCompletion(ProfileData data) {
     final isRecruiter = data.role == 'recruteur' || data.role == 'recruiter';
     int score = 0;
-    int total = isRecruiter ? 6 : 8; // (email, phone, location, bio, skills, cv) vs (+ prenom, nom)
+    // We use 10 fields for Candidat so each is exactly 10%
+    int total = isRecruiter ? 8 : 10; 
 
     if (!isRecruiter) {
       if (data.firstName.isNotEmpty) score++;
@@ -89,8 +90,18 @@ class ProfileCubit extends Cubit<ProfileState> {
     if (data.bio.isNotEmpty) score++;
     if (data.skills.isNotEmpty) score++;
     if (data.hasCv) score++;
+    
+    // Adding work info for perfect 10s
+    if (data.poste != null && data.poste!.isNotEmpty) score++;
+    if (data.entreprise != null && data.entreprise!.isNotEmpty) score++;
 
-    int percent = ((score / total) * 100).toInt();
+    int rawPercent = ((score / total) * 100).toInt();
+    // Round to nearest 10 (e.g., 12.5 -> 10, 25 -> 20, 37.5 -> 40, etc.)
+    int percent = (rawPercent / 10).round() * 10;
+    
+    // Ensure 100 is always 100 when finished
+    if (score == total) percent = 100;
+    
     return data.copyWith(completionPercent: percent);
   }
 
@@ -101,10 +112,11 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
   }
 
-  void updateSkillPercent(int index, int percent) {
+  void updateSkillPercent(String skillName, int percent) {
     if (state is ProfileLoaded) {
       final data = (state as ProfileLoaded).data;
-      if (index >= 0 && index < data.skills.length) {
+      final index = data.skills.indexWhere((s) => s.name == skillName);
+      if (index >= 0) {
         final updatedSkills = List<ProfileSkill>.from(data.skills);
         final skill = updatedSkills[index];
         updatedSkills[index] = ProfileSkill(
@@ -134,7 +146,7 @@ class ProfileCubit extends Cubit<ProfileState> {
           if (s is String) {
             return ProfileSkill(name: s);
           } else if (s is Map) {
-            return ProfileSkill(name: s['name'] ?? '', percent: (s['percent'] ?? 50).toInt());
+            return ProfileSkill(name: s['name'] ?? '', percent: (s['percent'] ?? 33).toInt());
           }
           return const ProfileSkill(name: '');
         }).toList() ?? current.skills,

@@ -89,7 +89,7 @@ class CandidateMatch {
       location: json['localisation'] ?? json['location'] ?? 'Non spécifiée',
       experience: json['experience'] ?? 'Jeune diplômé',
       skills: List<String>.from(json['competences'] ?? json['skills'] ?? []),
-      matchScore: json['matchScore'] ?? 90,
+      matchScore: (json['matchScore'] as num?)?.round() ?? 90,
       matchingAnalysis: json['matchingAnalysis'] ?? '',
       recommendation: json['recommendation'] ?? '',
       status: json['status'] ?? 'Nouveau',

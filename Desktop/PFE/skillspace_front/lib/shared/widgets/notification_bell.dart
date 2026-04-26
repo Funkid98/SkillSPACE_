@@ -57,6 +57,22 @@ class _NotificationBellState extends State<NotificationBell> {
     _loading = false;
   }
 
+  Future<void> _handleDecision(String id, String decision,
+      {String? date, String? time, String? link, String? reason}) async {
+    try {
+      final client = ApiClient();
+      await client.post('/recruiter/notifications/decision', {
+        'notificationId': id,
+        'decision': decision,
+        'interviewDate': date,
+        'interviewTime': time,
+        'meetingLink': link,
+        'rejectionReason': reason,
+      });
+      _fetchNotifications();
+    } catch (_) {}
+  }
+
   Future<void> _markAsRead(String id) async {
     try {
       final client = ApiClient();
@@ -66,6 +82,148 @@ class _NotificationBellState extends State<NotificationBell> {
       await client.put(endpoint, {});
       _fetchNotifications();
     } catch (_) {}
+  }
+
+  void _showAcceptDialog(String id) {
+    final dateController = TextEditingController();
+    final timeController = TextEditingController();
+    final linkController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.event_available_rounded,
+                  color: AppColors.success, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Text('Planifier un entretien',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: dateController,
+              decoration: InputDecoration(
+                labelText: 'Date (ex: 30 Avril)',
+                prefixIcon: const Icon(Icons.calendar_today_rounded, size: 20),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: timeController,
+              decoration: InputDecoration(
+                labelText: 'Heure (ex: 14:00)',
+                prefixIcon: const Icon(Icons.access_time_rounded, size: 20),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: linkController,
+              decoration: InputDecoration(
+                labelText: 'Lien Google Meet',
+                prefixIcon: const Icon(Icons.videocam_rounded, size: 20),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler',
+                  style: TextStyle(color: AppColors.textGray))),
+          ElevatedButton(
+            onPressed: () {
+              _handleDecision(id, 'ACCEPT',
+                  date: dateController.text,
+                  time: timeController.text,
+                  link: linkController.text);
+              Navigator.pop(ctx);
+              Navigator.pop(context); // Close notifications menu
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.navy,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Confirmer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRejectDialog(String id) {
+    final reasonController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close_rounded,
+                  color: AppColors.error, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Text('Refuser la candidature',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        content: TextField(
+          controller: reasonController,
+          maxLines: 3,
+          decoration: InputDecoration(
+            labelText: 'Motif du refus',
+            hintText: 'Expliquez brièvement pourquoi...',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler',
+                  style: TextStyle(color: AppColors.textGray))),
+          ElevatedButton(
+            onPressed: () {
+              _handleDecision(id, 'REJECT', reason: reasonController.text);
+              Navigator.pop(ctx);
+              Navigator.pop(context); // Close notifications menu
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Refuser'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showNotificationMenu() {
@@ -154,6 +312,8 @@ class _NotificationBellState extends State<NotificationBell> {
                         itemBuilder: (context, index) {
                           final n = _notifications[index];
                           final isRead = n['read'] ?? false;
+                          final type = n['type'] ?? '';
+                          final isDecisionMade = n['decisionMade'] ?? false;
 
                           return InkWell(
                             onTap: () async {
@@ -164,90 +324,156 @@ class _NotificationBellState extends State<NotificationBell> {
                             },
                             borderRadius: BorderRadius.circular(12),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 12, horizontal: 16),
-                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.all(16),
+                              margin: const EdgeInsets.only(bottom: 12),
                               decoration: BoxDecoration(
                                 color: isRead
-                                    ? Colors.transparent
-                                    : AppColors.orange.withValues(alpha: 0.05),
-                                borderRadius: BorderRadius.circular(12),
+                                    ? Colors.white.withValues(alpha: 0.5)
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                   color: isRead
                                       ? AppColors.border
                                       : AppColors.orange.withValues(alpha: 0.3),
+                                  width: isRead ? 1 : 2,
                                 ),
+                                boxShadow: [
+                                  if (!isRead)
+                                    BoxShadow(
+                                      color:
+                                          AppColors.orange.withValues(alpha: 0.1),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                ],
                               ),
-                              child: Row(
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: const BoxDecoration(
-                                      color: AppColors.bg,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      widget.isRecruiter
-                                          ? Icons.description_rounded
-                                          : Icons.business_rounded,
-                                      color: AppColors.navy,
-                                      size: 18,
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: type == 'APPLICATION'
+                                              ? AppColors.navy
+                                                  .withValues(alpha: 0.1)
+                                              : type == 'INTERVIEW_SCHEDULED'
+                                                  ? AppColors.success
+                                                      .withValues(alpha: 0.1)
+                                                  : AppColors.bg,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          type == 'APPLICATION'
+                                              ? Icons.description_rounded
+                                              : type == 'INTERVIEW_SCHEDULED'
+                                                  ? Icons.event_available_rounded
+                                                  : type ==
+                                                          'APPLICATION_REJECTED'
+                                                      ? Icons.cancel_outlined
+                                                      : Icons.notifications,
+                                          color: type == 'APPLICATION'
+                                              ? AppColors.navy
+                                              : type == 'INTERVIEW_SCHEDULED'
+                                                  ? AppColors.success
+                                                  : type ==
+                                                          'APPLICATION_REJECTED'
+                                                      ? AppColors.error
+                                                      : AppColors.textGray,
+                                          size: 18,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              n['senderName'] ?? 'Système',
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 14,
+                                                  color: AppColors.textDark),
+                                            ),
+                                            if (n['senderEmail'] != null)
+                                              Text(
+                                                n['senderEmail'],
+                                                style: const TextStyle(
+                                                    fontSize: 11,
+                                                    color: AppColors.textGray),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                      if (!isRead)
+                                        Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: const BoxDecoration(
+                                              color: AppColors.orange,
+                                              shape: BoxShape.circle),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    n['message'] ?? '',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: isRead
+                                          ? AppColors.textGray
+                                          : AppColors.textDark,
+                                      fontWeight: isRead
+                                          ? FontWeight.normal
+                                          : FontWeight.w500,
+                                      height: 1.5,
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                  if (type == 'APPLICATION' &&
+                                      widget.isRecruiter &&
+                                      !isDecisionMade) ...[
+                                    const SizedBox(height: 16),
+                                    Row(
                                       children: [
-                                        Text(
-                                          n['senderName'] ?? 'Utilisateur',
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.w900,
-                                              fontSize: 14,
-                                              color: AppColors.textDark),
-                                        ),
-                                        if (n['senderEmail'] != null) ...[
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            n['senderEmail'],
-                                            style: const TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w500,
-                                                color: AppColors.textGray),
+                                        Expanded(
+                                          child: OutlinedButton(
+                                            onPressed: () =>
+                                                _showRejectDialog(n['_id']),
+                                            style: OutlinedButton.styleFrom(
+                                              side: const BorderSide(
+                                                  color: AppColors.error),
+                                              foregroundColor: AppColors.error,
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          12)),
+                                            ),
+                                            child: const Text('Refuser'),
                                           ),
-                                        ],
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          n['message'] ?? '',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: isRead
-                                                ? AppColors.textGray
-                                                : AppColors.textDark,
-                                            fontWeight: isRead
-                                                ? FontWeight.normal
-                                                : FontWeight.w600,
-                                            height: 1.4,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: ElevatedButton(
+                                            onPressed: () =>
+                                                _showAcceptDialog(n['_id']),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: AppColors.success,
+                                              foregroundColor: Colors.white,
+                                              elevation: 0,
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          12)),
+                                            ),
+                                            child: const Text('Accepter'),
                                           ),
                                         ),
                                       ],
                                     ),
-                                  ),
-                                  if (!isRead)
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                          left: 8.0, top: 4),
-                                      child: Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: const BoxDecoration(
-                                          color: AppColors.orange,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                    ),
+                                  ],
                                 ],
                               ),
                             ),

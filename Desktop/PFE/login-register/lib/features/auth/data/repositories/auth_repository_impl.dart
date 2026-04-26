@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -133,12 +134,20 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<UserModel> signInWithGoogle({String? role}) async {
     try {
-      // Force library initialization on web by attempting a silent sign-in first
-      try {
-        await _googleSignIn.signInSilently();
-      } catch (_) {}
+      GoogleSignInAccount? googleUser;
 
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (kIsWeb) {
+        // On web, signIn() popup is blocked by FedCM. Use signInSilently first
+        // (triggers One Tap / FedCM), then fall back to signIn if no session.
+        googleUser = await _googleSignIn.signInSilently();
+        googleUser ??= await _googleSignIn.signIn();
+      } else {
+        // On mobile, use the normal popup flow
+        try {
+          await _googleSignIn.signInSilently();
+        } catch (_) {}
+        googleUser = await _googleSignIn.signIn();
+      }
 
       if (googleUser == null) {
         throw Exception('Connexion Google annulée');
@@ -174,8 +183,9 @@ class AuthRepositoryImpl implements AuthRepository {
             data['message'] ?? 'Erreur lors de la connexion Google');
       }
     } catch (e) {
-      if (e.toString().contains('popup_closed')) {
-        // Do nothing or rethrow something that the Bloc can handle silently
+      if (e.toString().contains('popup_closed') ||
+          e.toString().contains('Operation cancelled') ||
+          e.toString().contains('unknown_reason')) {
         throw Exception('Operation cancelled');
       }
       throw Exception('Google Sign-In échoué: $e');

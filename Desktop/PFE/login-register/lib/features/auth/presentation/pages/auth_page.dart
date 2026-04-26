@@ -105,11 +105,14 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
                 String welcomeMsg;
                 String displayName;
                 final company = user?['entreprise']?.toString() ?? '';
-                final userRole = (user?['role']?.toString() ?? '').toLowerCase();
+                final userRole =
+                    (user?['role']?.toString() ?? '').toLowerCase();
 
-                if (company.isNotEmpty || userRole == 'recruiter' || userRole == 'recruteur') {
-                  displayName = company.isNotEmpty 
-                      ? company 
+                if (company.isNotEmpty ||
+                    userRole == 'recruiter' ||
+                    userRole == 'recruteur') {
+                  displayName = company.isNotEmpty
+                      ? company
                       : user?['email']?.toString() ?? 'Entreprise';
                   welcomeMsg = 'Bienvenue $displayName !';
                 } else {
@@ -550,7 +553,7 @@ class _LoginForm extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Bon retour ! 👋',
+          const Text('Bon retour ! ',
               style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
@@ -598,9 +601,8 @@ class _LoginForm extends StatelessWidget {
                 onPressed: () => context.read<AuthCubit>().togglePassword(),
               ),
             ),
-            validator: ValidationBuilder()
-                .required('Mot de passe requis')
-                .build(),
+            validator:
+                ValidationBuilder().required('Mot de passe requis').build(),
           ),
           const SizedBox(height: 20),
           Row(
@@ -691,169 +693,168 @@ class _RegisterForm extends StatelessWidget {
       key: formKey,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Créer un compte ✨',
-            style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.textDark,
-                letterSpacing: -0.5)),
-        const SizedBox(height: 4),
-        const Text('Commencez votre parcours SkillSpace',
-            style: TextStyle(fontSize: 13.5, color: AppTheme.textGrey)),
-        const SizedBox(height: 26),
-        if (state.error != null) ...[
-          _ErrorBanner(state.error!),
-          const SizedBox(height: 10),
-        ],
-        if (state.role != UserRole.recruteur)
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const _Label('Prénom'),
-                      TextFormField(
-                        controller: firstCtrl,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: const InputDecoration(hintText: 'Jean'),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                              RegExp(r'[a-zA-ZÀ-ÿ\s-]')),
-                        ],
-                        validator: ValidationBuilder()
-                            .required('Prénom requis')
-                            .minLength(4, 'Minimum 4 caractères')
-                            .build(),
-                      ),
-                    ]),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const _Label('Nom'),
-                      TextFormField(
-                        controller: lastCtrl,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: const InputDecoration(hintText: 'Dupont'),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                              RegExp(r'[a-zA-ZÀ-ÿ\s-]')),
-                        ],
-                        validator: ValidationBuilder()
-                            .required('Nom requis')
-                            .minLength(4, 'Minimum 4 caractères')
-                            .build(),
-                      ),
-                    ]),
-              ),
-            ],
-          ),
-        if (state.role == UserRole.recruteur) ...[
-          const SizedBox(height: 16),
-          const _Label('Nom de l\'entreprise'),
-          TextFormField(
-            controller: entrepriseCtrl,
-            textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(
-              hintText: 'SkillSpace Inc.',
-              prefixIcon: Icon(Icons.business_rounded,
-                  size: 18, color: AppTheme.textGrey),
-            ),
-            validator: state.role == UserRole.recruteur
-                ? ValidationBuilder()
-                    .required('Nom de l\'entreprise requis')
-                    .build()
-                : null,
-          ),
-        ],
-        const SizedBox(height: 16),
-        const _Label('Email'),
-        TextFormField(
-          controller: emailCtrl,
-          keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(
-            hintText: 'vous@exemple.com',
-            prefixIcon: Icon(Icons.mail_outline_rounded,
-                size: 18, color: AppTheme.textGrey),
-          ),
-          validator: ValidationBuilder()
-              .required('Email requis')
-              .email('Email invalide')
-              .build(),
-        ),
-        const SizedBox(height: 16),
-        const _Label('Mot de passe'),
-        TextFormField(
-          controller: passCtrl,
-          obscureText: !state.passwordVisible,
-          decoration: InputDecoration(
-            hintText: '••••••••',
-            prefixIcon: const Icon(Icons.lock_outline_rounded,
-                size: 18, color: AppTheme.textGrey),
-            suffixIcon: IconButton(
-              icon: Icon(
-                state.passwordVisible
-                    ? Icons.visibility_outlined
-                    : Icons.visibility_off_outlined,
-                color: AppTheme.textGrey,
-                size: 18,
-              ),
-              onPressed: () => context.read<AuthCubit>().togglePassword(),
-            ),
-          ),
-          validator: ValidationBuilder()
-              .required('Mot de passe requis')
-              .minLength(6, 'Minimum 6 caractères')
-              .build(),
-        ),
-        const SizedBox(height: 20),
-        _RoleSelector(selected: state.role, sectionLabel: 'Je suis un(e)'),
-        const SizedBox(height: 20),
-        _SubmitButton(
-          label: 'Créer mon compte',
-          isLoading: state.isLoading,
-          onTap: () {
-            if (formKey.currentState?.validate() ?? false) {
-              context.read<AuthCubit>().register(
-                    firstCtrl.text,
-                    lastCtrl.text,
-                    emailCtrl.text,
-                    passCtrl.text,
-                    entreprise: entrepriseCtrl.text,
-                  );
-            }
-          },
-        ),
-        const SizedBox(height: 24),
-
-        Center(
-          child: RichText(
-            textAlign: TextAlign.center,
-            text: const TextSpan(
-              style: TextStyle(fontSize: 11.5, color: AppTheme.textGrey),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Créer un compte ',
+              style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textDark,
+                  letterSpacing: -0.5)),
+          const SizedBox(height: 4),
+          const Text('Commencez votre parcours SkillSpace',
+              style: TextStyle(fontSize: 13.5, color: AppTheme.textGrey)),
+          const SizedBox(height: 26),
+          if (state.error != null) ...[
+            _ErrorBanner(state.error!),
+            const SizedBox(height: 10),
+          ],
+          if (state.role != UserRole.recruteur)
+            Row(
               children: [
-                TextSpan(text: 'En vous inscrivant, vous acceptez nos '),
-                TextSpan(
-                    text: 'CGU',
-                    style: TextStyle(
-                        color: AppTheme.accent, fontWeight: FontWeight.w600)),
-                TextSpan(text: ' et '),
-                TextSpan(
-                    text: 'politique de confidentialité',
-                    style: TextStyle(
-                        color: AppTheme.accent, fontWeight: FontWeight.w600)),
-                TextSpan(text: '.'),
+                Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _Label('Prénom'),
+                        TextFormField(
+                          controller: firstCtrl,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: const InputDecoration(hintText: 'Jean'),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'[a-zA-ZÀ-ÿ\s-]')),
+                          ],
+                          validator: ValidationBuilder()
+                              .required('Prénom requis')
+                              .minLength(4, 'Minimum 4 caractères')
+                              .build(),
+                        ),
+                      ]),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _Label('Nom'),
+                        TextFormField(
+                          controller: lastCtrl,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: const InputDecoration(hintText: 'Dupont'),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'[a-zA-ZÀ-ÿ\s-]')),
+                          ],
+                          validator: ValidationBuilder()
+                              .required('Nom requis')
+                              .minLength(4, 'Minimum 4 caractères')
+                              .build(),
+                        ),
+                      ]),
+                ),
               ],
             ),
+          if (state.role == UserRole.recruteur) ...[
+            const SizedBox(height: 16),
+            const _Label('Nom de l\'entreprise'),
+            TextFormField(
+              controller: entrepriseCtrl,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                hintText: 'SkillSpace Inc.',
+                prefixIcon: Icon(Icons.business_rounded,
+                    size: 18, color: AppTheme.textGrey),
+              ),
+              validator: state.role == UserRole.recruteur
+                  ? ValidationBuilder()
+                      .required('Nom de l\'entreprise requis')
+                      .build()
+                  : null,
+            ),
+          ],
+          const SizedBox(height: 16),
+          const _Label('Email'),
+          TextFormField(
+            controller: emailCtrl,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(
+              hintText: 'vous@exemple.com',
+              prefixIcon: Icon(Icons.mail_outline_rounded,
+                  size: 18, color: AppTheme.textGrey),
+            ),
+            validator: ValidationBuilder()
+                .required('Email requis')
+                .email('Email invalide')
+                .build(),
           ),
-        ),
-      ],
-    ),
+          const SizedBox(height: 16),
+          const _Label('Mot de passe'),
+          TextFormField(
+            controller: passCtrl,
+            obscureText: !state.passwordVisible,
+            decoration: InputDecoration(
+              hintText: '••••••••',
+              prefixIcon: const Icon(Icons.lock_outline_rounded,
+                  size: 18, color: AppTheme.textGrey),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  state.passwordVisible
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  color: AppTheme.textGrey,
+                  size: 18,
+                ),
+                onPressed: () => context.read<AuthCubit>().togglePassword(),
+              ),
+            ),
+            validator: ValidationBuilder()
+                .required('Mot de passe requis')
+                .minLength(6, 'Minimum 6 caractères')
+                .build(),
+          ),
+          const SizedBox(height: 20),
+          _RoleSelector(selected: state.role, sectionLabel: 'Je suis un(e)'),
+          const SizedBox(height: 20),
+          _SubmitButton(
+            label: 'Créer mon compte',
+            isLoading: state.isLoading,
+            onTap: () {
+              if (formKey.currentState?.validate() ?? false) {
+                context.read<AuthCubit>().register(
+                      firstCtrl.text,
+                      lastCtrl.text,
+                      emailCtrl.text,
+                      passCtrl.text,
+                      entreprise: entrepriseCtrl.text,
+                    );
+              }
+            },
+          ),
+          const SizedBox(height: 24),
+          Center(
+            child: RichText(
+              textAlign: TextAlign.center,
+              text: const TextSpan(
+                style: TextStyle(fontSize: 11.5, color: AppTheme.textGrey),
+                children: [
+                  TextSpan(text: 'En vous inscrivant, vous acceptez nos '),
+                  TextSpan(
+                      text: 'CGU',
+                      style: TextStyle(
+                          color: AppTheme.accent, fontWeight: FontWeight.w600)),
+                  TextSpan(text: ' et '),
+                  TextSpan(
+                      text: 'politique de confidentialité',
+                      style: TextStyle(
+                          color: AppTheme.accent, fontWeight: FontWeight.w600)),
+                  TextSpan(text: '.'),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -952,7 +953,9 @@ class _ForgotStepEmailState extends State<_ForgotStepEmail> {
                 isLoading: state.isLoading,
                 onTap: () {
                   if (_formKey.currentState?.validate() ?? false) {
-                    context.read<ForgotPasswordCubit>().sendOtp(_emailCtrl.text);
+                    context
+                        .read<ForgotPasswordCubit>()
+                        .sendOtp(_emailCtrl.text);
                   }
                 },
               ),

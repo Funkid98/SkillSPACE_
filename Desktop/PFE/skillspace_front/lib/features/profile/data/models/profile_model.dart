@@ -1,3 +1,5 @@
+import 'skill_level.dart';
+
 class ProfileData {
   final String firstName;
   final String lastName;
@@ -41,17 +43,15 @@ class ProfileData {
           ? (json['entreprise'] as Map)['nom']
           : json['entreprise'],
       poste: json['poste'] ?? json['jobtitle'],
-      skills: (json['skills'] as List?)
-              ?.map((s) {
-                if (s is Map<String, dynamic>) {
-                  return ProfileSkill(
-                    name: s['name'] ?? '',
-                    percent: (s['percent'] ?? 50).toInt(),
-                  );
-                }
-                return ProfileSkill(name: s.toString());
-              })
-              .toList() ??
+      skills: (json['skills'] as List?)?.map((s) {
+            if (s is Map<String, dynamic>) {
+              return ProfileSkill(
+                name: s['name'] ?? '',
+                percent: (s['percent'] ?? 10).toInt(),
+              );
+            }
+            return ProfileSkill(name: s.toString());
+          }).toList() ??
           [],
       role: json['role'] ?? 'candidat',
     );
@@ -69,7 +69,8 @@ class ProfileData {
       'entreprise': entreprise,
       'poste': poste,
       'jobtitle': poste,
-      'skills': skills.map((s) => {'name': s.name, 'percent': s.percent}).toList(),
+      'skills':
+          skills.map((s) => {'name': s.name, 'percent': s.percent}).toList(),
       'role': role,
     };
   }
@@ -133,5 +134,27 @@ class ProfileSkill {
   final String name;
   final int percent;
 
-  const ProfileSkill({required this.name, this.percent = 50});
+  const ProfileSkill({required this.name, this.percent = 33});
+
+  SkillLevel get level {
+    if (percent <= 33) return SkillLevel.beginner;
+    if (percent <= 66) return SkillLevel.intermediate;
+    return SkillLevel.advanced;
+  }
+
+  ProfileSkill copyWithLevel(SkillLevel lvl) {
+    int newPercent = 33;
+    switch (lvl) {
+      case SkillLevel.beginner:
+        newPercent = 33;
+        break;
+      case SkillLevel.intermediate:
+        newPercent = 66;
+        break;
+      case SkillLevel.advanced:
+        newPercent = 100;
+        break;
+    }
+    return ProfileSkill(name: name, percent: newPercent);
+  }
 }

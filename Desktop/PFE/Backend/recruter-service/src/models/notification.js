@@ -6,6 +6,9 @@ const notificationSchema = mongoose.Schema({
     senderName: { type: String, default: 'Un candidat' },
     senderEmail: { type: String },
     message: { type: String, required: true },
+    offerId: { type: String },
+    offerTitle: { type: String },
+    decisionMade: { type: Boolean, default: false },
     type: { type: String, enum: ['APPLICATION', 'SYSTEM'], default: 'APPLICATION' },
     read: { type: Boolean, default: false }
 }, { timestamps: true });
