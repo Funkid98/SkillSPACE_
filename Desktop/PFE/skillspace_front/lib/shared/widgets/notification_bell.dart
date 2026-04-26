@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:pfe/core/network/api_client.dart';
 import '../../../../core/app_colors.dart';
+import 'scheduling_dialog.dart';
 
 class NotificationBell extends StatefulWidget {
   final bool isRecruiter;
@@ -84,88 +85,14 @@ class _NotificationBellState extends State<NotificationBell> {
     } catch (_) {}
   }
 
-  void _showAcceptDialog(String id) {
-    final dateController = TextEditingController();
-    final timeController = TextEditingController();
-    final linkController = TextEditingController();
-
+  void _showAcceptDialog(String id, String candidateName) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.event_available_rounded,
-                  color: AppColors.success, size: 20),
-            ),
-            const SizedBox(width: 12),
-            const Text('Planifier un entretien',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: dateController,
-              decoration: InputDecoration(
-                labelText: 'Date (ex: 30 Avril)',
-                prefixIcon: const Icon(Icons.calendar_today_rounded, size: 20),
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: timeController,
-              decoration: InputDecoration(
-                labelText: 'Heure (ex: 14:00)',
-                prefixIcon: const Icon(Icons.access_time_rounded, size: 20),
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: linkController,
-              decoration: InputDecoration(
-                labelText: 'Lien Google Meet',
-                prefixIcon: const Icon(Icons.videocam_rounded, size: 20),
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Annuler',
-                  style: TextStyle(color: AppColors.textGray))),
-          ElevatedButton(
-            onPressed: () {
-              _handleDecision(id, 'ACCEPT',
-                  date: dateController.text,
-                  time: timeController.text,
-                  link: linkController.text);
-              Navigator.pop(ctx);
-              Navigator.pop(context); // Close notifications menu
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.navy,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Confirmer'),
-          ),
-        ],
+      builder: (ctx) => SchedulingDialog(
+        candidateName: candidateName,
+        onConfirm: (date, time, link) {
+          _handleDecision(id, 'ACCEPT', date: date, time: time, link: link);
+        },
       ),
     );
   }
@@ -458,7 +385,7 @@ class _NotificationBellState extends State<NotificationBell> {
                                         Expanded(
                                           child: ElevatedButton(
                                             onPressed: () =>
-                                                _showAcceptDialog(n['_id']),
+                                                _showAcceptDialog(n['_id'], n['senderName'] ?? 'Candidat'),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: AppColors.success,
                                               foregroundColor: Colors.white,

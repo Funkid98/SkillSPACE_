@@ -6,17 +6,31 @@ const { extractText } = require('./extractor');
 const { matchCvWithJob } = require('./ai-service');
 
 const taskQueue = [];
+const processingTasks = new Set(); // Track tasks currently being processed to prevent loops
 let isProcessing = false;
 
 /**
  * Adds a candidate-centric match task to the queue (Match 1 candidate against ALL offers)
  */
 const runBackgroundMatchForCandidate = async (candidateId) => {
-    const exists = taskQueue.some(t => t.type === 'CANDIDATE' && t.id.toString() === candidateId.toString());
-    if (exists) {
-        console.log(`[Queue] Prevented duplicate candidate match task for: ${candidateId}`);
-        return;
+    const taskId = `CANDIDATE_${candidateId.toString()}`;
+    const inQueue = taskQueue.some(t => t.type === 'CANDIDATE' && t.id.toString() === candidateId.toString());
+    
+    if (inQueue || processingTasks.has(taskId)) {
+        return; // Already queued or being processed
     }
+
+    // Reset all existing matches to ANALYSING immediately ONLY if they were COMPLETED or FAILED
+    // This provides the visual feedback but avoids resetting those already being analyzed
+    try {
+        await Match.updateMany(
+            { candidateId: candidateId, status: { $ne: 'ANALYSING' } },
+            { $set: { status: 'ANALYSING', analysis: "Analyse en cours suite à la mise à jour de votre profil..." } }
+        );
+    } catch (e) {
+        console.error(`[Queue] Failed to reset match statuses for candidate ${candidateId}:`, e.message);
+    }
+
     console.log(`[Queue] Added candidate match task for: ${candidateId}`);
     taskQueue.push({ type: 'CANDIDATE', id: candidateId });
     processQueue(); // Start processing but don't block
@@ -26,11 +40,13 @@ const runBackgroundMatchForCandidate = async (candidateId) => {
  * Adds an offer-centric match task to the queue (Match ALL candidates against 1 offer)
  */
 const runBackgroundMatchForOffer = async (offerId, offerData = null) => {
-    const exists = taskQueue.some(t => t.type === 'OFFER' && t.id.toString() === offerId.toString());
-    if (exists) {
-        console.log(`[Queue] Prevented duplicate offer match task for: ${offerId}`);
+    const taskId = `OFFER_${offerId.toString()}`;
+    const inQueue = taskQueue.some(t => t.type === 'OFFER' && t.id.toString() === offerId.toString());
+    
+    if (inQueue || processingTasks.has(taskId)) {
         return;
     }
+
     console.log(`[Queue] Added offer match task for: ${offerId}`);
     taskQueue.push({ type: 'OFFER', id: offerId, data: offerData });
     processQueue();
@@ -43,6 +59,9 @@ const processQueue = async () => {
     try {
         while (taskQueue.length > 0) {
             const task = taskQueue.shift();
+            const taskId = `${task.type}_${task.id.toString()}`;
+            processingTasks.add(taskId);
+
             try {
                 if (task.type === 'CANDIDATE') {
                     await handleCandidateTask(task.id);
@@ -51,6 +70,8 @@ const processQueue = async () => {
                 }
             } catch (err) {
                 console.error(`[Queue] Global Task error (${task.type}):`, err.message);
+            } finally {
+                processingTasks.delete(taskId);
             }
         }
     } finally {
@@ -88,7 +109,13 @@ const handleCandidateTask = async (candidateId) => {
                 candidateSkills.some(candSkill => candSkill.includes(reqSkill) || reqSkill.includes(candSkill))
             ).length;
         }
-        const isTitleMatch = candidate.jobtitle && (offer.title || '').toLowerCase() === candidate.jobtitle.toLowerCase();
+        const isTitleMatch = candidate.jobtitle && (offer.title || '').toLowerCase().includes(candidate.jobtitle.toLowerCase());
+
+        // Skip if absolutely no chance of matching (stricter than before)
+        if (!isTitleMatch && matchCount < 3) {
+            // If match already exists, mark it as hidden/low score so it doesn't show up
+            continue; 
+        }
 
         const existingMatch = await Match.findOne({ candidateId: candidate._id, offerId: offer._id }).lean();
 
@@ -148,7 +175,11 @@ const handleOfferTask = async (offerId, offerData) => {
                 candidateSkillNames.some(candSkill => candSkill.includes(reqSkill) || reqSkill.includes(candSkill))
             ).length;
         }
-        const isTitleMatch = candidate.jobtitle && (offer.title || '').toLowerCase() === candidate.jobtitle.toLowerCase();
+        const isTitleMatch = candidate.jobtitle && (offer.title || '').toLowerCase().includes(candidate.jobtitle.toLowerCase());
+
+        if (!isTitleMatch && matchCount < 3) {
+            continue;
+        }
 
         const existingMatch = await Match.findOne({ candidateId: candidate._id, offerId: offer._id }).lean();
 

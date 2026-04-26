@@ -7,6 +7,7 @@ import '../../../../core/app_colors.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../shared/widgets/animated_reveal.dart';
+import '../../../../shared/widgets/scheduling_dialog.dart';
 
 class RecruiterCandidatesPage extends StatelessWidget {
   const RecruiterCandidatesPage({super.key});
@@ -446,100 +447,7 @@ class _CandidateMatchCard extends StatelessWidget {
     return Builder(
       builder: (context) => OutlinedButton.icon(
         onPressed: () async {
-          // Show loading
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (_) => const Center(
-              child: CircularProgressIndicator(color: AppColors.navy),
-            ),
-          );
-
-          try {
-            final client = ApiClient();
-            final response = await client.post('/recruiter/contact', {
-              'candidateId': candidate.id,
-              'candidateName': candidate.name,
-            });
-            if (context.mounted) Navigator.of(context).pop(); // close loading
-
-            if (context.mounted) {
-              if (response.statusCode == 200) {
-                showDialog(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: AppColors.navy.withValues(alpha: 0.08),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.check_circle_rounded,
-                              color: AppColors.navy, size: 40),
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Contact envoyé !',
-                          style: TextStyle(
-                              fontWeight: FontWeight.w900, fontSize: 17),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${candidate.name} recevra une notification que vous souhaitez le contacter.',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                              color: AppColors.textGray,
-                              fontSize: 14,
-                              height: 1.5),
-                        ),
-                        const SizedBox(height: 20),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.navy,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                            child: const Text('Fermer',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Erreur (${response.statusCode})'),
-                    backgroundColor: Colors.red.shade600,
-                  ),
-                );
-              }
-            }
-          } catch (e) {
-            if (context.mounted) Navigator.of(context).pop();
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Erreur réseau. Veuillez réessayer.'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          }
+          _showContactOptions(context, l10n);
         },
         icon: const Icon(Icons.mail_outline_rounded, size: 16),
         label: Text(l10n.contactCandidate),
@@ -554,6 +462,200 @@ class _CandidateMatchCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _showContactOptions(BuildContext context, AppLocalizations l10n) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(28),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Contacter ${candidate.name}',
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: AppColors.textDark,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Choisissez comment vous souhaitez initier le contact.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textGray, fontSize: 14),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _submitContact(context, l10n);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.bg,
+                foregroundColor: AppColors.navy,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.mail_outline_rounded, size: 20),
+                  SizedBox(width: 12),
+                  Text('Envoyer demande simple',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                showDialog(
+                  context: context,
+                  builder: (_) => SchedulingDialog(
+                    candidateName: candidate.name,
+                    onConfirm: (date, time, link) {
+                      _submitContact(context, l10n,
+                          date: date, time: time, link: link);
+                    },
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.navy,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.video_call_rounded, size: 20),
+                  SizedBox(width: 12),
+                  Text('Planifier un entretien',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submitContact(BuildContext context, AppLocalizations l10n,
+      {String? date, String? time, String? link}) async {
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: AppColors.navy),
+      ),
+    );
+
+    try {
+      final client = ApiClient();
+      final response = await client.post('/recruiter/contact', {
+        'candidateId': candidate.id,
+        'candidateName': candidate.name,
+        'interviewDate': date,
+        'interviewTime': time,
+        'meetingLink': link,
+      });
+
+      if (context.mounted) Navigator.of(context).pop(); // close loading
+
+      if (context.mounted) {
+        if (response.statusCode == 200) {
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.check_circle_rounded,
+                        color: AppColors.success, size: 40),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    date != null ? 'Entretien proposé !' : 'Contact envoyé !',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w900, fontSize: 17),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    date != null
+                        ? 'Le candidat a été notifié de l\'entretien prévu le $date à $time.'
+                        : '${candidate.name} recevra une notification que vous souhaitez le contacter.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        color: AppColors.textGray, fontSize: 14, height: 1.5),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.navy,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text('Fermer',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erreur (${response.statusCode})'),
+              backgroundColor: Colors.red.shade600,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) Navigator.of(context).pop();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur réseau. Veuillez réessayer.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
 

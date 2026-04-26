@@ -342,12 +342,20 @@ const Notification = require('../models/notification');
 // Contact a candidate
 const contactCandidate = async (req, res) => {
     try {
-        const { candidateId, candidateName } = req.body;
+        const { candidateId, candidateName, interviewDate, interviewTime, meetingLink } = req.body;
         const recruiterId = req.user._id;
 
         if (!candidateId) return res.status(400).json({ error: 'Missing candidateId' });
 
         const recruiter = await Recruiter.findById(recruiterId).lean();
+
+        let message = `L'entreprise ${recruiter.entreprise} souhaite vous contacter.`;
+        let type = 'CONTACT';
+
+        if (interviewDate && interviewTime) {
+            message = `L'entreprise ${recruiter.entreprise} vous propose un entretien le ${interviewDate} à ${interviewTime}.`;
+            type = 'INTERVIEW_SCHEDULED';
+        }
 
         // Notify Candidat Service
         try {
@@ -356,8 +364,11 @@ const contactCandidate = async (req, res) => {
                 senderId: recruiterId,
                 senderName: recruiter.entreprise || 'Un recruteur',
                 senderEmail: recruiter.email,
-                message: `L'entreprise ${recruiter.entreprise} souhaite vous contacter.`,
-                type: 'CONTACT'
+                message,
+                type,
+                interviewDate,
+                interviewTime,
+                meetingLink
             });
         } catch (e) {
             console.error('Failed to notify candidate:', e.message);

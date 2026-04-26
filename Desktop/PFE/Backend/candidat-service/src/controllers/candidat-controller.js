@@ -490,11 +490,11 @@ const getMatchingCandidatesGroupedByOffer = async (req, res) => {
                 }
             }
 
+            let triggerBackgroundArray = [];
+
             if (matches.length === 0 || isStale) {
                 const candidates = await User.find({ role: 'candidat' });
                 const { runBackgroundMatchForCandidate } = require('../services/background-matcher');
-
-                let triggerBackgroundArray = [];
 
                 for (const c of candidates) {
                     const candidateSkillNames = (c.skills || []).map(s => (typeof s === 'string' ? s : s.name).toLowerCase());
@@ -509,9 +509,9 @@ const getMatchingCandidatesGroupedByOffer = async (req, res) => {
                     if (isStale) {
                          // We don't skip if we are updating a stale match that already existed
                     } else {
-                        const isTitleMatch = c.jobtitle && (offer.title || '').toLowerCase() === c.jobtitle.toLowerCase();
-                        if (!isTitleMatch && matchCount < 2) {
-                            continue; // Skip this candidate entirely if new and no keyword overlap
+                        const isTitleMatch = c.jobtitle && (offer.title || '').toLowerCase().includes(c.jobtitle.toLowerCase());
+                        if (!isTitleMatch && matchCount < 3) {
+                            continue; // Skip: Stricter pre-filter (at least 3 keywords for total outsiders)
                         }
                     }
 
@@ -541,7 +541,8 @@ const getMatchingCandidatesGroupedByOffer = async (req, res) => {
                         score: fallbackScore,
                         analysis: fallbackAnalysis,
                         recommendation: fallbackRec,
-                        status: fallbackStatus
+                        status: fallbackStatus,
+                        updatedAt: newMatch.updatedAt
                     });
 
                     triggerBackgroundArray.push(c._id);
@@ -549,18 +550,6 @@ const getMatchingCandidatesGroupedByOffer = async (req, res) => {
 
                 matches.sort((a, b) => b.score - a.score);
 
-                // If candidates were missing scores, trigger full recalculation for those candidates in background
-                if (triggerBackgroundArray.length > 0) {
-                    console.log(`[API] Triggering AI background matched for ${triggerBackgroundArray.length} candidates...`);
-                    for (const cid of triggerBackgroundArray) {
-                        try {
-                            const { runBackgroundMatchForCandidate } = require('../services/background-matcher');
-                            runBackgroundMatchForCandidate(cid).catch(e => console.error(e));
-                        } catch (e) {
-                            console.error("Could not run background matcher", e);
-                        }
-                    }
-                }
             }
 
             const candidateDetails = [];
@@ -600,10 +589,33 @@ const getMatchingCandidatesGroupedByOffer = async (req, res) => {
                         currentRecommendation = "Analyse en cours...";
                     }
 
-                    // IF the score is not yet COMPLETED, trigger a real AI analysis in the background
+                    // STRICT FILTER: Even if it's already in the DB, hide it if it doesn't meet minimum keyword relevance
+                    // This cleans up legacy bad matches from before stricter rules were applied.
+                    const candidateSkillNames = (candidate.skills || []).map(s => (typeof s === 'string' ? s : s.name).toLowerCase());
+                    const offerRequirements = (offer.requirements || []).map(r => r.toLowerCase());
+                    let matchCount = offerRequirements.filter(reqSkill =>
+                        candidateSkillNames.some(candSkill => candSkill.toLowerCase().includes(reqSkill.toLowerCase()) || reqSkill.toLowerCase().includes(candSkill.toLowerCase()))
+                    ).length;
+
+                    const isTitleMatch = candidate.jobtitle && (
+                        (offer.title || '').toLowerCase().includes(candidate.jobtitle.toLowerCase()) || 
+                        candidate.jobtitle.toLowerCase().includes((offer.title || '').toLowerCase())
+                    );
+
+                    // Skip if neither title matches nor enough keywords (2+ required for analyzed, 3+ for new)
+                    const threshold = currentStatus === 'COMPLETED' ? 2 : 3; 
+                    if (!isTitleMatch && matchCount < threshold) {
+                        continue; 
+                    }
+
+                    // Collect candidates that need analysis for background triggering
                     if (currentStatus !== 'COMPLETED') {
-                        console.log(`[API] Triggering required AI update for ${candidate.prenom} (Status: ${currentStatus})...`);
-                        runBackgroundMatchForCandidate(candidate._id).catch(e => console.error(e));
+                        triggerBackgroundArray.push(candidate._id);
+                    }
+
+                    // FILTER: If AI analysis is complete but score is very low, do not show him
+                    if (currentStatus === 'COMPLETED' && currentScore < 30) {
+                        continue;
                     }
 
                     candidateDetails.push({
@@ -620,6 +632,20 @@ const getMatchingCandidatesGroupedByOffer = async (req, res) => {
                         initials: `${candidate.prenom[0] || '?'}${candidate.nom[0] || '?'}`.toUpperCase(),
                         isSaved: false // Placeholder
                     });
+                }
+            }
+
+            // Trigger background analyst for all collected candidates (from both new/stale detections and existing ANALYSING statuses)
+            if (triggerBackgroundArray.length > 0) {
+                const uniqueIds = [...new Set(triggerBackgroundArray.map(id => id.toString()))];
+                console.log(`[API] Triggering background AI for ${uniqueIds.length} candidate(s) under offer: ${offer.title}`);
+                for (const cid of uniqueIds) {
+                    try {
+                        const { runBackgroundMatchForCandidate } = require('../services/background-matcher');
+                        runBackgroundMatchForCandidate(cid).catch(e => console.error(e));
+                    } catch (e) {
+                        console.error("BG Trigger Error:", e);
+                    }
                 }
             }
 
