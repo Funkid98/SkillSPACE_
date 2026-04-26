@@ -294,18 +294,23 @@ const getMatchingOffersForCandidate = async (req, res) => {
             }
             const totalSkills = requirements.length || 1;
 
-            const isTitleMatch = candidate.jobtitle && (offer.title || '').toLowerCase() === candidate.jobtitle.toLowerCase();
-            if (!isTitleMatch && matchCount < 3) {
-                return null; // Skip this offer entirely
-            }
-
             let matchScore = 0;
             let matchingAnalysis = '';
             let recommendation = '';
             let matchStatus = 'COMPLETED'; // Default to COMPLETED if already in DB
 
-            // 1. Check Cache
+            // 1. Check Cache FIRST
             const existingMatch = await Match.findOne({ candidateId: candidate._id, offerId: offer._id });
+
+            // 2. Strict Filter: At least 2 matching skills required (unless title matches exactly)
+            const effectiveMatchCount = (existingMatch && existingMatch.status === 'COMPLETED') 
+                ? existingMatch.matchingSkills 
+                : matchCount;
+                
+            const isTitleMatch = candidate.jobtitle && (offer.title || '').toLowerCase() === candidate.jobtitle.toLowerCase();
+            if (!isTitleMatch && effectiveMatchCount < 2) {
+                return null; // Skip this offer entirely (less than 2 skills mapped)
+            }
 
             if (existingMatch) {
                 matchScore = existingMatch.score;
@@ -342,6 +347,13 @@ const getMatchingOffersForCandidate = async (req, res) => {
                             : "Mise à jour de l'analyse (votre profil a été modifié)...";
                         console.log(`[API] Stale match detected (Buffered) for ${candidate.prenom} -> ${offer.title}`);
                     }
+
+                    // PERSIST the state so we don't keep detecting staleness every poll
+                    await Match.updateOne(
+                        { _id: existingMatch._id },
+                        { $set: { status: 'ANALYSING', score: 0, analysis: matchingAnalysis } }
+                    ).catch(e => console.error("Error persisting stale reset:", e.message));
+
                 } else if (existingMatch.status === 'ANALYSING') {
                     // Re-trigger background match if it was stuck in ANALYSING status (e.g. after server restart)
                     needsBackgroundMatch = true;
@@ -494,10 +506,13 @@ const getMatchingCandidatesGroupedByOffer = async (req, res) => {
                             candidateSkillNames.some(candSkill => candSkill.includes(reqSkill) || reqSkill.includes(candSkill))
                         ).length;
                     }
-                    const isTitleMatch = c.jobtitle && (offer.title || '').toLowerCase() === c.jobtitle.toLowerCase();
-
-                    if (!isTitleMatch && matchCount < 3) {
-                        continue; // Skip this candidate entirely
+                    if (isStale) {
+                         // We don't skip if we are updating a stale match that already existed
+                    } else {
+                        const isTitleMatch = c.jobtitle && (offer.title || '').toLowerCase() === c.jobtitle.toLowerCase();
+                        if (!isTitleMatch && matchCount < 2) {
+                            continue; // Skip this candidate entirely if new and no keyword overlap
+                        }
                     }
 
                     let fallbackScore = 0; // 0 triggers AI Analyzing UI

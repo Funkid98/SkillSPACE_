@@ -3,6 +3,7 @@ const express = require('express')
 const cors = require('cors')
 const candidatRoutes = require('./src/routes/candidat-route')
 const cvRoutes = require('./src/routes/cv-route')
+const quizRoutes = require('./src/routes/quiz-route')
 const mongoose = require('mongoose')
 
 
@@ -17,6 +18,7 @@ app.use(cors({
 app.use(express.json())
 app.use('/candidat', candidatRoutes)
 app.use('/cv', cvRoutes)
+app.use('/quiz', quizRoutes)
 
 const PORT = process.env.PORT || 5000
 

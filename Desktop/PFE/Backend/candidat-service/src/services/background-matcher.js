@@ -90,12 +90,8 @@ const handleCandidateTask = async (candidateId) => {
         }
         const isTitleMatch = candidate.jobtitle && (offer.title || '').toLowerCase() === candidate.jobtitle.toLowerCase();
 
-        if (!isTitleMatch && matchCount < 3) {
-            continue; // Skip AI matching for this non-relevant offer
-        }
-
-        // Skip if already matched
         const existingMatch = await Match.findOne({ candidateId: candidate._id, offerId: offer._id }).lean();
+
         if (existingMatch && existingMatch.status === 'COMPLETED') {
             // Check if match is stale (Job Offer OR Candidate was updated after the Match was completed)
             // Use a 2-second buffer to prevent millisecond rounding issues
@@ -143,22 +139,17 @@ const handleOfferTask = async (offerId, offerData) => {
     const candidates = await User.find({ role: 'candidat' }).lean();
     for (const candidate of candidates) {
         // Pre-filter: Same job title OR at least 3 matching skills
-        const candidateSkills = (candidate.skills || []).map(s => (typeof s === 'string' ? s : s.name).toLowerCase());
+        const candidateSkillNames = (candidate.skills || []).map(s => (typeof s === 'string' ? s : s.name).toLowerCase());
         const offerRequirements = (offer.requirements || []).map(r => r.toLowerCase());
 
         let matchCount = 0;
         if (offerRequirements.length > 0) {
             matchCount = offerRequirements.filter(reqSkill =>
-                candidateSkills.some(candSkill => candSkill.includes(reqSkill) || reqSkill.includes(candSkill))
+                candidateSkillNames.some(candSkill => candSkill.includes(reqSkill) || reqSkill.includes(candSkill))
             ).length;
         }
         const isTitleMatch = candidate.jobtitle && (offer.title || '').toLowerCase() === candidate.jobtitle.toLowerCase();
 
-        if (!isTitleMatch && matchCount < 3) {
-            continue; // Skip AI matching for this non-relevant candidate
-        }
-
-        // Skip if already matched
         const existingMatch = await Match.findOne({ candidateId: candidate._id, offerId: offer._id }).lean();
 
         if (existingMatch && existingMatch.status === 'COMPLETED') {
@@ -194,10 +185,14 @@ const getCvText = async (candidate) => {
         }
     }
 
-    const cvSkills = (candidate.skills || []).map(s => typeof s === 'string' ? s : s.name).join(', ');
+    // Include skill levels so the AI can factor in proficiency, not just presence
+    const cvSkills = (candidate.skills || []).map(s => {
+        if (typeof s === 'string') return s;
+        const level = s.percent >= 80 ? 'Advanced' : s.percent >= 40 ? 'Intermediate' : 'Beginner';
+        return `${s.name} (${level})`;
+    }).join(', ');
     
-    // Always include the database profile data so the AI knows about manually added skills
-    let finalCvText = `Job Title: ${candidate.jobtitle || 'N/A'}\nBio: ${candidate.bio || 'N/A'}\nExplicit Profile Skills: ${cvSkills}\n`;
+    let finalCvText = `Job Title: ${candidate.jobtitle || 'N/A'}\nBio: ${candidate.bio || 'N/A'}\nExplicit Profile Skills (with level): ${cvSkills}\n`;
     
     if (extractedText) {
         finalCvText += `\n--- Extracted CV File Content ---\n${extractedText}`;
@@ -214,7 +209,7 @@ const processSingleAiMatch = async (candidate, offer, cvText) => {
     try {
         console.log(`[Background AI Matcher] Querying AI via Groq API for ${candidate.prenom} -> ${offer.title}`);
 
-        const aiResData = await matchCvWithJob(cvText, jobDescriptionText);
+        const aiResData = await matchCvWithJob(cvText, jobDescriptionText, candidate.skills || []);
 
         if (aiResData && aiResData.status === 'COMPLETED') {
             const matchedSkills = aiResData.matched_skills || [];
