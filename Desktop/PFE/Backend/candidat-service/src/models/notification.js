@@ -8,7 +8,11 @@ const notificationSchema = mongoose.Schema({
     message: { type: String, required: true },
     offerId: { type: String },
     offerTitle: { type: String },
-    type: { type: String, enum: ['CONTACT', 'SYSTEM', 'INTERVIEW_SCHEDULED', 'APPLICATION_REJECTED'], default: 'CONTACT' },
+    rejectionReason: { type: String },
+    meetingLink: { type: String },
+    interviewDate: { type: String },
+    interviewTime: { type: String },
+    type: { type: String, enum: ['CONTACT', 'SYSTEM', 'INTERVIEW_SCHEDULED', 'APPLICATION_REJECTED', 'REJECTION'], default: 'CONTACT' },
     read: { type: Boolean, default: false }
 }, { timestamps: true });
 

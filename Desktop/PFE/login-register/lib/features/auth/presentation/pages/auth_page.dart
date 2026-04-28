@@ -8,6 +8,7 @@ import '../../../../core/utils/app_toast.dart';
 import '../../../../core/utils/string_extension.dart';
 import 'package:form_validator/form_validator.dart';
 
+
 class AuthPage extends StatefulWidget {
   final VoidCallback? onSuccess;
   const AuthPage({super.key, this.onSuccess});

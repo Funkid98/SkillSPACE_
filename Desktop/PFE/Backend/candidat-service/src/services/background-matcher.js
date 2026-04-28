@@ -20,16 +20,8 @@ const runBackgroundMatchForCandidate = async (candidateId) => {
         return; // Already queued or being processed
     }
 
-    // Reset all existing matches to ANALYSING immediately ONLY if they were COMPLETED or FAILED
-    // This provides the visual feedback but avoids resetting those already being analyzed
-    try {
-        await Match.updateMany(
-            { candidateId: candidateId, status: { $ne: 'ANALYSING' } },
-            { $set: { status: 'ANALYSING', analysis: "Analyse en cours suite à la mise à jour de votre profil..." } }
-        );
-    } catch (e) {
-        console.error(`[Queue] Failed to reset match statuses for candidate ${candidateId}:`, e.message);
-    }
+    // We no longer bulk-reset all matches here. 
+    // The API (getMatchingOffers) or the processing loop will handle state transitions.
 
     console.log(`[Queue] Added candidate match task for: ${candidateId}`);
     taskQueue.push({ type: 'CANDIDATE', id: candidateId });
@@ -111,9 +103,13 @@ const handleCandidateTask = async (candidateId) => {
         }
         const isTitleMatch = candidate.jobtitle && (offer.title || '').toLowerCase().includes(candidate.jobtitle.toLowerCase());
 
-        // Skip if absolutely no chance of matching (stricter than before)
-        if (!isTitleMatch && matchCount < 3) {
-            // If match already exists, mark it as hidden/low score so it doesn't show up
+        // Skip if absolutely no chance of matching (threshold aligned with API: 2)
+        if (!isTitleMatch && matchCount < 2) {
+            // If match was stuck in ANALYSING, finalize it as FAILED or COMPLETED(0) to stop the loop
+            await Match.findOneAndUpdate(
+                { candidateId: candidate._id, offerId: offer._id, status: 'ANALYSING' },
+                { $set: { status: 'COMPLETED', score: 0, analysis: "Le profil ne correspond pas assez aux pré-requis de l'offre." } }
+            );
             continue; 
         }
 
@@ -177,7 +173,11 @@ const handleOfferTask = async (offerId, offerData) => {
         }
         const isTitleMatch = candidate.jobtitle && (offer.title || '').toLowerCase().includes(candidate.jobtitle.toLowerCase());
 
-        if (!isTitleMatch && matchCount < 3) {
+        if (!isTitleMatch && matchCount < 2) {
+            await Match.findOneAndUpdate(
+                { candidateId: candidate._id, offerId: offer._id, status: 'ANALYSING' },
+                { $set: { status: 'COMPLETED', score: 0, analysis: "Le profil ne correspond pas assez aux pré-requis de l'offre." } }
+            );
             continue;
         }
 

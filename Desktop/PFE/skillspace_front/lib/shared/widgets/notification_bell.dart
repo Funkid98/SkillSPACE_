@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:pfe/core/network/api_client.dart';
 import '../../../../core/app_colors.dart';
 import 'scheduling_dialog.dart';
@@ -83,6 +84,95 @@ class _NotificationBellState extends State<NotificationBell> {
       await client.put(endpoint, {});
       _fetchNotifications();
     } catch (_) {}
+  }
+
+  Future<void> _deleteNotification(String id) async {
+    try {
+      final client = ApiClient();
+      final endpoint = widget.isRecruiter
+          ? '/recruiter/notifications/$id'
+          : '/candidat/notifications/$id';
+      await client.delete(endpoint);
+      _fetchNotifications();
+    } catch (_) {}
+  }
+
+  Future<void> _clearAllNotifications() async {
+    try {
+      final client = ApiClient();
+      final endpoint = widget.isRecruiter
+          ? '/recruiter/notifications/clear/all'
+          : '/candidat/notifications/clear/all';
+      await client.delete(endpoint);
+      _fetchNotifications();
+    } catch (_) {}
+  }
+
+  void _showMeetLinkDialog(String link) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.video_call_rounded, color: AppColors.navy),
+            SizedBox(width: 12),
+            Text('Lien de l\'entretien',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Utilisez ce lien pour rejoindre l\'appel à l\'heure prévue :',
+                style: TextStyle(fontSize: 13, color: AppColors.textGray)),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.bg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: SelectableText(
+                link,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 13,
+                  color: AppColors.navy,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Fermer'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: link));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Lien copié dans le presse-papiers'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+              Navigator.pop(ctx);
+            },
+            icon: const Icon(Icons.copy_rounded, size: 18),
+            label: const Text('Copier le lien'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.navy,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showAcceptDialog(String id, String candidateName) {
@@ -186,30 +276,70 @@ class _NotificationBellState extends State<NotificationBell> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Notifications',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.textDark,
-                        ),
-                      ),
-                      if (_unreadCount > 0)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.orange.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            '$_unreadCount non lu${_unreadCount > 1 ? 's' : ''}',
-                            style: const TextStyle(
-                              color: AppColors.orange,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                      Row(
+                        children: [
+                          const Text(
+                            'Notifications',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.textDark,
                             ),
                           ),
+                          if (_unreadCount > 0) ...[
+                            const SizedBox(width: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.orange.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                '$_unreadCount',
+                                style: const TextStyle(
+                                  color: AppColors.orange,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      if (_notifications.isNotEmpty)
+                        TextButton.icon(
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Tout effacer ?'),
+                                content: const Text(
+                                    'Voulez-vous vraiment supprimer toutes vos notifications ?'),
+                                actions: [
+                                  TextButton(
+                                      onPressed: () => Navigator.pop(ctx, false),
+                                      child: const Text('Annuler')),
+                                  TextButton(
+                                      onPressed: () => Navigator.pop(ctx, true),
+                                      child: const Text('Tout effacer',
+                                          style:
+                                              TextStyle(color: AppColors.error))),
+                                ],
+                              ),
+                            );
+                            if (confirm == true) {
+                              await _clearAllNotifications();
+                              setSheetState(() {});
+                            }
+                          },
+                          icon: const Icon(Icons.clear_all_rounded,
+                              size: 18, color: AppColors.error),
+                          label: const Text('Tout effacer',
+                              style: TextStyle(
+                                  color: AppColors.error,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold)),
                         ),
                     ],
                   ),
@@ -297,18 +427,17 @@ class _NotificationBellState extends State<NotificationBell> {
                                               ? Icons.description_rounded
                                               : type == 'INTERVIEW_SCHEDULED'
                                                   ? Icons.event_available_rounded
-                                                  : type ==
-                                                          'APPLICATION_REJECTED'
-                                                      ? Icons.cancel_outlined
-                                                      : Icons.notifications,
+                                                  : type == 'APPLICATION_REJECTED' || type == 'REJECTION'
+                                                       ? Icons.cancel_outlined
+                                                       : Icons.notifications,
                                           color: type == 'APPLICATION'
                                               ? AppColors.navy
                                               : type == 'INTERVIEW_SCHEDULED'
                                                   ? AppColors.success
                                                   : type ==
-                                                          'APPLICATION_REJECTED'
-                                                      ? AppColors.error
-                                                      : AppColors.textGray,
+                                                           'APPLICATION_REJECTED' || type == 'REJECTION'
+                                                       ? AppColors.error
+                                                       : AppColors.textGray,
                                           size: 18,
                                         ),
                                       ),
@@ -343,6 +472,18 @@ class _NotificationBellState extends State<NotificationBell> {
                                               color: AppColors.orange,
                                               shape: BoxShape.circle),
                                         ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
+                                        onPressed: () async {
+                                          await _deleteNotification(n['_id']);
+                                          setSheetState(() {});
+                                        },
+                                        icon: const Icon(Icons.close_rounded,
+                                            size: 16, color: AppColors.textGray),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                        visualDensity: VisualDensity.compact,
+                                      ),
                                     ],
                                   ),
                                   const SizedBox(height: 12),
@@ -359,6 +500,30 @@ class _NotificationBellState extends State<NotificationBell> {
                                       height: 1.5,
                                     ),
                                   ),
+                                  if (type == 'INTERVIEW_SCHEDULED' &&
+                                      !widget.isRecruiter &&
+                                      n['meetingLink'] != null &&
+                                      n['meetingLink'].toString().isNotEmpty) ...[
+                                    const SizedBox(height: 12),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton.icon(
+                                        onPressed: () {
+                                          _showMeetLinkDialog(n['meetingLink']);
+                                        },
+                                        icon: const Icon(Icons.link_rounded, size: 18),
+                                        label: const Text('Voir le lien de l\'entretien'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.navy,
+                                          foregroundColor: Colors.white,
+                                          elevation: 0,
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(12)),
+                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                   if (type == 'APPLICATION' &&
                                       widget.isRecruiter &&
                                       !isDecisionMade) ...[

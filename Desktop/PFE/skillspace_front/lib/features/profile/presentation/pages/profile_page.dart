@@ -1,8 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/utils/string_extension.dart';
 import '../../../../core/utils/app_toast.dart';
@@ -770,7 +768,9 @@ class _CvCard extends StatelessWidget {
         }
         if (cvState is CvExtractionSuccess) {
           context.read<ProfileCubit>().updateFromExtractedData(cvState.data);
-          context.read<ProfileCubit>().saveProfile(); // auto-save so Beginner level is persisted
+          context
+              .read<ProfileCubit>()
+              .saveProfile(); // auto-save so Beginner level is persisted
           AppToast.showSuccess(context, 'CV analysé avec succès !');
         }
       },
@@ -1033,7 +1033,7 @@ class _SkillsCard extends StatefulWidget {
 }
 
 class _SkillsCardState extends State<_SkillsCard> {
-  bool _editing = false;
+  final bool _editing = false;
   bool _showAll = false;
 
   @override

@@ -471,8 +471,14 @@ const getMatchingCandidatesGroupedByOffer = async (req, res) => {
 
         const groupedResult = [];
 
-        // 2. For each offer, find matching candidates
+        // 2. Fetch all relevant applications for this recruiter's offers
+        const offerIds = recruiterOffers.map(o => o._id.toString());
+        const allApplications = await Application.find({ offerId: { $in: offerIds } }).lean();
+
+        // 3. For each offer, find matching candidates
         for (const offer of recruiterOffers) {
+            const offerIdStr = offer._id.toString();
+            const offerApplications = allApplications.filter(app => app.offerId === offerIdStr);
             // Find all matches for this offer in the Match collection
             let matches = await Match.find({ offerId: offer._id })
                 .sort({ score: -1 })
@@ -618,6 +624,16 @@ const getMatchingCandidatesGroupedByOffer = async (req, res) => {
                         continue;
                     }
 
+                    // COLLECT STATUS
+                    const application = offerApplications.find(app => app.candidateId.toString() === candidate._id.toString());
+                    let displayStatus = 'Nouveau';
+                    if (application) {
+                        if (application.status === 'REJECTED') displayStatus = 'Refusé';
+                        else if (application.status === 'INTERVIEW_PLANNED') displayStatus = 'Entretien planifié';
+                        else if (application.status === 'ACCEPTED') displayStatus = 'Accepté';
+                        else if (application.status === 'PENDING') displayStatus = 'En revue';
+                    }
+
                     candidateDetails.push({
                         _id: candidate._id,
                         name: `${candidate.prenom} ${candidate.nom}`,
@@ -625,7 +641,7 @@ const getMatchingCandidatesGroupedByOffer = async (req, res) => {
                         location: candidate.localisation || 'Non spécifiée',
                         experience: 'Nouveau diplômé',
                         skills: (candidate.skills || []).map(s => typeof s === 'string' ? s : s.name),
-                        status: 'Nouveau',
+                        status: displayStatus,
                         matchScore: currentScore,
                         matchingAnalysis: currentAnalysis,
                         recommendation: currentRecommendation,
@@ -736,16 +752,46 @@ const applyToOffer = async (req, res) => {
 // Internal endpoint to receive notification
 const receiveNotification = async (req, res) => {
     try {
-        const { candidateId, senderId, senderName, senderEmail, message, type } = req.body;
+        const { candidateId, senderId, senderName, senderEmail, message, type, rejectionReason, offerId, offerTitle, interviewDate, interviewTime, meetingLink } = req.body;
         const notif = new Notification({
             userId: candidateId,
             senderId,
             senderName,
             senderEmail,
             message,
-            type
+            type,
+            offerId,
+            offerTitle,
+            rejectionReason,
+            meetingLink,
+            interviewDate,
+            interviewTime
         });
         await notif.save();
+
+        // If it's a rejection or interview scheduling, update/create Application record
+        if (offerId && (type === 'REJECTION' || type === 'INTERVIEW_SCHEDULED' || type === 'INTERVIEW')) {
+            let appStatus = 'PENDING';
+            if (type === 'REJECTION') appStatus = 'REJECTED';
+            else if (type === 'INTERVIEW_SCHEDULED' || type === 'INTERVIEW') appStatus = 'INTERVIEW_PLANNED';
+
+            await Application.findOneAndUpdate(
+                { candidateId, offerId },
+                { 
+                    $set: { 
+                        status: appStatus,
+                        interviewDate,
+                        interviewTime,
+                        meetingLink,
+                        rejectionReason,
+                        recruiterId: senderId
+                    },
+                    $setOnInsert: { candidateId, offerId }
+                },
+                { upsert: true }
+            );
+        }
+
         res.json({ message: 'Notification received' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -772,10 +818,31 @@ const markNotificationRead = async (req, res) => {
     }
 };
 
+// Delete single notification
+const deleteNotification = async (req, res) => {
+    try {
+        await Notification.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Deleted' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Clear all notifications for candidate
+const clearAllNotifications = async (req, res) => {
+    try {
+        await Notification.deleteMany({ userId: req.userId });
+        res.json({ message: 'All cleared' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
 // Internal endpoint to finalize decision
 const internalUpdateApplication = async (req, res) => {
     try {
         const { candidateId, offerId, status, interviewDate, interviewTime, meetingLink, rejectionReason, recruiterName, recruiterEmail } = req.body;
+        console.log('Internal application update request:', req.body);
 
         const application = await Application.findOneAndUpdate(
             { candidateId, offerId },
@@ -791,7 +858,10 @@ const internalUpdateApplication = async (req, res) => {
             { new: true }
         );
 
-        if (!application) return res.status(404).json({ error: 'Application not found' });
+        if (!application) {
+            console.warn(`Application not found for candidateId: ${candidateId}, offerId: ${offerId}`);
+            return res.status(404).json({ error: 'Application not found' });
+        }
 
         // Notify Candidate
         let message = '';
@@ -813,7 +883,10 @@ const internalUpdateApplication = async (req, res) => {
             message,
             offerId,
             offerTitle: req.body.offerTitle,
-            type
+            type,
+            meetingLink,
+            interviewDate,
+            interviewTime
         });
         await notif.save();
 
@@ -827,5 +900,5 @@ module.exports = {
     register, login, getProfile, updateProfile, getRecentCandidatesBySector,
     getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer,
     applyToOffer, receiveNotification, getNotifications, markNotificationRead,
-    internalUpdateApplication
+    internalUpdateApplication, deleteNotification, clearAllNotifications
 };

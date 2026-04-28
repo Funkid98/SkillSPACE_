@@ -28,15 +28,26 @@ const evaluateQuizHandler = async (req, res) => {
 
     const result = await evaluateQuiz(skill, claimedLevel, qna);
     
-    // Scale the score based on difficulty
+    // Manually calculate/verify score from answers_analysis to ensure accuracy
+    if (result.answers_analysis && Array.isArray(result.answers_analysis)) {
+      let calculatedScore = 0;
+      result.answers_analysis.forEach((ans, index) => {
+        if (ans.is_correct === true) {
+          if (index < 4) calculatedScore += 15; // Q1-Q4: 15pts each
+          else calculatedScore += 40; // Q5: 40pts
+        }
+      });
+      result.score = calculatedScore;
+    }
+
     let rawScore = result.score || 0;
     let score = 0;
     if (claimedLevel === 'Beginner') {
-      score = Math.round(rawScore * 0.35);
+      score = Math.round(rawScore * 0.4); // Max 40%
     } else if (claimedLevel === 'Intermediate') {
-      score = 40 + Math.round(rawScore * 0.35);
+      score = Math.round(rawScore * 0.8); // Max 80%
     } else {
-      score = 80 + Math.round(rawScore * 0.20);
+      score = rawScore; // Max 100%
     }
     score = Math.max(0, Math.min(100, (Math.round(score / 5) * 5)));
 

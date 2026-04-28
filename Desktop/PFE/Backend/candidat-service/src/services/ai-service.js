@@ -145,20 +145,34 @@ const evaluateQuiz = async (skill, claimedLevel, qna) => {
         - Question 5 is a PROBLEM-SOLVING scenario and is worth 40 points (max 40 points).
         - Total maximum score = 100 points.
         
-        Evaluate each answer strictly and calculate the total "score".
+        Evaluate each answer strictly. For each question, determine if it is correct (is_correct: true) or incorrect (is_correct: false).
+        Calculate the total "score" as the EXACT sum of points:
+        - Each correct answer in Questions 1-4 = 15 points.
+        - Correct answer in Question 5 = 40 points.
+        - The "score" field in the JSON MUST be the sum of these points (0 to 100).
         
         Then determine "determined_level" based on score:
         - 0-30: Beginner
-        - 40-70: Intermediate
+        - 40-75: Intermediate
         - 80-100: Advanced
         
+        if all the answers are incorrect then the score will be 0 and the determined level will be beginner. 
+
         Provide brief constructive "feedback" explaining the evaluation.
 
         Return ONLY a JSON object:
         {
           "score": number,
           "determined_level": "Beginner" | "Intermediate" | "Advanced",
-          "feedback": "string"
+          "feedback": "string",
+          "answers_analysis": [
+            {
+              "question": "string",
+              "user_answer": "string",
+              "is_correct": boolean,
+              "correct_answer": "string"
+            }
+          ]
         }`
       },
       {

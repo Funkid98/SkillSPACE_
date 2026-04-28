@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../data/datasources/google_auth_web.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../data/models/user_model.dart';
 
@@ -22,6 +23,7 @@ class AuthCubit extends Cubit<AuthState> {
   void toggleStaySignedIn() {
     emit(state.copyWith(staySignedIn: !state.staySignedIn));
   }
+
   void clearError() => emit(state.copyWith(clearError: true));
   void clearSuccess() => emit(state.copyWith(isSuccess: false));
 
@@ -40,6 +42,9 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   Future<void> checkAuthStatus() async {
+    // On web, check if we're returning from a Google OAuth redirect first.
+    await handleGoogleRedirect();
+
     final prefs = await SharedPreferences.getInstance();
     final staySignedIn = prefs.getBool('stay_signed_in') ?? true;
     final token = prefs.getString('jwt_token');
@@ -51,6 +56,15 @@ class AuthCubit extends Cubit<AuthState> {
         restoreSession(user);
       } catch (_) {}
     }
+  }
+
+  /// Checks if the app was just launched with a Google access token in the URL.
+  Future<void> handleGoogleRedirect() async {
+    try {
+      if (state.loggedInUser == null && hasGoogleRedirectToken()) {
+        await signInWithGoogle();
+      }
+    } catch (e) {}
   }
 
   Future<void> login(String email, String password) async {
@@ -95,8 +109,7 @@ class AuthCubit extends Cubit<AuthState> {
           'sector': synchronizedSector ?? user.sector,
         },
       ));
-    }
- catch (e) {
+    } catch (e) {
       emit(state.copyWith(
           isLoading: false, error: e.toString().replaceAll('Exception: ', '')));
     }
@@ -160,8 +173,7 @@ class AuthCubit extends Cubit<AuthState> {
           'sector': synchronizedSector ?? user.sector,
         },
       ));
-    }
- catch (e) {
+    } catch (e) {
       emit(state.copyWith(
           isLoading: false, error: e.toString().replaceAll('Exception: ', '')));
     }
@@ -202,7 +214,9 @@ class AuthCubit extends Cubit<AuthState> {
       ));
     } catch (e) {
       final errorMsg = e.toString().replaceAll('Exception: ', '');
-      if (errorMsg.contains('popup_closed')) {
+      if (errorMsg.contains('popup_closed') ||
+          errorMsg == 'google_redirect' ||
+          errorMsg == 'Operation cancelled') {
         emit(state.copyWith(isLoading: false));
         return;
       }
@@ -238,7 +252,8 @@ class AuthCubit extends Cubit<AuthState> {
     emit(state.copyWith(
         isLoading: true, clearError: true, githubAwaitingCode: false));
     try {
-      final user = await authRepository.signInWithGithubCode(code.trim(), role: state.role.name);
+      final user = await authRepository.signInWithGithubCode(code.trim(),
+          role: state.role.name);
       UserRole userRole = UserRole.candidat;
       if (user.role == 'recruteur' || user.role == 'recruiter') {
         userRole = UserRole.recruteur;
@@ -309,7 +324,7 @@ class AuthCubit extends Cubit<AuthState> {
         final updatedUser = Map<String, dynamic>.from(state.loggedInUser!);
         updatedUser['sector'] = fullProfile.sector;
         emit(state.copyWith(loggedInUser: updatedUser));
-        
+
         // Persist updated user data to SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user_data', jsonEncode(updatedUser));
@@ -328,7 +343,7 @@ class AuthCubit extends Cubit<AuthState> {
         final updatedUser = Map<String, dynamic>.from(state.loggedInUser!);
         updatedUser['sector'] = sector;
         emit(state.copyWith(loggedInUser: updatedUser));
-        
+
         // Persist to SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user_data', jsonEncode(updatedUser));
@@ -347,7 +362,7 @@ class AuthCubit extends Cubit<AuthState> {
         }
       });
       emit(state.copyWith(loggedInUser: updatedUser));
-      
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_data', jsonEncode(updatedUser));
     }

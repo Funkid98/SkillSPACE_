@@ -33,6 +33,7 @@ class _QuizModalState extends State<QuizModal> {
   int _currentQuestionIndex = 0;
   String _evaluationFeedback = '';
   String _determinedLevel = '';
+  List<dynamic> _answersAnalysis = [];
 
   Future<void> _generateQuiz() async {
     setState(() => _step = 1);
@@ -96,11 +97,11 @@ class _QuizModalState extends State<QuizModal> {
 
         // Scale the raw score based on the selected difficulty level
         if (_selectedLevel == 'Beginner') {
-          score = (rawScore * 0.35).round(); // Max 35
+          score = (rawScore * 0.4).round(); // Max 40
         } else if (_selectedLevel == 'Intermediate') {
-          score = 40 + (rawScore * 0.35).round(); // Max 75
+          score = (rawScore * 0.8).round(); // Max 80
         } else {
-          score = 80 + (rawScore * 0.20).round(); // Max 100
+          score = rawScore; // Max 100
         }
 
         // Round score to nearest 5: 10, 15, 20 ...
@@ -108,9 +109,9 @@ class _QuizModalState extends State<QuizModal> {
 
         // Sanitize the level for UI display
         String displayLevel = 'Beginner';
-        if (score >= 80)
+        if (score >= 80) {
           displayLevel = 'Advanced';
-        else if (score >= 40) displayLevel = 'Intermediate';
+        } else if (score >= 40) displayLevel = 'Intermediate';
 
         if (mounted) {
           widget.parentContext
@@ -122,6 +123,7 @@ class _QuizModalState extends State<QuizModal> {
         setState(() {
           _determinedLevel = displayLevel;
           _evaluationFeedback = data['feedback'] ?? '';
+          _answersAnalysis = data['answers_analysis'] ?? [];
 
           if ((_selectedLevel == 'Beginner' ||
                   _selectedLevel == 'Intermediate') &&
@@ -275,40 +277,139 @@ class _QuizModalState extends State<QuizModal> {
         ),
       );
     } else if (_step == 4) {
-      content = Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.check_circle, color: Colors.green, size: 64),
-          const SizedBox(height: 16),
-          const Text('Analyse Terminée',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          const SizedBox(height: 16),
-          Text('Niveau Déterminé: $_determinedLevel',
-              style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  color: AppColors.navy)),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-                color: AppColors.bgAlt, borderRadius: BorderRadius.circular(8)),
-            child: Text(_evaluationFeedback,
-                style: const TextStyle(fontSize: 14, color: AppColors.textDark),
-                textAlign: TextAlign.center),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.orange,
-                foregroundColor: Colors.white),
-            onPressed: () {
-              Navigator.of(context).pop();
-              AppToast.showSuccess(context, 'Niveau mis à jour!');
-            },
-            child: const Text('Fermer et sauvegarder'),
-          ),
-        ],
+      content = SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle, color: Colors.green, size: 64),
+            const SizedBox(height: 16),
+            const Text('Analyse Terminée',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const SizedBox(height: 16),
+            Text('Niveau Déterminé: $_determinedLevel',
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    color: AppColors.navy)),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.navy.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'Score Brut: ${_answersAnalysis.where((a) => a['is_correct'] == true).fold(0, (sum, a) => sum + (_answersAnalysis.indexOf(a) < 4 ? 15 : 40))}/100',
+                style: const TextStyle(
+                    color: AppColors.navy,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                  color: AppColors.bgAlt,
+                  borderRadius: BorderRadius.circular(8)),
+              child: Text(_evaluationFeedback,
+                  style:
+                      const TextStyle(fontSize: 14, color: AppColors.textDark),
+                  textAlign: TextAlign.center),
+            ),
+            const SizedBox(height: 24),
+            const Text('Détails des Réponses',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 12),
+            ..._answersAnalysis.map((analysis) {
+              final bool isCorrect = analysis['is_correct'] ?? false;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                      color: isCorrect
+                          ? Colors.green.withOpacity(0.3)
+                          : Colors.red.withOpacity(0.3)),
+                  borderRadius: BorderRadius.circular(8),
+                  color: isCorrect
+                      ? Colors.green.withOpacity(0.05)
+                      : Colors.red.withOpacity(0.05),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(analysis['question'] ?? '',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w600, fontSize: 14)),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: isCorrect ? Colors.green : Colors.red,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            isCorrect
+                                ? '+${_answersAnalysis.indexOf(analysis) < 4 ? 15 : 40} pts'
+                                : '0 pts',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(isCorrect ? Icons.check : Icons.close,
+                            size: 16,
+                            color: isCorrect ? Colors.green : Colors.red),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text('Votre réponse: ${analysis['user_answer']}',
+                              style: TextStyle(
+                                  color: isCorrect ? Colors.green : Colors.red,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500)),
+                        ),
+                      ],
+                    ),
+                    if (!isCorrect) ...[
+                      const SizedBox(height: 4),
+                      Text('Réponse correcte: ${analysis['correct_answer']}',
+                          style: const TextStyle(
+                              color: Colors.green,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500)),
+                    ],
+                  ],
+                ),
+              );
+            }).toList(),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.orange,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 45)),
+              onPressed: () {
+                Navigator.of(context).pop();
+                AppToast.showSuccess(context, 'Niveau mis à jour!');
+              },
+              child: const Text('Fermer et sauvegarder'),
+            ),
+          ],
+        ),
       );
     } else {
       final isBeginner = _selectedLevel == 'Beginner';

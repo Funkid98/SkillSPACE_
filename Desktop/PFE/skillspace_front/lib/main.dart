@@ -12,7 +12,6 @@ import 'package:skillspace/features/landing/presentation/pages/landing_page.dart
 import 'package:skillspace/features/dashboard_shell/dashboard_shell.dart';
 import 'package:skillspace/features/recruiter/presentation/pages/recruiter_shell.dart';
 import 'package:trainer_profile/screens/main_navigation_screen.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
@@ -26,6 +25,8 @@ void main() async {
   }
 
   final apiClient = ApiClient();
+  // AuthRepositoryImpl uses the module-level _sharedGoogleSignIn singleton
+  // internally, so no googleSignIn arg is needed here.
   final authRepository = AuthRepositoryImpl(apiClient: apiClient);
 
   runApp(

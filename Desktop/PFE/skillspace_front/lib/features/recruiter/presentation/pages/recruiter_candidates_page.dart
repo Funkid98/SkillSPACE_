@@ -144,7 +144,11 @@ class RecruiterCandidatesPage extends StatelessWidget {
                           )
                         else
                           ...group.candidates.map((c) {
-                            return _CandidateMatchCard(candidate: c);
+                            return _CandidateMatchCard(
+                              candidate: c,
+                              offerId: group.offer.id,
+                              offerTitle: group.offer.title,
+                            );
                           }),
                         const SizedBox(height: 16),
                       ],
@@ -219,7 +223,13 @@ class RecruiterCandidatesPage extends StatelessWidget {
 
 class _CandidateMatchCard extends StatelessWidget {
   final CandidateMatch candidate;
-  const _CandidateMatchCard({required this.candidate});
+  final String offerId;
+  final String offerTitle;
+  const _CandidateMatchCard({
+    required this.candidate,
+    required this.offerId,
+    required this.offerTitle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -446,8 +456,17 @@ class _CandidateMatchCard extends StatelessWidget {
   Widget _buildActionButton(AppLocalizations l10n) {
     return Builder(
       builder: (context) => OutlinedButton.icon(
-        onPressed: () async {
-          _showContactOptions(context, l10n);
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (ctx) => SchedulingDialog(
+              candidateName: candidate.name,
+              onConfirm: (date, time, link) {
+                _submitContact(context, l10n,
+                    date: date, time: time, link: link);
+              },
+            ),
+          );
         },
         icon: const Icon(Icons.mail_outline_rounded, size: 16),
         label: Text(l10n.contactCandidate),
@@ -457,108 +476,17 @@ class _CandidateMatchCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          textStyle:
-              const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-        ),
-      ),
-    );
-  }
-
-  void _showContactOptions(BuildContext context, AppLocalizations l10n) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.all(28),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Contacter ${candidate.name}',
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                color: AppColors.textDark,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Choisissez comment vous souhaitez initier le contact.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textGray, fontSize: 14),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                _submitContact(context, l10n);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.bg,
-                foregroundColor: AppColors.navy,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.mail_outline_rounded, size: 20),
-                  SizedBox(width: 12),
-                  Text('Envoyer demande simple',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                showDialog(
-                  context: context,
-                  builder: (_) => SchedulingDialog(
-                    candidateName: candidate.name,
-                    onConfirm: (date, time, link) {
-                      _submitContact(context, l10n,
-                          date: date, time: time, link: link);
-                    },
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.navy,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.video_call_rounded, size: 20),
-                  SizedBox(width: 12),
-                  Text('Planifier un entretien',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
+          textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
         ),
       ),
     );
   }
 
   Future<void> _submitContact(BuildContext context, AppLocalizations l10n,
-      {String? date, String? time, String? link}) async {
+      {String? date,
+      String? time,
+      String? link,
+      String? rejectionReason}) async {
     // Show loading
     showDialog(
       context: context,
@@ -573,9 +501,15 @@ class _CandidateMatchCard extends StatelessWidget {
       final response = await client.post('/recruiter/contact', {
         'candidateId': candidate.id,
         'candidateName': candidate.name,
+        'offerId': offerId,
+        'offerTitle': offerTitle,
         'interviewDate': date,
         'interviewTime': time,
         'meetingLink': link,
+        'rejectionReason': rejectionReason,
+        'type': rejectionReason != null
+            ? 'REJECTION'
+            : (date != null ? 'INTERVIEW' : 'CONTACT'),
       });
 
       if (context.mounted) Navigator.of(context).pop(); // close loading
@@ -602,16 +536,22 @@ class _CandidateMatchCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    date != null ? 'Entretien proposé !' : 'Contact envoyé !',
+                    rejectionReason != null
+                        ? 'Candidature refusée'
+                        : (date != null
+                            ? 'Entretien proposé !'
+                            : 'Contact envoyé !'),
                     style: const TextStyle(
                         fontWeight: FontWeight.w900, fontSize: 17),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    date != null
-                        ? 'Le candidat a été notifié de l\'entretien prévu le $date à $time.'
-                        : '${candidate.name} recevra une notification que vous souhaitez le contacter.',
+                    rejectionReason != null
+                        ? 'Le candidat a été informé de votre décision.'
+                        : (date != null
+                            ? 'Le candidat a été notifié de l\'entretien prévu le $date à $time.'
+                            : '${candidate.name} recevra une notification que vous souhaitez le contacter.'),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                         color: AppColors.textGray, fontSize: 14, height: 1.5),

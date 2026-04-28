@@ -342,7 +342,7 @@ const Notification = require('../models/notification');
 // Contact a candidate
 const contactCandidate = async (req, res) => {
     try {
-        const { candidateId, candidateName, interviewDate, interviewTime, meetingLink } = req.body;
+        const { candidateId, candidateName, interviewDate, interviewTime, meetingLink, rejectionReason, offerId, offerTitle, type: providedType } = req.body;
         const recruiterId = req.user._id;
 
         if (!candidateId) return res.status(400).json({ error: 'Missing candidateId' });
@@ -350,9 +350,11 @@ const contactCandidate = async (req, res) => {
         const recruiter = await Recruiter.findById(recruiterId).lean();
 
         let message = `L'entreprise ${recruiter.entreprise} souhaite vous contacter.`;
-        let type = 'CONTACT';
+        let type = providedType || 'CONTACT';
 
-        if (interviewDate && interviewTime) {
+        if (type === 'REJECTION') {
+            message = `L'entreprise ${recruiter.entreprise} a refusé votre profil. Motif : ${rejectionReason || 'Non spécifié'}`;
+        } else if (interviewDate && interviewTime) {
             message = `L'entreprise ${recruiter.entreprise} vous propose un entretien le ${interviewDate} à ${interviewTime}.`;
             type = 'INTERVIEW_SCHEDULED';
         }
@@ -366,9 +368,12 @@ const contactCandidate = async (req, res) => {
                 senderEmail: recruiter.email,
                 message,
                 type,
+                offerId,
+                offerTitle,
                 interviewDate,
                 interviewTime,
-                meetingLink
+                meetingLink,
+                rejectionReason
             });
         } catch (e) {
             console.error('Failed to notify candidate:', e.message);
@@ -427,8 +432,11 @@ const handleApplicationDecision = async (req, res) => {
                 recruiterEmail: recruiter.email
             });
         } catch (e) {
-            console.error('Failed to update candidate application:', e.message);
-            return res.status(500).json({ error: 'Failed to sync decision with candidate service' });
+            console.error('Failed to update candidate application:', e.response ? e.response.data : e.message);
+            return res.status(500).json({ 
+                error: 'Failed to sync decision with candidate service',
+                details: e.response ? e.response.data : e.message
+            });
         }
 
         // Mark decision as made
@@ -462,6 +470,26 @@ const markNotificationRead = async (req, res) => {
     }
 };
 
+// Delete single notification
+const deleteNotification = async (req, res) => {
+    try {
+        await Notification.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Deleted' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Clear all notifications for recruiter
+const clearAllNotifications = async (req, res) => {
+    try {
+        await Notification.deleteMany({ userId: req.user._id });
+        res.json({ message: 'All cleared' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
 module.exports = {
     registerRecruiter,
     authRecruiter,
@@ -474,5 +502,7 @@ module.exports = {
     receiveNotification,
     getNotifications,
     markNotificationRead,
-    handleApplicationDecision
+    handleApplicationDecision,
+    deleteNotification,
+    clearAllNotifications
 };

@@ -6,6 +6,20 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/network/api_client.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../models/user_model.dart';
+// Conditional import: dart:html on web, no-op stub on mobile.
+import '../datasources/google_auth_web.dart'
+    if (dart.library.io) '../datasources/google_auth_stub.dart';
+
+
+/// Public module-level singleton — GoogleSignIn must only be instantiated ONCE.
+/// Multiple instantiations cause google.accounts.id.initialize() to fire
+/// repeatedly and break FedCM / One-Tap on web.
+final sharedGoogleSignIn = GoogleSignIn(
+  clientId:
+      '1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com',
+  scopes: ['email', 'openid'],
+);
+
 
 class AuthRepositoryImpl implements AuthRepository {
   final ApiClient _apiClient;
@@ -13,12 +27,9 @@ class AuthRepositoryImpl implements AuthRepository {
 
   AuthRepositoryImpl({ApiClient? apiClient, GoogleSignIn? googleSignIn})
       : _apiClient = apiClient ?? ApiClient(),
-        _googleSignIn = googleSignIn ??
-            GoogleSignIn(
-              clientId:
-                  '1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com',
-              scopes: ['email', 'openid'],
-            );
+        // Always falls back to the module-level singleton — never creates a new instance.
+        _googleSignIn = googleSignIn ?? sharedGoogleSignIn;
+
 
   // Helper method to save token and user data
   Future<void> _saveAuthData(String token, UserModel user) async {
@@ -133,24 +144,50 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<UserModel> signInWithGoogle({String? role}) async {
+    // ── WEB ──────────────────────────────────────────────────────────────────
+    if (kIsWeb) {
+      // Check if we are returning from a Google OAuth redirect.
+      // consumeOAuthToken() reads the #access_token fragment and clears the URL.
+      final webToken = consumeOAuthToken();
+      final webRole = consumePendingRole() ?? role ?? 'candidat';
+
+      if (webToken != null) {
+        // We have an access token from the redirect — authenticate with backend.
+        final isRecruiter =
+            webRole == 'recruteur' || webRole == 'recruiter';
+        final endpoint =
+            isRecruiter ? '/recruiter/google' : '/api/auth/google';
+        final response = await _apiClient
+            .post(endpoint, {'accessToken': webToken, 'role': webRole});
+        final data = jsonDecode(response.body);
+        if (response.statusCode == 200 && data['success'] == true) {
+          final user = UserModel.fromJson(data['user']);
+          await _saveAuthData(data['token'], user);
+          return user;
+        }
+        throw Exception(
+            data['message'] ?? 'Erreur lors de la connexion Google');
+      } else {
+        // No token yet — redirect the browser to Google OAuth.
+        // Google will redirect back to http://localhost:3000 with #access_token.
+        startGoogleRedirectFlow(role ?? 'candidat');
+        // Throwing this specific string lets the AuthCubit show a loading
+        // indicator rather than an error while the redirect is happening.
+        throw Exception('google_redirect');
+      }
+    }
+
+    // ── MOBILE ───────────────────────────────────────────────────────────────
     try {
       GoogleSignInAccount? googleUser;
-
-      if (kIsWeb) {
-        // On web, signIn() popup is blocked by FedCM. Use signInSilently first
-        // (triggers One Tap / FedCM), then fall back to signIn if no session.
-        googleUser = await _googleSignIn.signInSilently();
-        googleUser ??= await _googleSignIn.signIn();
-      } else {
-        // On mobile, use the normal popup flow
-        try {
-          await _googleSignIn.signInSilently();
-        } catch (_) {}
-        googleUser = await _googleSignIn.signIn();
-      }
+      try {
+        await _googleSignIn.signInSilently();
+      } catch (_) {}
+      googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
-        throw Exception('Connexion Google annulée');
+        throw Exception(
+            'Connexion Google annulée. Si le problème persiste, essayez de vous connecter via email.');
       }
 
       final GoogleSignInAuthentication googleAuth =
@@ -160,7 +197,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       if (idToken == null && accessToken == null) {
         throw Exception(
-            'Token Google introuvable. Assurez-vous que le SHA-1 est correctement configuré.');
+            'Token Google introuvable. Vérifiez que localhost est autorisé dans Google Cloud Console.');
       }
 
       final isRecruiter = role == 'recruteur' || role == 'recruiter';
@@ -183,12 +220,15 @@ class AuthRepositoryImpl implements AuthRepository {
             data['message'] ?? 'Erreur lors de la connexion Google');
       }
     } catch (e) {
-      if (e.toString().contains('popup_closed') ||
-          e.toString().contains('Operation cancelled') ||
-          e.toString().contains('unknown_reason')) {
+      final msg = e.toString();
+      if (msg.contains('popup_closed') ||
+          msg.contains('Operation cancelled') ||
+          msg.contains('unknown_reason') ||
+          msg.contains('network_error') ||
+          msg.contains('NetworkError')) {
         throw Exception('Operation cancelled');
       }
-      throw Exception('Google Sign-In échoué: $e');
+      rethrow;
     }
   }
 
