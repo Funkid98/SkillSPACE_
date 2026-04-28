@@ -523,17 +523,6 @@ class _SkillsCardState extends State<_SkillsCard> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (widget.skills.isNotEmpty)
-                TextButton(
-                  onPressed: _showSkillsModal,
-                  child: Text(
-                    l10n.edit,
-                    style: const TextStyle(
-                        color: AppColors.orange,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold),
-                  ),
-                ),
             ],
           ),
           const SizedBox(height: 16),

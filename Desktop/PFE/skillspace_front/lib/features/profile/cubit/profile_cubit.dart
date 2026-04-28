@@ -77,7 +77,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     final isRecruiter = data.role == 'recruteur' || data.role == 'recruiter';
     int score = 0;
     // We use 10 fields for Candidat so each is exactly 10%
-    int total = isRecruiter ? 8 : 10; 
+    int total = isRecruiter ? 8 : 9; 
 
     if (!isRecruiter) {
       if (data.firstName.isNotEmpty) score++;
@@ -93,7 +93,9 @@ class ProfileCubit extends Cubit<ProfileState> {
     
     // Adding work info for perfect 10s
     if (data.poste != null && data.poste!.isNotEmpty) score++;
-    if (data.entreprise != null && data.entreprise!.isNotEmpty) score++;
+    if (isRecruiter && data.entreprise != null && data.entreprise!.isNotEmpty) {
+      score++;
+    }
 
     int rawPercent = ((score / total) * 100).toInt();
     // Round to nearest 10 (e.g., 12.5 -> 10, 25 -> 20, 37.5 -> 40, etc.)

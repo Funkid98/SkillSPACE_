@@ -224,20 +224,25 @@ class _ProfileContent extends StatelessWidget {
 class _CompletionCard extends StatelessWidget {
   const _CompletionCard();
 
-  String _getHint(BuildContext context, ProfileData data, bool isSaved) {
-    if (data.completionPercent == 100 && isSaved) {
-      return 'Votre profil est complété !';
+  List<String> _getMissingFields(ProfileData data) {
+    final List<String> missing = [];
+    final isRecruiter = data.role == 'recruteur' || data.role == 'recruiter';
+
+    if (!isRecruiter) {
+      if (data.firstName.isEmpty) missing.add('Prénom');
+      if (data.lastName.isEmpty) missing.add('Nom');
+    }
+    if (data.phone.isEmpty) missing.add('Téléphone');
+    if (data.location.isEmpty) missing.add('Localisation');
+    if (data.bio.isEmpty) missing.add('Bio');
+    if (data.skills.isEmpty) missing.add('Compétences');
+    if (!data.hasCv) missing.add('CV');
+    if (data.poste == null || data.poste!.isEmpty) missing.add('Poste actuel');
+    if (isRecruiter && (data.entreprise == null || data.entreprise!.isEmpty)) {
+      missing.add('Entreprise');
     }
 
-    final List<String> missing = [];
-    if (data.phone.isEmpty) missing.add('un numéro de téléphone');
-    if (data.location.isEmpty) missing.add('une localisation');
-    if (data.bio.isEmpty) missing.add('une bio');
-    if (data.skills.isEmpty) missing.add('des compétences');
-    if (!data.hasCv) missing.add('un CV');
-
-    if (missing.isEmpty) return 'Complétez votre profil pour atteindre 100%';
-    return 'Ajouter ${missing.first} pour compléter votre profil';
+    return missing;
   }
 
   @override
@@ -305,20 +310,50 @@ class _CompletionCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              Text(
-                data != null
-                    ? _getHint(context, data, isSaved)
-                    : l10n.completeProfileHint,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: (percent == 100 && isSaved)
-                      ? Colors.green
-                      : AppColors.textGray,
-                  fontWeight: (percent == 100 && isSaved)
-                      ? FontWeight.bold
-                      : FontWeight.w500,
+              if (percent == 100 && isSaved)
+                const Text(
+                  'Votre profil est complété !',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              else if (data != null) ...[
+                const Text(
+                  'Éléments manquants :',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textDark,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _getMissingFields(data).map((field) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.orange.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: AppColors.orange.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        field,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.orange,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
             ],
           ),
         );
@@ -343,6 +378,7 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
   late final TextEditingController _location;
   late final TextEditingController _bio;
   late final TextEditingController _poste;
+  late final TextEditingController _entreprise;
   PhoneNumber _number = PhoneNumber(isoCode: 'TN');
 
   @override
@@ -360,6 +396,7 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
     _location = TextEditingController(text: data?.location ?? '');
     _bio = TextEditingController(text: data?.bio ?? '');
     _poste = TextEditingController(text: data?.poste ?? '');
+    _entreprise = TextEditingController(text: data?.entreprise ?? '');
 
     if (_phone.text.isNotEmpty) {
       _initPhoneNumber(_phone.text);
@@ -393,6 +430,7 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
     _location.dispose();
     _bio.dispose();
     _poste.dispose();
+    _entreprise.dispose();
     super.dispose();
   }
 
@@ -408,6 +446,7 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
       location: _location.text,
       bio: _bio.text,
       poste: _poste.text,
+      entreprise: _entreprise.text,
     ));
   }
 
@@ -441,6 +480,9 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
             if (_bio.text != state.data.bio) _bio.text = state.data.bio;
             if (_poste.text != state.data.poste) {
               _poste.text = state.data.poste ?? '';
+            }
+            if (_entreprise.text != state.data.entreprise) {
+              _entreprise.text = state.data.entreprise ?? '';
             }
           }
         },
@@ -575,6 +617,9 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
               const SizedBox(height: 16),
               BlocBuilder<ProfileCubit, ProfileState>(
                 builder: (context, state) {
+                  final isRecruiter = state is ProfileLoaded &&
+                      (state.data.role == 'recruteur' ||
+                          state.data.role == 'recruiter');
                   return Column(
                     children: [
                       _Field(
@@ -583,6 +628,15 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
                         readOnly: false,
                         onChanged: (_) => _updateCubit(),
                       ),
+                      if (isRecruiter) ...[
+                        const SizedBox(height: 16),
+                        _Field(
+                          label: 'Entreprise',
+                          controller: _entreprise,
+                          readOnly: false,
+                          onChanged: (_) => _updateCubit(),
+                        ),
+                      ],
                       const SizedBox(height: 16),
                     ],
                   );
@@ -1024,7 +1078,7 @@ class _CvSuccessView extends StatelessWidget {
   }
 }
 
-// ─── Skills Card ───────────────────────────────────────────────────────────
+// ─── Skills Card ────────
 class _SkillsCard extends StatefulWidget {
   const _SkillsCard();
 
