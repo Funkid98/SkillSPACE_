@@ -10,6 +10,7 @@ import '../job_offers/cubit/job_offers_cubit.dart';
 import '../job_offers/presentation/pages/job_offers_page.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import '../../core/l10n/app_localizations.dart';
+import '../simulation/presentation/pages/simulation_selection_page.dart';
 
 class DashboardShell extends StatefulWidget {
   final DashboardTab initialTab;
@@ -109,7 +110,11 @@ class _DashboardShellState extends State<DashboardShell> {
           child: const JobOffersPage(),
         );
       case DashboardTab.simulation:
-        return _ComingSoon(label: l10n.simulation);
+        return BlocProvider(
+          create: (_) => ProfileCubit(initialUserData: widget.initialUserData)
+            ..loadProfile(),
+          child: const SimulationSelectionPage(),
+        );
       case DashboardTab.formations:
         return _ComingSoon(label: l10n.training);
     }

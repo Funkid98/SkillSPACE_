@@ -1,5 +1,13 @@
 import '../../data/models/user_model.dart';
 
+class NeedsVerificationException implements Exception {
+  final String email;
+  final String message;
+  NeedsVerificationException(this.email, this.message);
+  @override
+  String toString() => message;
+}
+
 abstract class AuthRepository {
   Future<UserModel> register({
     required String firstName,
@@ -8,6 +16,12 @@ abstract class AuthRepository {
     required String password,
     String? role,
     String? entreprise,
+  });
+  
+  Future<UserModel> verifySignup({
+    required String email,
+    required String otp,
+    String? role,
   });
 
   Future<UserModel> login({

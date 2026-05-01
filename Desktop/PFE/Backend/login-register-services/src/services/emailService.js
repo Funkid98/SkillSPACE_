@@ -20,11 +20,11 @@ const sendOtpEmail = async (toEmail, otp) => {
   const mailOptions = {
     from: `"SkillSpace" <${process.env.GMAIL_FROM}>`,
     to: toEmail,
-    subject: '🔐 Code de réinitialisation SkillSpace',
+    subject: ' Code de réinitialisation SkillSpace',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 32px; background: #f5f3ee; border-radius: 16px;">
         <div style="text-align: center; margin-bottom: 24px;">
-          <h1 style="color: #1E2B6B; font-size: 24px; margin: 0;">⭐ SkillSpace</h1>
+          <h1 style="color: #1E2B6B; font-size: 24px; margin: 0;">SkillSpace</h1>
         </div>
         <div style="background: white; border-radius: 12px; padding: 24px; text-align: center;">
           <h2 style="color: #1A1A2E; font-size: 20px;">Réinitialisation du mot de passe</h2>
@@ -43,15 +43,42 @@ const sendOtpEmail = async (toEmail, otp) => {
   await transporter.sendMail(mailOptions);
 };
 
+const sendVerificationEmail = async (toEmail, otp) => {
+  const mailOptions = {
+    from: `"SkillSpace" <${process.env.GMAIL_FROM}>`,
+    to: toEmail,
+    subject: ' Vérifiez votre compte SkillSpace',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 32px; background: #f5f3ee; border-radius: 16px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h1 style="color: #1E2B6B; font-size: 24px; margin: 0;">SkillSpace</h1>
+        </div>
+        <div style="background: white; border-radius: 12px; padding: 24px; text-align: center;">
+          <h2 style="color: #1A1A2E; font-size: 20px;">Vérification de votre compte</h2>
+          <p style="color: #8A8A9A; font-size: 14px;">Bienvenue sur SkillSpace ! Utilisez ce code pour vérifier votre adresse email et finaliser votre inscription.</p>
+          <div style="background: #F0F4FF; border: 2px solid #1E2B6B; border-radius: 12px; padding: 20px; margin: 24px 0;">
+            <span style="font-size: 36px; font-weight: 800; color: #1E2B6B; letter-spacing: 12px;">${otp}</span>
+          </div>
+          <p style="color: #8A8A9A; font-size: 12px;">Ce code expirera dans <strong>10 minutes</strong>.</p>
+        </div>
+      </div>
+    `,
+  };
+
+  const transporter = getTransporter();
+  if (!transporter) { console.warn('[Email] GMAIL_USER/GMAIL_PASS not set — skipping verification email.'); return; }
+  await transporter.sendMail(mailOptions);
+};
+
 const sendLoginSuccessEmail = async (toEmail, firstName) => {
   const mailOptions = {
     from: `"SkillSpace Security" <${process.env.GMAIL_FROM}>`,
     to: toEmail,
-    subject: '🔔 Nouvelle connexion à votre compte SkillSpace',
+    subject: 'Nouvelle connexion à votre compte SkillSpace',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 32px; background: #f5f3ee; border-radius: 16px;">
         <div style="text-align: center; margin-bottom: 24px;">
-          <h1 style="color: #1E2B6B; font-size: 24px; margin: 0;">⭐ SkillSpace</h1>
+          <h1 style="color: #1E2B6B; font-size: 24px; margin: 0;">SkillSpace</h1>
         </div>
         <div style="background: white; border-radius: 12px; padding: 24px;">
           <h2 style="color: #1A1A2E; font-size: 20px; text-align: center;">Bonjour ${firstName},</h2>
@@ -77,4 +104,4 @@ const sendLoginSuccessEmail = async (toEmail, firstName) => {
   }
 };
 
-module.exports = { sendOtpEmail, sendLoginSuccessEmail };
+module.exports = { sendOtpEmail, sendLoginSuccessEmail, sendVerificationEmail };

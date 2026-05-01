@@ -1,0 +1,130 @@
+@startuml SkillSpace_Use_Case
+
+' -- Configuration de l'apparence --
+header Projet SkillSpace - Diagramme de Cas d'Utilisation Général
+footer Rapport de PFE 2024
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam shadowing true
+skinparam backgroundColor #FDFDFD
+skinparam DefaultFontName "Arial"
+
+' Style pour les acteurs
+skinparam actor {
+    BackgroundColor White
+    BorderColor #2C3E50
+}
+
+' Style pour les cas d'utilisation
+skinparam usecase {
+    BackgroundColor White
+    BorderColor #2C3E50
+    ArrowColor #34495E
+    FontSize 12
+}
+
+' Couleurs spécifiques par module
+skinparam package {
+    BackgroundColor<<Candidat>> #E3F2FD
+    BackgroundColor<<Recruteur>> #E8F5E9
+    BackgroundColor<<Formateur>> #FFF3E0
+    BackgroundColor<<AI>> #F3E5F5
+}
+
+actor "Candidat" as candidate
+actor "Recruteur" as recruiter
+actor "Formateur" as trainer
+actor "Système IA" as ai << System >>
+
+rectangle "Plateforme SkillSpace" {
+    
+    package "Authentification & Profil" {
+        usecase "S'inscrire / Se connecter" as login
+        usecase "Gérer le profil professionnel" as profile
+    }
+
+    package "Espace Candidat" <<Candidat>> {
+        usecase "Choisir un niveau de difficulté" as choose_level
+        usecase "Passer l'évaluation IA (Quiz)" as quiz
+        usecase "Consulter les offres d'emploi" as view_jobs
+        usecase "Postuler à une offre" as apply
+        usecase "Suivre ses candidatures" as track
+        usecase "Suivre une formation" as follow_course
+        usecase "Effectuer un Entretien Virtuel (Simulation)" as simulation
+        usecase "Recevoir un Feedback IA (Analyse de lacunes)" as feedback
+    }
+
+    package "Espace Recruteur" <<Recruteur>> {
+        usecase "Publier des offres d'emploi" as post_job
+        usecase "Gérer les offres & Candidats" as manage_jobs
+        usecase "Consulter les matchs IA" as view_candidates
+        usecase "Planifier des entretiens" as manage_interviews
+        usecase "Décider de l'embauche" as decide
+    }
+
+    package "Espace Formateur" <<Formateur>> {
+        usecase "Gérer le catalogue de formations" as manage_courses
+        usecase "Suivre les apprenants" as track_enrollments
+    }
+
+    package "Moteur d'Intelligence Artificielle" <<AI>> {
+        usecase "Analyser les compétences" as analyze
+        usecase "Calculer le score de matching" as matching
+        usecase "Génération dynamique de quiz\n(selon le niveau)" as gen_quiz
+        usecase "Analyser les performances d'entretien" as analyze_interview
+    }
+}
+
+' --- Liaisons Candidat (Alignées verticalement) ---
+candidate -- login
+candidate -- profile
+candidate -- choose_level
+candidate -- quiz
+candidate -- view_jobs
+candidate -- apply
+candidate -- track
+candidate -- follow_course
+candidate -- simulation
+candidate -- feedback
+
+' --- Liaisons Recruteur ---
+recruiter -- login
+recruiter -- profile
+recruiter -- post_job
+recruiter -- manage_jobs
+recruiter -- view_candidates
+recruiter -- manage_interviews
+recruiter -- decide
+
+' --- Liaisons Formateur ---
+trainer -- login
+trainer -- profile
+trainer -- manage_courses
+trainer -- track_enrollments
+
+' --- Interactions Système IA (Liaisons courtes vers la droite) ---
+analyze -- ai
+matching -- ai
+gen_quiz -- ai
+analyze_interview -- ai
+
+' --- Logique de dépendances (Includes & Extends) ---
+quiz .[#grey].> choose_level : <<include>>
+gen_quiz .[#grey].> choose_level : <<include>>
+quiz .[#grey].> gen_quiz : <<include>>
+quiz .[#grey].> analyze : <<include>>
+matching .[#grey].> analyze : <<include>>
+view_candidates .[#grey].> matching : <<include>>
+
+simulation .[#DeepSkyBlue].> analyze_interview : <<include>>
+feedback .[#DeepSkyBlue].> analyze_interview : <<include>>
+simulation <.. feedback : <<extend>> \n (Génération de feedback)
+
+note right of simulation
+  L'entretien est analysé en temps réel
+  pour produire un feedback immédiat.
+end note
+
+@enduml

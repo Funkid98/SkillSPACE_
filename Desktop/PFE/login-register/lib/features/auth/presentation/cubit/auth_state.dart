@@ -16,6 +16,8 @@ class AuthState {
   final Map<String, dynamic>? cvData;
   final Map<String, dynamic>? loggedInUser; // Holds user data after login
   final bool staySignedIn;
+  final bool awaitingVerification;
+  final String? verificationEmail;
 
   const AuthState({
     this.tab = AuthTab.login,
@@ -29,6 +31,8 @@ class AuthState {
     this.cvData,
     this.loggedInUser,
     this.staySignedIn = true,
+    this.awaitingVerification = false,
+    this.verificationEmail,
   });
 
   AuthState copyWith({
@@ -44,6 +48,8 @@ class AuthState {
     Map<String, dynamic>? cvData,
     Map<String, dynamic>? loggedInUser,
     bool? staySignedIn,
+    bool? awaitingVerification,
+    String? verificationEmail,
   }) {
     return AuthState(
       tab: tab ?? this.tab,
@@ -57,6 +63,8 @@ class AuthState {
       cvData: cvData ?? this.cvData,
       loggedInUser: loggedInUser ?? this.loggedInUser,
       staySignedIn: staySignedIn ?? this.staySignedIn,
+      awaitingVerification: awaitingVerification ?? this.awaitingVerification,
+      verificationEmail: verificationEmail ?? this.verificationEmail,
     );
   }
 }

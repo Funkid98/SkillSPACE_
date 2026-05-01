@@ -2,6 +2,7 @@ const Formateur = require('../models/formateurModel');
 const Formation = require('../models/formationModel');
 const jwt = require('jsonwebtoken');
 const { suggestExpertiseDomains, generateBio: generateBioAI, validatePortfolioUrlAI, suggestFormationContent } = require('../services/ai-service');
+const { sendVerificationEmail, sendLoginSuccessEmail } = require('../services/emailService');
 
 // Helper to generate JWT
 const generateToken = (id) => {
@@ -50,23 +51,27 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'Cet email est déjà utilisé' });
     }
 
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
     const formateur = await Formateur.create({
       firstName,
       lastName,
       email,
       password,
+      resetOtp: otp,
+      resetOtpExpires: otpExpires,
+      isVerified: false,
       profileCompleteness: 10
     });
 
+    await sendVerificationEmail(email, otp);
+
     res.status(201).json({
-      token: generateToken(formateur._id),
-      user: {
-        id: formateur._id,
-        firstName: formateur.firstName,
-        lastName: formateur.lastName,
-        email: formateur.email,
-        role: 'formateur'
-      }
+      requiresVerification: true,
+      email: formateur.email,
+      message: 'Un code de vérification a été envoyé à votre email.'
     });
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de l\'inscription', error: error.message });
@@ -81,6 +86,24 @@ const login = async (req, res) => {
 
     const formateur = await Formateur.findOne({ email });
     if (formateur && (await formateur.matchPassword(password))) {
+      
+      if (!formateur.isVerified) {
+        // Resend OTP if not verified
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        formateur.resetOtp = otp;
+        formateur.resetOtpExpires = new Date(Date.now() + 10 * 60 * 1000);
+        await formateur.save();
+        await sendVerificationEmail(email, otp);
+
+        return res.status(403).json({
+          requiresVerification: true,
+          email: formateur.email,
+          message: 'Votre compte n\'est pas encore vérifié. Un nouveau code a été envoyé.'
+        });
+      }
+
+      await sendLoginSuccessEmail(email, formateur.firstName);
+
       res.status(200).json({
         token: generateToken(formateur._id),
         user: {
@@ -96,6 +119,40 @@ const login = async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la connexion', error: error.message });
+  }
+};
+
+const verifySignupOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const formateur = await Formateur.findOne({
+      email,
+      resetOtp: otp,
+      resetOtpExpires: { $gt: Date.now() }
+    });
+
+    if (!formateur) {
+      return res.status(400).json({ message: 'Code invalide ou expiré.' });
+    }
+
+    formateur.isVerified = true;
+    formateur.resetOtp = null;
+    formateur.resetOtpExpires = null;
+    await formateur.save();
+
+    res.status(200).json({
+      message: 'Compte vérifié avec succès.',
+      token: generateToken(formateur._id),
+      user: {
+        id: formateur._id,
+        firstName: formateur.firstName,
+        lastName: formateur.lastName,
+        email: formateur.email,
+        role: 'formateur'
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la vérification', error: error.message });
   }
 };
 
@@ -541,6 +598,7 @@ module.exports = {
   enhanceFormation,
   register,
   login,
+  verifySignupOtp,
   checkEmailExists,
   patchProfile
 };

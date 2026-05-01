@@ -25,8 +25,6 @@ void main() async {
   }
 
   final apiClient = ApiClient();
-  // AuthRepositoryImpl uses the module-level _sharedGoogleSignIn singleton
-  // internally, so no googleSignIn arg is needed here.
   final authRepository = AuthRepositoryImpl(apiClient: apiClient);
 
   runApp(
@@ -34,7 +32,8 @@ void main() async {
       providers: [
         BlocProvider(create: (context) => L10nCubit()),
         BlocProvider(
-            create: (context) => AuthCubit(authRepository: authRepository)..checkAuthStatus()),
+            create: (context) =>
+                AuthCubit(authRepository: authRepository)..checkAuthStatus()),
         BlocProvider(
             create: (context) =>
                 ForgotPasswordCubit(authRepository: authRepository)),
@@ -77,16 +76,16 @@ class SkillSpaceApp extends StatelessWidget {
               } else if (authState.role == UserRole.formateur) {
                 home = Builder(
                   builder: (ctx) => MainNavigationScreen(
-                    onLogout: () {
-                      // Navigate FIRST (before logout emits null state which unmounts ctx)
-                      Navigator.of(ctx, rootNavigator: true)
-                          .pushAndRemoveUntil(
-                        MaterialPageRoute(
-                            builder: (_) => const LandingPage()),
-                        (route) => false,
-                      );
-                      // Clear token after navigation is scheduled
-                      ctx.read<AuthCubit>().logout();
+                    onLogout: () async {
+                      await ctx.read<AuthCubit>().logout();
+                      if (ctx.mounted) {
+                        Navigator.of(ctx, rootNavigator: true)
+                            .pushAndRemoveUntil(
+                          MaterialPageRoute(
+                              builder: (_) => const LandingPage()),
+                          (route) => false,
+                        );
+                      }
                     },
                   ),
                 );
@@ -113,6 +112,7 @@ class SkillSpaceApp extends StatelessWidget {
             }
 
             return MaterialApp(
+              key: ValueKey(authState.loggedInUser != null),
               title: 'SkillSpace',
               debugShowCheckedModeBanner: false,
               theme: AppTheme.light,

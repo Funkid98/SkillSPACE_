@@ -266,7 +266,7 @@ class AudienceSection extends StatelessWidget {
           ];
 
     return Container(
-      color: AppColors.bgAlt,
+      color: Colors.black.withValues(alpha: 0.02),
       padding: EdgeInsets.symmetric(
         horizontal: Responsive.hPad(context),
         vertical: 80,

@@ -564,7 +564,7 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
                 _Field(
                   label: l10n.email,
                   controller: _email,
-                  readOnly: true,
+                  readOnly: false,
                   onChanged: (_) => _updateCubit(),
                   keyboardType: TextInputType.emailAddress,
                 ),
@@ -587,7 +587,7 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
                       child: _Field(
                         label: l10n.email,
                         controller: _email,
-                        readOnly: true,
+                        readOnly: false,
                         onChanged: (_) => _updateCubit(),
                         keyboardType: TextInputType.emailAddress,
                       ),
@@ -612,7 +612,7 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
               _Field(
                   label: l10n.location,
                   controller: _location,
-                  readOnly: true,
+                  readOnly: false,
                   onChanged: (_) => _updateCubit()),
               const SizedBox(height: 16),
               BlocBuilder<ProfileCubit, ProfileState>(

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pfe/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/datasources/google_auth_web.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -26,6 +27,8 @@ class AuthCubit extends Cubit<AuthState> {
 
   void clearError() => emit(state.copyWith(clearError: true));
   void clearSuccess() => emit(state.copyWith(isSuccess: false));
+  void cancelVerification() =>
+      emit(state.copyWith(awaitingVerification: false, clearError: true));
 
   void restoreSession(Map<String, dynamic> user) {
     UserRole userRole = UserRole.candidat;
@@ -109,6 +112,13 @@ class AuthCubit extends Cubit<AuthState> {
           'sector': synchronizedSector ?? user.sector,
         },
       ));
+    } on NeedsVerificationException catch (e) {
+      emit(state.copyWith(
+        isLoading: false,
+        awaitingVerification: true,
+        verificationEmail: e.email,
+        error: e.message,
+      ));
     } catch (e) {
       emit(state.copyWith(
           isLoading: false, error: e.toString().replaceAll('Exception: ', '')));
@@ -172,6 +182,13 @@ class AuthCubit extends Cubit<AuthState> {
           'entreprise': user.entreprise,
           'sector': synchronizedSector ?? user.sector,
         },
+      ));
+    } on NeedsVerificationException catch (e) {
+      emit(state.copyWith(
+        isLoading: false,
+        awaitingVerification: true,
+        verificationEmail: e.email,
+        error: e.message,
       ));
     } catch (e) {
       emit(state.copyWith(
@@ -365,6 +382,44 @@ class AuthCubit extends Cubit<AuthState> {
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_data', jsonEncode(updatedUser));
+    }
+  }
+
+  Future<void> verifySignup(String otp) async {
+    final email = state.verificationEmail;
+    if (email == null || otp.isEmpty) return;
+
+    emit(state.copyWith(isLoading: true, clearError: true));
+    try {
+      final user = await authRepository.verifySignup(
+          email: email, otp: otp, role: state.role.name);
+
+      UserRole userRole = UserRole.candidat;
+      if (user.role == 'recruteur' || user.role == 'recruiter') {
+        userRole = UserRole.recruteur;
+      } else if (user.role == 'formateur' || user.role == 'trainer') {
+        userRole = UserRole.formateur;
+      }
+
+      emit(state.copyWith(
+        isLoading: false,
+        isSuccess: true,
+        awaitingVerification: false,
+        verificationEmail: null,
+        role: userRole,
+        loggedInUser: {
+          'id': user.id,
+          'firstName': user.firstName,
+          'lastName': user.lastName,
+          'email': user.email,
+          'role': user.role,
+          'entreprise': user.entreprise,
+          'sector': user.sector,
+        },
+      ));
+    } catch (e) {
+      emit(state.copyWith(
+          isLoading: false, error: e.toString().replaceAll('Exception: ', '')));
     }
   }
 

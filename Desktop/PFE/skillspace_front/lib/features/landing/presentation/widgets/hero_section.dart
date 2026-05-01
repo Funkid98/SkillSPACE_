@@ -21,7 +21,7 @@ class HeroSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = Responsive.isMobile(context);
     return Container(
-      color: AppColors.bg,
+      color: Colors.transparent,
       padding: EdgeInsets.symmetric(
         horizontal: Responsive.hPad(context),
         vertical: isMobile ? 40 : 80,

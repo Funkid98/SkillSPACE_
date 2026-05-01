@@ -1,6 +1,6 @@
 {
-    "name": "skillspace_front",
-    "short_name": "skillspace_front",
+    "name": "SkillSpace",
+    "short_name": "SkillSpace",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

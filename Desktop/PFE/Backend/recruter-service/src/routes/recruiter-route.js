@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const { registerRecruiter, authRecruiter, getRecruiterProfile, updateRecruiterProfile, googleSignInForRecruiter, githubSignInForRecruiter, checkRecruiterEmailExists, listEmails, contactCandidate, receiveNotification, getNotifications, markNotificationRead, handleApplicationDecision, deleteNotification, clearAllNotifications } = require('../controllers/recruiter.controller');
+const { registerRecruiter, authRecruiter, verifyRecruiterSignupOtp, getRecruiterProfile, updateRecruiterProfile, googleSignInForRecruiter, githubSignInForRecruiter, checkRecruiterEmailExists, listEmails, contactCandidate, receiveNotification, getNotifications, markNotificationRead, handleApplicationDecision, deleteNotification, clearAllNotifications } = require('../controllers/recruiter.controller');
 const { protect } = require('../middleware/auth-middleware');
 
 // Multer Storage Configuration
@@ -20,6 +20,7 @@ const upload = multer({ storage });
 // Public routes
 router.post('/register', registerRecruiter);
 router.post('/login', authRecruiter);
+router.post('/verify-signup', verifyRecruiterSignupOtp);
 router.post('/google', googleSignInForRecruiter);
 router.post('/github', githubSignInForRecruiter);
 router.get('/exists/:email', checkRecruiterEmailExists);

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../cubit/auth_cubit.dart';
-import '../cubit/forgot_password_cubit.dart';
+import 'package:form_validator/form_validator.dart';
 import '../../../../core/theme.dart';
 import '../../../../core/utils/app_toast.dart';
 import '../../../../core/utils/string_extension.dart';
-import 'package:form_validator/form_validator.dart';
-
+import '../../../../core/widgets/particle_background.dart';
+import '../cubit/auth_cubit.dart';
+import '../cubit/forgot_password_cubit.dart';
 
 class AuthPage extends StatefulWidget {
   final VoidCallback? onSuccess;
@@ -94,14 +94,8 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
             if (state.githubAwaitingCode) {
               _showGithubCodeDialog(context);
             } else if (state.isSuccess) {
-              if (state.tab == AuthTab.register) {
-                AppToast.showSuccess(context,
-                    'Compte créé avec succès ! Connectez-vous maintenant.');
-                context.read<AuthCubit>().switchTab(AuthTab.login);
-                // Reset isSuccess so the login listener can fire again
-                context.read<AuthCubit>().clearSuccess();
-              } else {
-                // Login success
+              if (state.loggedInUser != null) {
+                // Success (either Login or post-Registration verification)
                 final user = state.loggedInUser;
                 String welcomeMsg;
                 String displayName;
@@ -127,62 +121,78 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
                 if (widget.onSuccess != null) {
                   widget.onSuccess!();
                 }
+              } else if (state.tab == AuthTab.register) {
+                // This branch is now only for cases where registration
+                // doesn't immediately log in (though we've moved to verification)
+                AppToast.showSuccess(context, 'Compte créé avec succès !');
+                context.read<AuthCubit>().switchTab(AuthTab.login);
+                context.read<AuthCubit>().clearSuccess();
               }
             }
           },
         ),
       ],
-      child: Scaffold(
-        backgroundColor: AppTheme.background,
-        body: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              children: [
-                const _HeroPanel(),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(22, 20, 22, 32),
-                  child: BlocBuilder<AuthCubit, AuthState>(
-                    builder: (context, authState) {
-                      return Column(
-                        children: [
-                          if (!_showForgot)
-                            _TabSwitcher(
-                              selected: authState.tab,
-                              onSwitch: _onTabSwitch,
+      child: ParticleBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                children: [
+                    const _HeroPanel(),
+                    const _TrailLine(),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(22, 20, 22, 32),
+                    child: BlocBuilder<AuthCubit, AuthState>(
+                      builder: (context, authState) {
+                        return Column(
+                          children: [
+                            if (!_showForgot)
+                              _TabSwitcher(
+                                selected: authState.tab,
+                                onSwitch: _onTabSwitch,
+                              ),
+                            if (!_showForgot) const SizedBox(height: 24),
+                            FadeTransition(
+                              opacity: _fadeAnim,
+                              child: SlideTransition(
+                                position: _slideAnim,
+                                child: _showForgot
+                                    ? _ForgotPasswordFlow(
+                                        onBack: _hideForgotFlow)
+                                    : authState.awaitingVerification
+                                        ? _SignupVerificationFlow(
+                                            onBack: () => context
+                                                .read<AuthCubit>()
+                                                .cancelVerification(),
+                                          )
+                                        : authState.tab == AuthTab.login
+                                            ? _LoginForm(
+                                                formKey: _loginFormKey,
+                                                emailCtrl: _emailCtrl,
+                                                passCtrl: _passCtrl,
+                                                state: authState,
+                                                onForgot: _showForgotFlow,
+                                              )
+                                            : _RegisterForm(
+                                                formKey: _registerFormKey,
+                                                firstCtrl: _firstCtrl,
+                                                lastCtrl: _lastCtrl,
+                                                entrepriseCtrl: _entrepriseCtrl,
+                                                emailCtrl: _emailCtrl,
+                                                passCtrl: _passCtrl,
+                                                state: authState,
+                                              ),
+                              ),
                             ),
-                          if (!_showForgot) const SizedBox(height: 24),
-                          FadeTransition(
-                            opacity: _fadeAnim,
-                            child: SlideTransition(
-                              position: _slideAnim,
-                              child: _showForgot
-                                  ? _ForgotPasswordFlow(onBack: _hideForgotFlow)
-                                  : authState.tab == AuthTab.login
-                                      ? _LoginForm(
-                                          formKey: _loginFormKey,
-                                          emailCtrl: _emailCtrl,
-                                          passCtrl: _passCtrl,
-                                          state: authState,
-                                          onForgot: _showForgotFlow,
-                                        )
-                                      : _RegisterForm(
-                                          formKey: _registerFormKey,
-                                          firstCtrl: _firstCtrl,
-                                          lastCtrl: _lastCtrl,
-                                          entrepriseCtrl: _entrepriseCtrl,
-                                          emailCtrl: _emailCtrl,
-                                          passCtrl: _passCtrl,
-                                          state: authState,
-                                        ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                          ],
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -383,6 +393,28 @@ class _TabSwitcher extends StatelessWidget {
   }
 }
 
+class _TrailLine extends StatelessWidget {
+  const _TrailLine();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 24),
+      height: 2,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.transparent,
+            AppTheme.accent.withOpacity(0.5),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
+      ),
+    );
+  }
+}
+
 class _TabItem extends StatelessWidget {
   final String label;
   final bool active;
@@ -550,7 +582,7 @@ class _LoginForm extends StatelessWidget {
   Widget build(BuildContext context) {
     return Form(
       key: formKey,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
+      autovalidateMode: AutovalidateMode.disabled,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -692,7 +724,7 @@ class _RegisterForm extends StatelessWidget {
   Widget build(BuildContext context) {
     return Form(
       key: formKey,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
+      autovalidateMode: AutovalidateMode.disabled,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -860,6 +892,72 @@ class _RegisterForm extends StatelessWidget {
   }
 }
 
+// ─── Signup Verification Flow ────────────────────────────────────────────────
+class _SignupVerificationFlow extends StatefulWidget {
+  final VoidCallback onBack;
+  const _SignupVerificationFlow({required this.onBack});
+
+  @override
+  State<_SignupVerificationFlow> createState() =>
+      _SignupVerificationFlowState();
+}
+
+class _SignupVerificationFlowState extends State<_SignupVerificationFlow> {
+  final _otpCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _otpCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, state) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _StepHeader(
+              emoji: '🛡️',
+              currentStep: 2,
+              onBack: widget.onBack,
+              title: 'Vérifiez votre email',
+              subtitle: 'Un code a été envoyé à ${state.verificationEmail}.',
+            ),
+            if (state.error != null) ...[
+              _ErrorBanner(state.error!),
+              const SizedBox(height: 10),
+            ],
+            const _Label('Code de vérification'),
+            TextField(
+              controller: _otpCtrl,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: const InputDecoration(
+                hintText: '1234',
+                prefixIcon: Icon(Icons.verified_user_outlined,
+                    size: 18, color: AppTheme.textGrey),
+              ),
+              onChanged: (_) => context.read<AuthCubit>().clearError(),
+            ),
+            const SizedBox(height: 28),
+            _SubmitButton(
+              label: 'Vérifier mon compte',
+              isLoading: state.isLoading,
+              onTap: () {
+                if (_otpCtrl.text.isNotEmpty) {
+                  context.read<AuthCubit>().verifySignup(_otpCtrl.text);
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // FORGOT PASSWORD FLOW
 // ═════════════════════════════════════════════════════════════════════════════
@@ -923,7 +1021,7 @@ class _ForgotStepEmailState extends State<_ForgotStepEmail> {
       builder: (context, state) {
         return Form(
           key: _formKey,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
+          autovalidateMode: AutovalidateMode.disabled,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "SkillSpace Web (Port 3000)",
+            "name": "SkillSpace Web (Port 5000)",
             "request": "launch",
             "type": "dart",
             "program": "lib/main.dart",
@@ -10,7 +10,7 @@
                 "-d",
                 "chrome",
                 "--web-port",
-                "3000"
+                "5000"
             ]
         }
     ]

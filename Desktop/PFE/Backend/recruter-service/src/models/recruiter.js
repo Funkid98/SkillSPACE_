@@ -5,7 +5,6 @@ const recruiterSchema = mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     entreprise: { type: String, required: true },
-    poste: { type: String },
     role: { type: String, default: 'recruiter' },
     taille: { type: String },
     anneeCreation: { type: Number },
@@ -13,7 +12,10 @@ const recruiterSchema = mongoose.Schema({
     localisation: { type: String },
     logo: { type: String },
     secteur: { type: String },
-    date: { type: Date, default: Date.now }
+    date: { type: Date, default: Date.now },
+    isVerified: { type: Boolean, default: false },
+    resetOtp: { type: String },
+    resetOtpExpires: { type: Date }
 });
 
 recruiterSchema.pre('save', async function (next) {

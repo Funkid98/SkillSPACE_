@@ -10,7 +10,6 @@ import '../models/user_model.dart';
 import '../datasources/google_auth_web.dart'
     if (dart.library.io) '../datasources/google_auth_stub.dart';
 
-
 /// Public module-level singleton — GoogleSignIn must only be instantiated ONCE.
 /// Multiple instantiations cause google.accounts.id.initialize() to fire
 /// repeatedly and break FedCM / One-Tap on web.
@@ -65,7 +64,6 @@ class AuthRepositoryImpl implements AuthRepository {
             'email': email,
             'password': password,
             'entreprise': entreprise ?? 'A définir',
-            'poste': 'Recruteur', // Default value
           }
         : {
             'firstName': firstName,
@@ -80,6 +78,10 @@ class AuthRepositoryImpl implements AuthRepository {
     final data = jsonDecode(response.body);
 
     if (response.statusCode == 201) {
+      if (data['requiresVerification'] == true) {
+        throw NeedsVerificationException(
+            data['email'] ?? email, data['message'] ?? 'Vérification requise');
+      }
       final user = isRecruiter
           ? _mapRecruiterToUserModel(data)
           : UserModel.fromJson(data['user']);
@@ -88,6 +90,48 @@ class AuthRepositoryImpl implements AuthRepository {
     } else {
       throw Exception(
           data['message'] ?? data['error'] ?? 'Erreur lors de l\'inscription');
+    }
+  }
+
+  @override
+  Future<UserModel> verifySignup({
+    required String email,
+    required String otp,
+    String? role,
+  }) async {
+    final isRecruiter = role == 'recruteur' || role == 'recruiter';
+    final isFormateur = role == 'formateur' || role == 'trainer';
+
+    final String endpoint;
+    if (isRecruiter) {
+      endpoint = '/recruiter/verify-signup';
+    } else if (isFormateur) {
+      endpoint = '/api/formateur/verify-signup';
+    } else {
+      endpoint = '/api/auth/verify-signup';
+    }
+
+    final response = await _apiClient.post(endpoint, {
+      'email': email,
+      'otp': otp,
+    });
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      final user = isRecruiter
+          ? _mapRecruiterToUserModel(data)
+          : UserModel.fromJson(data['user']);
+      await _saveAuthData(data['token'], user);
+      return user;
+    } else {
+      String errorMessage = 'Code de vérification invalide';
+      if (data is Map) {
+        errorMessage = data['message'] ?? data['error'] ?? errorMessage;
+      } else if (data is String) {
+        errorMessage = data;
+      }
+      throw Exception(errorMessage);
     }
   }
 
@@ -136,6 +180,9 @@ class AuthRepositoryImpl implements AuthRepository {
           : UserModel.fromJson(data['user']);
       await _saveAuthData(data['token'], user);
       return user;
+    } else if (response.statusCode == 403 && data['requiresVerification'] == true) {
+      throw NeedsVerificationException(
+          data['email'] ?? email, data['message'] ?? 'Vérification requise');
     } else {
       throw Exception(
           data['message'] ?? data['error'] ?? 'Erreur lors de la connexion');
@@ -350,8 +397,14 @@ class AuthRepositoryImpl implements AuthRepository {
 
     final data = jsonDecode(response.body);
 
-    if (response.statusCode != 200 || data['success'] != true) {
-      throw Exception(data['message'] ?? 'Erreur lors de la demande OTP');
+    if (response.statusCode != 200 || (data is Map && data['success'] != true)) {
+      String errorMessage = 'Erreur lors de la demande OTP';
+      if (data is Map) {
+        errorMessage = data['message'] ?? errorMessage;
+      } else if (data is String) {
+        errorMessage = data;
+      }
+      throw Exception(errorMessage);
     }
   }
 
@@ -364,8 +417,14 @@ class AuthRepositoryImpl implements AuthRepository {
 
     final data = jsonDecode(response.body);
 
-    if (response.statusCode != 200 || data['success'] != true) {
-      throw Exception(data['message'] ?? 'Code OTP invalide');
+    if (response.statusCode != 200 || (data is Map && data['success'] != true)) {
+      String errorMessage = 'Code OTP invalide';
+      if (data is Map) {
+        errorMessage = data['message'] ?? errorMessage;
+      } else if (data is String) {
+        errorMessage = data;
+      }
+      throw Exception(errorMessage);
     }
   }
 
@@ -380,8 +439,14 @@ class AuthRepositoryImpl implements AuthRepository {
 
     final data = jsonDecode(response.body);
 
-    if (response.statusCode != 200 || data['success'] != true) {
-      throw Exception(data['message'] ?? 'Erreur lors de la réinitialisation');
+    if (response.statusCode != 200 || (data is Map && data['success'] != true)) {
+      String errorMessage = 'Erreur lors de la réinitialisation';
+      if (data is Map) {
+        errorMessage = data['message'] ?? errorMessage;
+      } else if (data is String) {
+        errorMessage = data;
+      }
+      throw Exception(errorMessage);
     }
   }
 

@@ -25,7 +25,7 @@ class CtaSection extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return Container(
-      color: AppColors.bg,
+      color: Colors.transparent,
       padding: EdgeInsets.symmetric(
         horizontal: Responsive.hPad(context),
         vertical: 60,

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/particle_background.dart';
 import '../widgets/nav_bar.dart';
 import '../widgets/hero_section.dart';
 import '../widgets/features_section.dart';
@@ -57,38 +59,41 @@ class _LandingPageState extends State<LandingPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: NavDrawer(scrollTo: _scrollTo),
-      body: RawKeyboardListener(
-        focusNode: _focusNode,
-        autofocus: true,
-        onKey: _handleKey,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                child: Column(
-                  children: [
-                    const SizedBox(height: 80), // Padding for fixed navbar
-                    const HeroSection(),
-                    FeaturesSection(key: SectionKeys.features),
-                    StepsSection(key: SectionKeys.steps),
-                    AudienceSection(key: SectionKeys.audience),
-                    const CtaSection(),
-                    const AppFooter(),
-                  ],
+    return ParticleBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        drawer: NavDrawer(scrollTo: _scrollTo),
+        body: RawKeyboardListener(
+          focusNode: _focusNode,
+          autofocus: true,
+          onKey: _handleKey,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 80), // Padding for fixed navbar
+                      const HeroSection(),
+                      FeaturesSection(key: SectionKeys.features),
+                      StepsSection(key: SectionKeys.steps),
+                      AudienceSection(key: SectionKeys.audience),
+                      const CtaSection(),
+                      const AppFooter(),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: NavBar(scrollTo: _scrollTo),
-            ),
-            const FloatingLanguageSwitcher(),
-          ],
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: NavBar(scrollTo: _scrollTo),
+              ),
+              const FloatingLanguageSwitcher(),
+            ],
+          ),
         ),
       ),
     );

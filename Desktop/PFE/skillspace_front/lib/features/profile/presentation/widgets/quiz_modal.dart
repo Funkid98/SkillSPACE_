@@ -376,7 +376,8 @@ class _QuizModalState extends State<QuizModal> {
                             color: isCorrect ? Colors.green : Colors.red),
                         const SizedBox(width: 4),
                         Expanded(
-                          child: Text('Votre réponse: ${analysis['user_answer']}',
+                          child: Text(
+                              'Votre réponse: ${analysis['user_answer']}',
                               style: TextStyle(
                                   color: isCorrect ? Colors.green : Colors.red,
                                   fontSize: 13,
@@ -395,7 +396,7 @@ class _QuizModalState extends State<QuizModal> {
                   ],
                 ),
               );
-            }).toList(),
+            }),
             const SizedBox(height: 24),
             ElevatedButton(
               style: ElevatedButton.styleFrom(

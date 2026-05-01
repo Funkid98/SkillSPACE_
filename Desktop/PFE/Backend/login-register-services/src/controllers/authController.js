@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { sendOtpEmail, sendLoginSuccessEmail } = require('../services/emailService');
+const { sendOtpEmail, sendLoginSuccessEmail, sendVerificationEmail } = require('../services/emailService');
 const { OAuth2Client } = require('google-auth-library');
 const axios = require('axios');
 
@@ -144,9 +144,15 @@ exports.register = async (req, res) => {
       password,
       role: role || 'candidat',
       jobtitle: jobtitle || '',
+      isVerified: false, // Force false initially
     };
     if (firstName) userData.prenom = firstName;
     if (lastName) userData.nom = lastName;
+
+    // Generate OTP for registration verification
+    const otp = generateOtp();
+    userData.resetOtp = otp;
+    userData.resetOtpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     let user = await User.create(userData);
 
@@ -157,14 +163,55 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Initialiser le profil dans le trainer-service si c'est un formateur
-    // Removed because formateur-service handles its own auth now
-    
-    const token = generateToken(user._id);
+    // Send verification email
+    await sendVerificationEmail(user.email, otp);
 
     res.status(201).json({
       success: true,
-      message: 'Compte créé avec succès.',
+      message: 'Compte créé. Un code de vérification a été envoyé à votre email.',
+      requiresVerification: true,
+      email: user.email,
+    });
+  } catch (error) {
+    console.error('Register error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur.',
+      error: error.message,
+    });
+  }
+};
+
+// POST /api/auth/verify-signup
+exports.verifySignupOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: 'Email et OTP requis.' });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Utilisateur non trouvé.' });
+    }
+
+    if (user.resetOtp !== otp || user.resetOtpExpires < new Date()) {
+      return res.status(400).json({ success: false, message: 'Code incorrect ou expiré.' });
+    }
+
+    // Mark as verified and clear OTP
+    user.isVerified = true;
+    user.resetOtp = null;
+    user.resetOtpExpires = null;
+    await user.save();
+
+    const token = generateToken(user._id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Email vérifié avec succès.',
       token,
       user: {
         id: user._id,
@@ -176,12 +223,8 @@ exports.register = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur serveur.',
-      error: error.message,
-    });
+    console.error('VerifySignupOtp error:', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur.', error: error.message });
   }
 };
 
@@ -203,6 +246,23 @@ exports.login = async (req, res) => {
       return res.status(401).json({
         success: false,
         message: 'Email ou mot de passe incorrect.',
+      });
+    }
+
+    // Vérifier si le compte est vérifié
+    if (!user.isVerified) {
+      // Re-send OTP automatically or just tell them to verify
+      const otp = generateOtp();
+      user.resetOtp = otp;
+      user.resetOtpExpires = new Date(Date.now() + 10 * 60 * 1000);
+      await user.save({ validateBeforeSave: false });
+      await sendVerificationEmail(user.email, otp);
+
+      return res.status(403).json({
+        success: false,
+        message: 'Votre compte n\'est pas encore vérifié. Un nouveau code a été envoyé.',
+        requiresVerification: true,
+        email: user.email,
       });
     }
 

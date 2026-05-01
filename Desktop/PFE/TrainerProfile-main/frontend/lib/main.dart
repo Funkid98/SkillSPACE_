@@ -35,13 +35,27 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
         ),
         home: Builder(builder: (context) {
-          return AuthPage(
-            onSuccess: () {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-              );
-            },
-          );
+          void navigateToMain() {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (routeContext) => MainNavigationScreen(
+                  onLogout: () async {
+                    await routeContext.read<AuthCubit>().logout();
+                    if (routeContext.mounted) {
+                      Navigator.of(routeContext).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (_) => AuthPage(onSuccess: navigateToMain),
+                        ),
+                        (route) => false,
+                      );
+                    }
+                  },
+                ),
+              ),
+            );
+          }
+
+          return AuthPage(onSuccess: navigateToMain);
         }),
       ),
     );

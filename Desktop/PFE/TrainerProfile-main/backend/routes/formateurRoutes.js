@@ -4,7 +4,7 @@ const {
   getProfile, updateProfile, patchProfile, getDashboardData, getFormations,
   seedDummyData, suggestExpertise, generateBio, validateUrl,
   createFormation, updateFormation, deleteFormation, enhanceFormation,
-  register, login, checkEmailExists
+  register, login, verifySignupOtp, checkEmailExists
 } = require('../controllers/formateurController');
 
 router.route('/profile/:userId').get(getProfile).put(updateProfile).patch(patchProfile);
@@ -13,6 +13,7 @@ router.route('/dashboard/:userId').get(getDashboardData);
 // Auth Routes
 router.post('/register', register);
 router.post('/login', login);
+router.post('/verify-signup', verifySignupOtp);
 router.get('/exists/:email', checkEmailExists);
 
 

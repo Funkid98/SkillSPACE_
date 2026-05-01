@@ -44,7 +44,7 @@ class StepsSection extends StatelessWidget {
           ];
 
     return Container(
-      color: AppColors.bg,
+      color: Colors.transparent,
       padding: EdgeInsets.symmetric(
         horizontal: Responsive.hPad(context),
         vertical: 80,

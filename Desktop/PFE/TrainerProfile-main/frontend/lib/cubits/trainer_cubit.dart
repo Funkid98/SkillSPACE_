@@ -16,6 +16,7 @@ class TrainerCubit extends Cubit<TrainerState> {
   Future<void> fetchAllData(String userId) async {
     if (userId.isEmpty) return;
 
+    if (isClosed) return;
     emit(state.copyWith(status: TrainerStatus.loading));
 
     try {
@@ -23,6 +24,7 @@ class TrainerCubit extends Cubit<TrainerState> {
       // We don't need to fetch getProfile separately
       final dashboardData = await _dashboardService.getDashboardData(userId);
 
+      if (isClosed) return;
       if (dashboardData == null) {
         emit(state.copyWith(
           status: TrainerStatus.failure,
@@ -36,6 +38,7 @@ class TrainerCubit extends Cubit<TrainerState> {
         ));
       }
     } catch (e) {
+      if (isClosed) return;
       emit(state.copyWith(
         status: TrainerStatus.failure,
         errorMessage: e.toString(),
@@ -48,12 +51,16 @@ class TrainerCubit extends Cubit<TrainerState> {
   }
 
   Future<void> seedData(String userId) async {
+    if (isClosed) return;
     emit(state.copyWith(status: TrainerStatus.loading));
     final success = await _dashboardService.seedData(userId);
+    if (isClosed) return;
     if (success) {
       await fetchAllData(userId);
+      if (isClosed) return;
       Fluttertoast.showToast(msg: "Données de démo initialisées !");
     } else {
+      if (isClosed) return;
       emit(state.copyWith(
         status: TrainerStatus.failure,
         errorMessage: 'Échec de l\'initialisation des données.',
@@ -93,6 +100,7 @@ class TrainerCubit extends Cubit<TrainerState> {
         formations: updatedList,
         stats: updatedStats,
       );
+      if (isClosed) return true; // Still return success since backend worked
       emit(state.copyWith(dashboardData: updatedDashboard));
 
       // Refresh everything from backend to keep charts and other stats in sync
@@ -115,6 +123,7 @@ class TrainerCubit extends Cubit<TrainerState> {
         formations: updatedList,
         stats: state.dashboardData!.stats,
       );
+      if (isClosed) return true;
       emit(state.copyWith(dashboardData: updatedDashboard));
 
       // Refresh to update rankings and stats
@@ -142,6 +151,7 @@ class TrainerCubit extends Cubit<TrainerState> {
         formations: updatedList,
         stats: updatedStats,
       );
+      if (isClosed) return true;
       emit(state.copyWith(dashboardData: updatedDashboard));
 
       // Trigger a full fetch to update rankings, students count, and charts

@@ -3,7 +3,7 @@ import 'dart:html' as html;
 
 const _clientId =
     '1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com';
-const _redirectUri = 'http://localhost:3000';
+String get _redirectUri => html.window.location.origin;
 
 /// Redirects the current browser tab to Google's OAuth consent page.
 /// After the user signs in, Google redirects back to [_redirectUri]

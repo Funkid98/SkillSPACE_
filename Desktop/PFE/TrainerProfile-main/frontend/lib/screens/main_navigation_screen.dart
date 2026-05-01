@@ -61,21 +61,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                               BorderSide(color: Color(0xFFEAE8E3), width: 1)),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('SkillSpace',
-                            style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E3A8A))),
-                        IconButton(
-                          icon: const Icon(Icons.logout,
-                              color: Color(0xFFE9652B)),
-                          onPressed: () => _showLogoutConfirmation(context),
-                        ),
-                      ],
-                    ),
+                    child: Builder(builder: (localCtx) {
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('SkillSpace',
+                              style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E3A8A))),
+                          IconButton(
+                            icon: const Icon(Icons.logout,
+                                color: Color(0xFFE9652B)),
+                            onPressed: () => _showLogoutConfirmation(localCtx),
+                          ),
+                        ],
+                      );
+                    }),
                   ),
                   Expanded(
                     child: _pages[_selectedIndex == 2 ? 0 : _selectedIndex],
@@ -85,7 +87,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             : Row(
                 children: [
                   // Sidebar (only on desktop)
-                  if (!isMobile) _buildSidebar(),
+                  if (!isMobile) Builder(builder: (sideCtx) => _buildSidebar(sideCtx)),
                   // Main content
                   Expanded(
                     child: _pages[_selectedIndex == 2 ? 0 : _selectedIndex],
@@ -136,7 +138,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
-  Widget _buildSidebar() {
+  Widget _buildSidebar(BuildContext sideCtx) {
     return BlocBuilder<TrainerCubit, TrainerState>(
       builder: (context, trainerState) {
         return BlocBuilder<AuthCubit, AuthState>(
@@ -185,13 +187,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                   const SizedBox(height: 40),
                   // Nav Items
-                  _buildNavItem(0, 'Tableau de bord', Icons.grid_view_outlined),
-                  _buildNavItem(1, 'Mon profil', Icons.person_outline),
-                  _buildNavItem(2, 'Mes formations', Icons.school_outlined),
+                  _buildNavItem(sideCtx, 0, 'Tableau de bord', Icons.grid_view_outlined),
+                  _buildNavItem(sideCtx, 1, 'Mon profil', Icons.person_outline),
+                  _buildNavItem(sideCtx, 2, 'Mes formations', Icons.school_outlined),
                   const Spacer(),
                   // Logout
                   const Divider(),
-                  _buildNavItem(-1, 'Déconnexion', Icons.logout,
+                  _buildNavItem(sideCtx, -1, 'Déconnexion', Icons.logout,
                       color: Colors.grey),
                   const SizedBox(height: 20),
                 ],
@@ -203,7 +205,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
-  Widget _buildNavItem(int index, String title, IconData icon, {Color? color}) {
+  Widget _buildNavItem(BuildContext context, int index, String title, IconData icon, {Color? color}) {
     // Both Dashboard (0) and Mes formations (2) are active when _selectedIndex is 0 or 2
     bool isDashboardActive = _selectedIndex == 0 || _selectedIndex == 2;
     bool isSelected = false;
@@ -215,7 +217,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
 
     return InkWell(
-      onTap: () async {
+      onTap: () {
         if (index == -1) {
           // Handle Logout
           _showLogoutConfirmation(context);
@@ -261,105 +263,31 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   void _showLogoutConfirmation(BuildContext context) {
-    AwesomeDialog(
+    showDialog(
       context: context,
-      width: 380,
-      padding: EdgeInsets.zero,
-      dialogType: DialogType.noHeader,
-      customHeader: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(Icons.logout_rounded,
-            size: 40, color: Color(0xFFE9652B)),
-      ),
-      animType: AnimType.scale,
-      body: Column(
-        children: [
-          const SizedBox(height: 10),
-          const Text(
-            'Déconnexion',
-            style: TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: 16,
-                color: Colors.black87),
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Déconnexion'),
+        content: const Text('Voulez-vous vraiment vous déconnecter ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: const Text('ANNULER', style: TextStyle(color: Colors.grey)),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Voulez-vous vraiment vous déconnecter ?',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: SizedBox(
-                    height: 42,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.grey.shade300),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onPressed: () =>
-                          Navigator.of(context, rootNavigator: true).pop(),
-                      child: Text(
-                        'ANNULER',
-                        style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 3,
-                  child: SizedBox(
-                    height: 42,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE9652B),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onPressed: () {
-                        // Dismiss the dialog first
-                        Navigator.of(context, rootNavigator: true).pop();
-                        // onLogout (wired in main.dart) handles:
-                        // 1. clearing the token  2. navigating to LandingPage
-                        if (widget.onLogout != null) {
-                          widget.onLogout!();
-                        }
-                      },
-                      child: const Text(
-                        'DÉCONNEXION',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 11),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE9652B),
+              foregroundColor: Colors.white,
             ),
+            onPressed: () {
+              Navigator.of(dialogCtx).pop();
+              if (widget.onLogout != null) {
+                widget.onLogout!();
+              }
+            },
+            child: const Text('DÉCONNEXION'),
           ),
-          const SizedBox(height: 20),
         ],
       ),
-    ).show();
+    );
   }
 }

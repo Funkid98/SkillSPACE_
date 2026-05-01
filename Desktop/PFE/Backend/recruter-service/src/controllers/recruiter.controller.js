@@ -2,6 +2,7 @@ const Recruiter = require('../models/recruiter');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
+const { sendVerificationEmail } = require('../services/emailService');
 
 const client = new OAuth2Client('1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com');
 
@@ -42,7 +43,7 @@ const checkRecruiterEmailExists = async (req, res) => {
 // @access  Public
 const registerRecruiter = async (req, res) => {
     try {
-        const { email, password, entreprise, poste } = req.body;
+        const { email, password, entreprise } = req.body;
 
         const recruiterExists = await Recruiter.findOne({ email });
 
@@ -56,22 +57,25 @@ const registerRecruiter = async (req, res) => {
             return res.status(400).json({ message: 'Cet email est déjà utilisé par un candidat.' });
         }
 
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
         const recruiter = await Recruiter.create({
             email,
             password,
             entreprise,
-            poste
+            resetOtp: otp,
+            resetOtpExpires: otpExpires,
+            isVerified: false
         });
 
         if (recruiter) {
+            await sendVerificationEmail(email, otp);
             res.status(201).json({
-                _id: recruiter._id,
+                requiresVerification: true,
                 email: recruiter.email,
-                entreprise: recruiter.entreprise,
-                poste: recruiter.poste,
-                role: recruiter.role,
-                token: generateToken(recruiter._id, recruiter.entreprise),
-                message: `Bienvenue "${recruiter.entreprise}"`
+                message: 'Un code de vérification a été envoyé à votre email.'
             });
         } else {
             res.status(400).json({ message: 'Invalid recruiter data' });
@@ -91,11 +95,26 @@ const authRecruiter = async (req, res) => {
         const recruiter = await Recruiter.findOne({ email });
 
         if (recruiter && (await recruiter.matchPassword(password))) {
+            
+            if (!recruiter.isVerified) {
+                // Resend OTP if not verified
+                const otp = Math.floor(100000 + Math.random() * 900000).toString();
+                recruiter.resetOtp = otp;
+                recruiter.resetOtpExpires = new Date(Date.now() + 10 * 60 * 1000);
+                await recruiter.save();
+                await sendVerificationEmail(email, otp);
+
+                return res.status(403).json({
+                    requiresVerification: true,
+                    email: recruiter.email,
+                    message: 'Votre compte n\'est pas encore vérifié. Un nouveau code a été envoyé.'
+                });
+            }
+
             res.json({
                 _id: recruiter._id,
                 email: recruiter.email,
                 entreprise: recruiter.entreprise,
-                poste: recruiter.poste,
                 role: recruiter.role,
                 token: generateToken(recruiter._id, recruiter.entreprise),
                 message: `Bienvenue "${recruiter.entreprise}"`
@@ -103,6 +122,37 @@ const authRecruiter = async (req, res) => {
         } else {
             res.status(401).json({ message: 'Invalid email or password' });
         }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const verifyRecruiterSignupOtp = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+        const recruiter = await Recruiter.findOne({
+            email,
+            resetOtp: otp,
+            resetOtpExpires: { $gt: Date.now() }
+        });
+
+        if (!recruiter) {
+            return res.status(400).json({ message: 'Code incorrect ou expiré.' });
+        }
+
+        recruiter.isVerified = true;
+        recruiter.resetOtp = null;
+        recruiter.resetOtpExpires = null;
+        await recruiter.save();
+
+        res.status(200).json({
+            message: 'Compte vérifié avec succès.',
+            token: generateToken(recruiter._id, recruiter.entreprise),
+            _id: recruiter._id,
+            email: recruiter.email,
+            entreprise: recruiter.entreprise,
+            role: recruiter.role
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -120,7 +170,6 @@ const getRecruiterProfile = async (req, res) => {
                 _id: recruiter._id,
                 email: recruiter.email,
                 entreprise: recruiter.entreprise,
-                poste: recruiter.poste,
                 role: recruiter.role,
                 taille: recruiter.taille,
                 anneeCreation: recruiter.anneeCreation,
@@ -146,7 +195,6 @@ const updateRecruiterProfile = async (req, res) => {
 
         if (recruiter) {
             recruiter.entreprise = req.body.entreprise || recruiter.entreprise;
-            recruiter.poste = req.body.poste || recruiter.poste;
             recruiter.taille = req.body.taille || recruiter.taille;
             recruiter.anneeCreation = req.body.anneeCreation || recruiter.anneeCreation;
             recruiter.siteWeb = req.body.siteWeb || recruiter.siteWeb;
@@ -160,7 +208,6 @@ const updateRecruiterProfile = async (req, res) => {
                 _id: updatedRecruiter._id,
                 email: updatedRecruiter.email,
                 entreprise: updatedRecruiter.entreprise,
-                poste: updatedRecruiter.poste,
                 role: updatedRecruiter.role,
                 taille: updatedRecruiter.taille,
                 anneeCreation: updatedRecruiter.anneeCreation,
@@ -222,7 +269,6 @@ const googleSignInForRecruiter = async (req, res) => {
                 email,
                 password: randomPassword,
                 entreprise: 'A définir',
-                poste: 'Recruteur',
                 role: 'recruteur'
             });
         }
@@ -235,7 +281,6 @@ const googleSignInForRecruiter = async (req, res) => {
                 id: recruiter._id,
                 email: recruiter.email,
                 entreprise: recruiter.entreprise,
-                poste: recruiter.poste,
                 role: recruiter.role,
                 firstName: 'Recruteur',
                 lastName: ''
@@ -311,7 +356,6 @@ const githubSignInForRecruiter = async (req, res) => {
                 email,
                 password: randomPassword,
                 entreprise: 'A définir',
-                poste: 'Recruteur',
                 role: 'recruteur'
             });
         }
@@ -493,6 +537,7 @@ const clearAllNotifications = async (req, res) => {
 module.exports = {
     registerRecruiter,
     authRecruiter,
+    verifyRecruiterSignupOtp,
     getRecruiterProfile,
     updateRecruiterProfile,
     googleSignInForRecruiter,

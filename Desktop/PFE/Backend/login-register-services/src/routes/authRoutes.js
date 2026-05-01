@@ -9,11 +9,13 @@ const {
   googleSignIn,
   githubSignIn,
   checkEmailExists,
+  verifySignupOtp,
 } = require('../controllers/authController');
 
 // Public routes
 router.get('/exists/:email', checkEmailExists);
 router.post('/register', register);
+router.post('/verify-signup', verifySignupOtp);
 router.post('/login', login);
 router.post('/forgot-password', forgotPassword);
 router.post('/verify-otp', verifyOtp);

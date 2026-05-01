@@ -8,7 +8,11 @@
             "name": "login-register",
             "cwd": "login-register",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "args": [
+                "--web-port",
+                "3000"
+            ]
         },
         {
             "name": "login-register (profile mode)",
@@ -28,7 +32,11 @@
             "name": "skillspace_front",
             "cwd": "skillspace_front",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "args": [
+                "--web-port",
+                "3000"
+            ]
         },
         {
             "name": "skillspace_front (profile mode)",
