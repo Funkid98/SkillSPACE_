@@ -86,14 +86,14 @@ const login = async (req, res) => {
 
     const formateur = await Formateur.findOne({ email });
     if (formateur && (await formateur.matchPassword(password))) {
-      
+
       if (!formateur.isVerified) {
         // Resend OTP if not verified
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         formateur.resetOtp = otp;
         formateur.resetOtpExpires = new Date(Date.now() + 10 * 60 * 1000);
         await formateur.save();
-        await sendVerificationEmail(email, otp);
+        await sendVerificationEmail(formateur.email, otp);
 
         return res.status(403).json({
           requiresVerification: true,
@@ -102,7 +102,7 @@ const login = async (req, res) => {
         });
       }
 
-      await sendLoginSuccessEmail(email, formateur.firstName);
+      await sendLoginSuccessEmail(formateur.email, formateur.firstName);
 
       res.status(200).json({
         token: generateToken(formateur._id),
@@ -171,7 +171,7 @@ const patchProfile = async (req, res) => {
     const formateur = await Formateur.findByIdAndUpdate(
       userId,
       { $set: updateData },
-      { returnDocument: 'after', runValidators: true }
+      { returnDocument: 'after', runValidators: true, upsert: true }
     );
 
     if (!formateur) {
@@ -205,7 +205,7 @@ const updateProfile = async (req, res) => {
     const formateur = await Formateur.findByIdAndUpdate(
       userId,
       updateData,
-      { returnDocument: 'after', runValidators: true }
+      { returnDocument: 'after', runValidators: true, upsert: true }
     );
 
     res.status(200).json(formateur);
@@ -219,10 +219,12 @@ const updateProfile = async (req, res) => {
 const getDashboardData = async (req, res) => {
   try {
     const { userId } = req.params;
-    const formateur = await Formateur.findById(userId);
+    let formateur = await Formateur.findById(userId);
 
     if (!formateur) {
-      return res.status(404).json({ message: 'Profil non trouvé' });
+      // This should ideally not happen if createTrainerProfile worked during login
+      console.warn(`[Dashboard] Profile for ${userId} missing. Sync error? Returning 404.`);
+      return res.status(404).json({ message: 'Profil formateur introuvable. Veuillez vous reconnecter.' });
     }
 
     // Fetch formations for this trainer
@@ -579,15 +581,77 @@ const enhanceFormation = async (req, res) => {
     res.status(200).json(suggestion);
   } catch (error) {
     console.error('Enhance formation error:', error.message);
-    res.status(500).json({ message: 'Error enhancing formation', error: error.message });
+    res.status(500).json({ message: 'Erreur lors de la mise à jour', error: error.message });
   }
 };
 
+// @desc    Get all formations across all trainers (for searching/recommendation)
+// @route   GET /api/formateur/all-formations
+const getAllFormations = async (req, res) => {
+  try {
+    const { query, level } = req.query;
+    let filter = {};
+
+    if (query) {
+      const regexQuery = new RegExp(query, 'i');
+      filter.$or = [
+        { tags: { $in: [regexQuery] } },
+        { title: regexQuery },
+        { description: regexQuery }
+      ];
+    }
+
+    if (level) {
+      filter.level = level;
+    }
+
+    const formations = await Formation.find(filter)
+      .populate('trainerId', 'firstName lastName email jobTitle')
+      .sort({ rating: -1, studentCount: -1 })
+      .limit(10);
+
+    res.status(200).json(formations);
+  } catch (error) {
+    console.error('Error fetching all formations:', error);
+    res.status(500).json({ message: 'Erreur lors de la récupération des formations', error: error.message });
+  }
+};
+const getFormationById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const formation = await Formation.findById(id).populate('trainerId', 'firstName lastName email jobTitle');
+    if (!formation) {
+      return res.status(404).json({ message: 'Formation non trouvée' });
+    }
+    res.status(200).json(formation);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la récupération', error: error.message });
+  }
+};
+const enrollFormation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updated = await Formation.findByIdAndUpdate(
+      id,
+      { $inc: { studentCount: 1 } },
+      { returnDocument: 'after' }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Formation non trouvée' });
+    }
+
+    res.status(200).json({ message: 'Inscrit avec succès', studentCount: updated.studentCount });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de l\'inscription', error: error.message });
+  }
+};
 module.exports = {
   getProfile,
   updateProfile,
   getDashboardData,
   getFormations,
+  getAllFormations,
   seedDummyData,
   suggestExpertise,
   generateBio,
@@ -600,5 +664,7 @@ module.exports = {
   login,
   verifySignupOtp,
   checkEmailExists,
-  patchProfile
+  patchProfile,
+  enrollFormation,
+  getFormationById
 };

@@ -71,4 +71,31 @@ const sendLoginSuccessEmail = async (toEmail, firstName) => {
   }
 };
 
-module.exports = { sendVerificationEmail, sendLoginSuccessEmail };
+const sendPasswordResetEmail = async (toEmail, otp) => {
+  const mailOptions = {
+    from: `"SkillSpace Security" <${process.env.GMAIL_FROM}>`,
+    to: toEmail,
+    subject: 'Réinitialisation de votre mot de passe SkillSpace',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 32px; background: #f5f3ee; border-radius: 16px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h1 style="color: #1E2B6B; font-size: 24px; margin: 0;">SkillSpace</h1>
+        </div>
+        <div style="background: white; border-radius: 12px; padding: 24px; text-align: center;">
+          <h2 style="color: #1A1A2E; font-size: 20px;">Réinitialisation de mot de passe</h2>
+          <p style="color: #8A8A9A; font-size: 14px;">Vous avez demandé la réinitialisation de votre mot de passe. Utilisez le code ci-dessous pour continuer.</p>
+          <div style="background: #FFF0F0; border: 2px solid #E63946; border-radius: 12px; padding: 20px; margin: 24px 0;">
+            <span style="font-size: 36px; font-weight: 800; color: #E63946; letter-spacing: 12px;">${otp}</span>
+          </div>
+          <p style="color: #8A8A9A; font-size: 12px;">Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
+        </div>
+      </div>
+    `,
+  };
+
+  const transporter = getTransporter();
+  if (!transporter) return;
+  await transporter.sendMail(mailOptions);
+};
+
+module.exports = { sendVerificationEmail, sendLoginSuccessEmail, sendPasswordResetEmail };

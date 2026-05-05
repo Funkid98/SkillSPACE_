@@ -28,9 +28,9 @@ if (!mongo_uri) {
 }
 
 mongoose.connect(mongo_uri)
-  .then(() => {
-    const dbName = mongoose.connection.name;
-    console.log(`✅ Connected to MongoDB Database: ${dbName}`);
+  .then((conn) => {
+    console.log(`✅ MongoDB Connected to Host: ${conn.connection.host}`);
+    console.log(`✅ Database Name: ${conn.connection.name}`);
   })
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
 

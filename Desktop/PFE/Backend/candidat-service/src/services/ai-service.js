@@ -193,4 +193,138 @@ const evaluateQuiz = async (skill, claimedLevel, qna) => {
   }
 }
 
-module.exports = { extractSkillsFromText, matchCvWithJob, generateQuiz, evaluateQuiz }
+/**
+ * Generates deeply personalized course recommendations.
+ *
+ * @param {string}   skill            - The skill name (e.g. "Python")
+ * @param {number}   score            - Final computed score 0-100 (already level-weighted)
+ * @param {string}   claimedLevel     - The level the user self-declared: 'Beginner' | 'Intermediate' | 'Advanced'
+ * @param {Array}    wrongTopics      - List of topics/questions the user got wrong (from answers_analysis)
+ * @param {Array}    internalFormations - Formations fetched from internal DB
+ */
+const getCourseRecommendationsAI = async (skill, score, claimedLevel, wrongTopics, internalFormations) => {
+
+  // Derive achieved level from score
+  let achievedLevel = 'Beginner';
+  if (score >= 80) achievedLevel = 'Advanced';
+  else if (score >= 40) achievedLevel = 'Intermediate';
+
+  // Build a nuanced skill gap description
+  const gapDescription = buildGapDescription(skill, score, claimedLevel, achievedLevel, wrongTopics);
+
+  // Build internal formations list for AI (only relevant level range)
+  const internalJson = JSON.stringify(
+    internalFormations.map(f => ({
+      id: f._id,
+      title: f.title,
+      level: f.level,          // 'Débutant' | 'Intermédiaire' | 'Avancé'
+      description: f.description || '',
+      tags: (f.tags || []).join(', '),
+      category: f.category || '',
+    }))
+  );
+
+  const promptText = `
+## Learner Profile
+- Skill: "${skill}"
+- Self-declared level: ${claimedLevel}
+- Quiz score: ${score}/100
+- Achieved level (from score): ${achievedLevel}
+- Skill gap analysis: ${gapDescription}
+- Topics they struggled with: ${wrongTopics.length > 0 ? wrongTopics.join('; ') : 'None identified'}
+
+## Task
+You are a learning advisor. Your job is to recommend the MOST PERSONALIZED courses for this exact learner profile.
+
+CRITICAL RULES:
+1. A ${claimedLevel} at ${score}% is NOT the same as an ${achievedLevel} at ${score}%.
+   - ${claimedLevel} ${score}% → They overestimated themselves → They need foundational reinforcement at ${achievedLevel} level.
+   - Their weak topics MUST drive the recommendations.
+2. Do NOT recommend courses that are too advanced or too basic for their actual gap.
+3. For internal formations: evaluate BOTH the level AND the description/tags to match their specific gaps.
+4. For external formations: generate highly specific courses targeting EXACTLY the weak topics found.
+
+## Available Internal Formations
+${internalJson || '[]'}
+
+## Instructions
+Select up to 3 internal formations that best address the learner's SPECIFIC gaps.
+Then generate external course recommendations to fill any remaining gaps (total: at least 3 recommendations).
+
+Return ONLY valid JSON, no markdown:
+{
+  "internal": [
+    {
+      "_id": "exact id from list",
+      "title": "exact title",
+      "trainerName": "trainer name",
+      "reason": "Specific 1-sentence explanation referencing their score (${score}%) AND their weak topics"
+    }
+  ],
+  "external": [
+    {
+      "title": "Very specific course title targeting their weak topics",
+      "platform": "Coursera | Udemy | YouTube | edX | LinkedIn Learning",
+      "url": "realistic URL",
+      "type": "Course | Workshop | Tutorial | Bootcamp",
+      "why": "1-sentence explanation of why this targets their specific gap"
+    }
+  ]
+}`;
+
+  const response = await groq.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    messages: [
+      {
+        role: 'system',
+        content: `You are a highly specialized learning advisor. You MUST tailor every recommendation to the learner's exact skill gap, score, and wrong topics. Return ONLY valid JSON with no extra text or markdown.`
+      },
+      {
+        role: 'user',
+        content: promptText
+      }
+    ],
+    temperature: 0.3,
+  });
+
+  const content = response.choices[0].message.content;
+  const clean = content.replace(/```json|```/g, '').trim();
+  try {
+    return JSON.parse(clean);
+  } catch (err) {
+    console.error('Groq Course Recommendation Parse Error:', err.message, 'Content:', content);
+    return { internal: [], external: [] };
+  }
+}
+
+/**
+ * Builds a human-readable gap description based on score context.
+ * A 55% Beginner ≠ 55% Intermediate — this captures that difference.
+ */
+function buildGapDescription(skill, score, claimedLevel, achievedLevel, wrongTopics) {
+  const levelMap = { Beginner: 1, Intermediate: 2, Advanced: 3 };
+  const claimedRank = levelMap[claimedLevel] || 1;
+  const achievedRank = levelMap[achievedLevel] || 1;
+
+  if (claimedRank > achievedRank) {
+    return `The learner claimed ${claimedLevel} but only achieved ${achievedLevel} level (${score}%). ` +
+      `This means they have significant gaps in ${skill} concepts that should be at ${achievedLevel} level. ` +
+      `Recommend courses that consolidate ${achievedLevel}-level ${skill} fundamentals, ` +
+      `especially around: ${wrongTopics.slice(0, 3).join(', ') || 'core concepts'}.`;
+  } else if (claimedRank === achievedRank) {
+    if (score >= 70) {
+      return `The learner is solid at ${achievedLevel} level (${score}%) and is ready to advance. ` +
+        `Recommend courses that bridge ${achievedLevel} to ${achievedLevel === 'Beginner' ? 'Intermediate' : 'Advanced'} level, ` +
+        `particularly covering: ${wrongTopics.slice(0, 3).join(', ') || 'advanced topics'}.`;
+    } else {
+      return `The learner is at ${achievedLevel} level but scored only ${score}%, indicating gaps. ` +
+        `Recommend courses to reinforce ${achievedLevel}-level ${skill}, ` +
+        `focusing on: ${wrongTopics.slice(0, 3).join(', ') || 'weak areas'}.`;
+    }
+  } else {
+    return `The learner exceeded their ${claimedLevel} expectation and is at ${achievedLevel} (${score}%). ` +
+      `Recommend advanced ${achievedLevel}-level courses to leverage their strong foundation in ${skill}.`;
+  }
+}
+
+module.exports = { extractSkillsFromText, matchCvWithJob, generateQuiz, evaluateQuiz, getCourseRecommendationsAI }

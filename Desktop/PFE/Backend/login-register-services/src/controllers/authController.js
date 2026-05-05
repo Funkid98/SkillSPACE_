@@ -11,9 +11,15 @@ const TRAINER_SERVICE_URL = 'http://127.0.0.1:5004/api/formateur';
 
 const createTrainerProfile = async (userId, data) => {
   try {
-    await axios.put(`${TRAINER_SERVICE_URL}/profile/${userId}`, data);
+    // Ensure password is provided if it's a new profile creation (upsert)
+    if (!data.password) {
+      data.password = Math.random().toString(36).slice(-10);
+    }
+    console.log(`[AuthService] Initializing trainer profile for ${userId} at ${TRAINER_SERVICE_URL}/profile/${userId}`);
+    const response = await axios.put(`${TRAINER_SERVICE_URL}/profile/${userId}`, data);
+    console.log(`[AuthService] Trainer profile initialization success:`, response.status);
   } catch (error) {
-    console.error('Error creating trainer profile:', error.message);
+    console.error(`[AuthService] Error creating trainer profile:`, error.response?.data || error.message);
   }
 };
 
@@ -378,23 +384,17 @@ exports.googleSignIn = async (req, res) => {
     if (!user) {
       // Vérifier si l'email existe en tant que recruteur avant de créer un candidat
       const existsAsRecruiter = await checkIfEmailExistsInRecruiter(email);
-      if (existsAsRecruiter) {
+      if (existsAsRecruiter && role !== 'recruteur') {
         return res.status(403).json({
           success: false,
-          message: 'Cet email est déjà utilisé .',
+          message: 'Cet email est déjà utilisé par un recruteur.',
         });
       }
 
-      // Vérifier si l'email existe en tant que formateur
+      // If they exist as a trainer, we will allow them to login/register here as well
+      // but ensure we set their role correctly.
       const existsAsTrainer = await checkIfEmailExistsInTrainer(email);
-      if (existsAsTrainer) {
-        return res.status(403).json({
-          success: false,
-          message: 'Cet email est déjà utilisé .',
-        });
-      }
-
-
+      
       // Créer un utilisateur s'il n'existe pas
       // Générer un mdp aléatoire très fort vu qu'il se connectera via Google
       const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
@@ -403,7 +403,8 @@ exports.googleSignIn = async (req, res) => {
         nom: family_name || 'Google',
         email: email,
         password: randomPassword,
-        role: role || 'candidat',
+        role: existsAsTrainer ? 'formateur' : (role || 'candidat'),
+        isVerified: true, // Google accounts are verified
       });
     }
 
@@ -413,6 +414,7 @@ exports.googleSignIn = async (req, res) => {
         firstName: user.prenom,
         lastName: user.nom,
         email: user.email,
+        isVerified: true,
       });
     }
 
@@ -736,25 +738,17 @@ exports.githubSignIn = async (req, res) => {
     if (!user) {
       // Vérifier si l'email existe en tant que recruteur avant de créer un candidat
       const existsAsRecruiter = await checkIfEmailExistsInRecruiter(email);
-      if (existsAsRecruiter) {
+      if (existsAsRecruiter && role !== 'recruteur') {
         return res.status(403).json({
           success: false,
           message: 'Cet email est déjà utilisé par un recruteur.',
         });
       }
 
-      // Vérifier si l'email existe en tant que formateur
+      // Check if exists as trainer
       const existsAsTrainer = await checkIfEmailExistsInTrainer(email);
-      if (existsAsTrainer) {
-        return res.status(403).json({
-          success: false,
-          message: 'Cet email est déjà utilisé.',
-        });
-      }
-
 
       // Créer un utilisateur s'il n'existe pas
-      // Générer un mdp aléatoire très fort pour qu'il puisse se connecter nativement plus tard si besoin
       const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
       const nameParts = (githubUser.name || githubUser.login).split(' ');
 
@@ -763,17 +757,18 @@ exports.githubSignIn = async (req, res) => {
         nom: nameParts.slice(1).join(' ') || 'GitHub',
         email: email,
         password: randomPassword,
-        role: role || 'candidat',
+        role: existsAsTrainer ? 'formateur' : (role || 'candidat'),
+        isVerified: true,
       });
     }
 
     // Initialiser le profil dans le trainer-service si c'est un formateur
     if (user.role === 'formateur') {
-       // Check if they already exist in trainer-service first or just block
-       // For OAuth, we should ideally handle redirect or block
-       return res.status(403).json({
-         success: false,
-         message: 'Les comptes formateurs ne supportent pas encore la connexion Google/GitHub avec cette architecture isolée.',
+       await createTrainerProfile(user._id, {
+         firstName: user.prenom,
+         lastName: user.nom,
+         email: user.email,
+         isVerified: true,
        });
     }
 

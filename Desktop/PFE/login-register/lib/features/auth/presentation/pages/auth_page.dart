@@ -146,14 +146,16 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
                     padding: const EdgeInsets.fromLTRB(22, 20, 22, 32),
                     child: BlocBuilder<AuthCubit, AuthState>(
                       builder: (context, authState) {
+                        print('AuthPage Build: awaitingVerification=${authState.awaitingVerification}, error=${authState.error}');
                         return Column(
                           children: [
-                            if (!_showForgot)
+                            if (!_showForgot && !authState.awaitingVerification) ...[
                               _TabSwitcher(
                                 selected: authState.tab,
                                 onSwitch: _onTabSwitch,
                               ),
-                            if (!_showForgot) const SizedBox(height: 24),
+                              const SizedBox(height: 24),
+                            ],
                             FadeTransition(
                               opacity: _fadeAnim,
                               child: SlideTransition(

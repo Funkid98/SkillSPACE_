@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:http_parser/http_parser.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:camera/camera.dart';
 import '../../../../core/app_colors.dart';
 import 'simulation_result_page.dart';
@@ -20,11 +24,13 @@ class _SimulationLivePageState extends State<SimulationLivePage>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
   final TextEditingController _textController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   final List<Map<String, dynamic>> _chatHistory = [];
 
-  // Speech to Text
-  final stt.SpeechToText _speechToText = stt.SpeechToText();
-  bool _speechEnabled = false;
+  // Audio Recording (Whisper)
+  final AudioRecorder _audioRecorder = AudioRecorder();
+  String _selectedLanguage = 'fr'; // 'fr' or 'en'
+  bool _isTranscribing = false;
 
   // Camera
   CameraController? _cameraController;
@@ -34,8 +40,20 @@ class _SimulationLivePageState extends State<SimulationLivePage>
   bool _isCamOn = true;
   bool _isScreenOn = false;
 
+  // PiP Position
+  double? _pipTop;
+  double? _pipLeft;
+
   String _currentQuestion = "Génération de la question en cours...";
+  String get _generatingText => _selectedLanguage == 'en'
+      ? "Generating question..."
+      : "Génération de la question en cours...";
   bool _isGenerating = true;
+
+  // Timer
+  Timer? _timer;
+  int _secondsRemaining = 90; // 90 seconds per answer
+  static const int _maxResponseTime = 90;
 
   @override
   void initState() {
@@ -44,7 +62,8 @@ class _SimulationLivePageState extends State<SimulationLivePage>
       vsync: this,
       duration: const Duration(seconds: 1),
     )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(_pulseController);
+    _pulseAnimation =
+        Tween<double>(begin: 0.8, end: 1.2).animate(_pulseController);
 
     _initSpeech();
     _initCamera();
@@ -52,21 +71,9 @@ class _SimulationLivePageState extends State<SimulationLivePage>
   }
 
   Future<void> _initSpeech() async {
-    _speechEnabled = await _speechToText.initialize(
-      onStatus: (status) {
-        if (status == 'notListening' && _isMicOn) {
-          if (mounted) setState(() => _isMicOn = false);
-        }
-      },
-      onError: (errorNotification) {
-        if (mounted) setState(() => _isMicOn = false);
-      },
-    );
-    if (mounted) {
-      setState(() {});
-      if (_speechEnabled) {
-        _toggleMicrophone(); // Auto-start the microphone
-      }
+    // Check for permissions
+    if (await _audioRecorder.hasPermission()) {
+      if (mounted) setState(() {});
     }
   }
 
@@ -93,12 +100,54 @@ class _SimulationLivePageState extends State<SimulationLivePage>
     }
   }
 
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    setState(() => _secondsRemaining = _maxResponseTime);
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsRemaining > 0) {
+        setState(() => _secondsRemaining--);
+      } else {
+        _timer?.cancel();
+        // Optionnel: Auto-envoyer ou alerter l'utilisateur
+      }
+    });
+  }
+
+  void _stopTimer() {
+    _timer?.cancel();
+  }
+
+  String _formatTime(int seconds) {
+    final mins = (seconds / 60).floor();
+    final secs = seconds % 60;
+    return '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+  }
+
   Future<void> _startSimulationBackend() async {
+    setState(() {
+      _currentQuestion = _generatingText;
+      _isGenerating = true;
+    });
     try {
       final response = await http.post(
         Uri.parse('http://localhost:5005/api/interview/start'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'role': widget.roleTitle}),
+        body: jsonEncode({
+          'role': widget.roleTitle,
+          'language': _selectedLanguage,
+        }),
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -108,38 +157,43 @@ class _SimulationLivePageState extends State<SimulationLivePage>
             _chatHistory.add({'isUser': false, 'text': _currentQuestion});
             _isGenerating = false;
           });
+          _startTimer();
+          _scrollToBottom();
         }
       } else {
-        if (mounted) {
-          setState(() {
-            _currentQuestion = "Bonjour ! Parlez-moi d'un projet dont vous êtes fier.";
-            _chatHistory.add({'isUser': false, 'text': _currentQuestion});
-            _isGenerating = false;
-          });
-        }
+        if (mounted) _fallbackStart();
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _currentQuestion = "Bonjour ! Parlez-moi d'un projet dont vous êtes fier.";
-          _chatHistory.add({'isUser': false, 'text': _currentQuestion});
-          _isGenerating = false;
-        });
-      }
+      if (mounted) _fallbackStart();
     }
+  }
+
+  void _fallbackStart() {
+    setState(() {
+      _currentQuestion = _selectedLanguage == 'en'
+          ? "Hello! Tell me about a project you are proud of."
+          : "Bonjour ! Parlez-moi d'un projet dont vous êtes fier.";
+      _chatHistory.add({'isUser': false, 'text': _currentQuestion});
+      _isGenerating = false;
+    });
+    _startTimer();
   }
 
   Future<void> _sendAnswerToBackend() async {
     final answer = _textController.text.trim();
     if (answer.isEmpty) return;
 
+    _stopTimer();
+
     setState(() {
       _chatHistory.add({'isUser': true, 'text': answer});
       _isGenerating = true;
       _textController.clear();
-      _isMicOn = false; // Stop listening when sending
+      _isMicOn = false;
     });
-    _speechToText.stop();
+    _scrollToBottom();
+
+    _stopAndTranscribe();
 
     try {
       final response = await http.post(
@@ -149,6 +203,7 @@ class _SimulationLivePageState extends State<SimulationLivePage>
           'message': answer,
           'roleTitle': widget.roleTitle,
           'history': _chatHistory,
+          'language': _selectedLanguage,
         }),
       );
       if (response.statusCode == 200) {
@@ -159,6 +214,8 @@ class _SimulationLivePageState extends State<SimulationLivePage>
             _chatHistory.add({'isUser': false, 'text': _currentQuestion});
             _isGenerating = false;
           });
+          _startTimer();
+          _scrollToBottom();
         }
       } else {
         _fallbackResponse();
@@ -175,31 +232,118 @@ class _SimulationLivePageState extends State<SimulationLivePage>
         _chatHistory.add({'isUser': false, 'text': _currentQuestion});
         _isGenerating = false;
       });
+      _startTimer();
     }
   }
 
-  void _toggleMicrophone() {
-    if (!_speechEnabled) return;
-    
-    setState(() {
-      _isMicOn = !_isMicOn;
-    });
+  Future<void> _toggleMicrophone() async {
+    if (_isTranscribing) return;
 
-    if (_isMicOn) {
-      // Start listening
-      _speechToText.listen(
-        onResult: (result) {
+    try {
+      if (await _audioRecorder.isRecording()) {
+        setState(() {
+          _isMicOn = false;
+          _isTranscribing = true;
+        });
+        await _stopAndTranscribe();
+      } else {
+        // Explicitly check and request permission
+        final hasPermission = await _audioRecorder.hasPermission();
+        if (!hasPermission) {
           if (mounted) {
-            setState(() {
-              _textController.text = result.recognizedWords;
-            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content:
+                      Text('Permission micro refusée. Veuillez l\'autoriser.')),
+            );
           }
-        },
-        localeId: 'fr_FR',
-      );
-    } else {
-      // Stop listening
-      _speechToText.stop();
+          return;
+        }
+
+        // Start recording
+        String? path;
+        if (!kIsWeb) {
+          final directory = await getTemporaryDirectory();
+          path = '${directory.path}/audio_record.m4a';
+        }
+
+        const config = RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 128000,
+          sampleRate: 44100,
+        );
+
+        await _audioRecorder.start(config, path: path ?? '');
+        setState(() {
+          _isMicOn = true;
+        });
+      }
+    } catch (e) {
+      print("Mic Toggle Error: $e");
+      if (mounted) {
+        setState(() {
+          _isMicOn = false;
+          _isTranscribing = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur micro: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _stopAndTranscribe() async {
+    final path = await _audioRecorder.stop();
+    if (path == null) {
+      setState(() => _isTranscribing = false);
+      return;
+    }
+
+    setState(() => _isTranscribing = true);
+
+    try {
+      var request = http.MultipartRequest(
+          'POST', Uri.parse('http://localhost:5005/api/interview/transcribe'));
+
+      if (kIsWeb) {
+        // On web, stop() returns a blob URL. Fetch bytes first.
+        final audioResponse = await http.get(Uri.parse(path));
+        request.files.add(http.MultipartFile.fromBytes(
+          'audio',
+          audioResponse.bodyBytes,
+          filename: 'audio.m4a',
+          contentType: MediaType('audio', 'm4a'),
+        ));
+      } else {
+        request.files.add(await http.MultipartFile.fromPath(
+          'audio',
+          path,
+          contentType: MediaType('audio', 'm4a'),
+        ));
+      }
+
+      request.fields['language'] = _selectedLanguage;
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            _textController.text = data['text'];
+            _isTranscribing = false;
+          });
+          // Auto-send if it's a significant transcription?
+          // For now let the user review and click send
+        }
+      } else {
+        print("Transcription failed: ${response.body}");
+        setState(() => _isTranscribing = false);
+      }
+    } catch (e) {
+      print("Error transcribing: $e");
+      setState(() => _isTranscribing = false);
     }
   }
 
@@ -211,9 +355,11 @@ class _SimulationLivePageState extends State<SimulationLivePage>
 
   @override
   void dispose() {
+    _timer?.cancel();
     _pulseController.dispose();
     _textController.dispose();
-    _speechToText.stop();
+    _scrollController.dispose();
+    _audioRecorder.dispose();
     _cameraController?.dispose();
     super.dispose();
   }
@@ -221,10 +367,12 @@ class _SimulationLivePageState extends State<SimulationLivePage>
   void _finishSimulation() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => SimulationResultPage(
-        chatHistory: _chatHistory,
-        roleTitle: widget.roleTitle,
-      )),
+      MaterialPageRoute(
+          builder: (_) => SimulationResultPage(
+                chatHistory: _chatHistory,
+                roleTitle: widget.roleTitle,
+                language: _selectedLanguage,
+              )),
     );
   }
 
@@ -237,17 +385,19 @@ class _SimulationLivePageState extends State<SimulationLivePage>
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       color: const Color(0xFFEBE9E4),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      widget.roleTitle.replaceAll(' ', '\n'), 
+                      widget.roleTitle.replaceAll(' ', '\n'),
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -261,21 +411,24 @@ class _SimulationLivePageState extends State<SimulationLivePage>
                     onPressed: () {
                       Navigator.popUntil(context, (route) => route.isFirst);
                     },
-                    child: const Text('Quitter', style: TextStyle(color: AppColors.textGray)),
+                    child: const Text('Quitter',
+                        style: TextStyle(color: AppColors.textGray)),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: _finishSimulation,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.orange,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text('Terminer & Voir les résultats', style: TextStyle(color: Colors.white, fontSize: 12)),
+                    child: const Text('Terminer & Voir les résultats',
+                        style: TextStyle(color: Colors.white, fontSize: 12)),
                   )
                 ],
               ),
             ),
-            
+
             Expanded(
               child: Stack(
                 children: [
@@ -294,7 +447,8 @@ class _SimulationLivePageState extends State<SimulationLivePage>
                                   color: Colors.black12,
                                   borderRadius: BorderRadius.circular(24),
                                   image: const DecorationImage(
-                                    image: NetworkImage('https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400'),
+                                    image: NetworkImage(
+                                        'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400'),
                                     fit: BoxFit.cover,
                                   ),
                                   boxShadow: const [
@@ -310,7 +464,8 @@ class _SimulationLivePageState extends State<SimulationLivePage>
                                 top: 16,
                                 right: 16,
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withOpacity(0.9),
                                     borderRadius: BorderRadius.circular(12),
@@ -347,57 +502,74 @@ class _SimulationLivePageState extends State<SimulationLivePage>
                           const SizedBox(height: 16),
                           const Text(
                             'Sophie Martin',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.navy),
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.navy),
                           ),
                           const Text(
                             'Recruteuse IA',
-                            style: TextStyle(fontSize: 14, color: AppColors.textGray),
+                            style: TextStyle(
+                                fontSize: 14, color: AppColors.textGray),
                           ),
-                          const SizedBox(height: 32),
-                          
-                          // AI Question Bubble
+                          const SizedBox(height: 12),
+                          // Timer Display
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _secondsRemaining < 15
+                                  ? Colors.red.withOpacity(0.1)
+                                  : AppColors.navy.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.timer_outlined,
+                                  size: 14,
+                                  color: _secondsRemaining < 15
+                                      ? Colors.red
+                                      : AppColors.navy,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _formatTime(_secondsRemaining),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: _secondsRemaining < 15
+                                        ? Colors.red
+                                        : AppColors.navy,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Real-time Conversation Flow
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 24.0),
                             child: Container(
-                              constraints: const BoxConstraints(maxWidth: 600),
-                              child: Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(24),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFEBE9E4),
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: _isGenerating
-                                      ? const Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.orange))
-                                      : Text(
-                                          _currentQuestion,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            color: AppColors.navy,
-                                            height: 1.5,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                  ),
-                                  Positioned(
-                                    top: -12,
-                                    left: 24,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(6),
-                                      decoration: const BoxDecoration(
-                                        color: AppColors.orange,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Text(
-                                        '?',
-                                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                              constraints: const BoxConstraints(maxHeight: 400),
+                              child: ListView.builder(
+                                controller: _scrollController,
+                                shrinkWrap: true,
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: _chatHistory.length +
+                                    (_isGenerating ? 1 : 0),
+                                itemBuilder: (context, index) {
+                                  if (index == _chatHistory.length &&
+                                      _isGenerating) {
+                                    return _buildLoadingBubble();
+                                  }
+                                  final msg = _chatHistory[index];
+                                  return _buildChatBubble(
+                                      msg['isUser'], msg['text']);
+                                },
                               ),
                             ),
                           ),
@@ -406,29 +578,120 @@ class _SimulationLivePageState extends State<SimulationLivePage>
                     ),
                   ),
 
-                  // Candidate Camera PiP (Bottom Right)
-                  if (_isCamOn && _cameraController != null && _cameraController!.value.isInitialized)
+                  // Candidate Camera PiP (Draggable)
+                  if (_isCamOn &&
+                      _cameraController != null &&
+                      _cameraController!.value.isInitialized)
                     Positioned(
-                      bottom: 20,
-                      right: 32,
-                      child: Container(
-                        width: 150,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          color: Colors.black,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: const [
-                            BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 5))
-                          ],
+                      top: _pipTop,
+                      left: _pipLeft,
+                      right: _pipLeft == null ? 32 : null,
+                      bottom: _pipTop == null ? 20 : null,
+                      child: GestureDetector(
+                        onPanUpdate: (details) {
+                          setState(() {
+                            // Initialize position if null (start from bottom right)
+                            _pipLeft ??=
+                                MediaQuery.of(context).size.width - 150 - 32;
+                            _pipTop ??= MediaQuery.of(context).size.height -
+                                200 -
+                                150; // Adjust for bottom area
+
+                            _pipLeft = _pipLeft! + details.delta.dx;
+                            _pipTop = _pipTop! + details.delta.dy;
+                          });
+                        },
+                        child: Container(
+                          width: 160,
+                          height:
+                              120, // Changed to a more natural landscape/webcam ratio
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                                color: Colors.white.withOpacity(0.2), width: 1),
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 15,
+                                  spreadRadius: 2,
+                                  offset: const Offset(0, 8))
+                            ],
+                          ),
+                          clipBehavior: Clip.hardEdge,
+                          child: Stack(
+                            children: [
+                              Transform.scale(
+                                scale: 1.1, // Slight zoom to ensure fill
+                                child: Center(
+                                  child: CameraPreview(_cameraController!),
+                                ),
+                              ),
+                              // Gradient Overlay for better contrast
+                              Positioned.fill(
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Colors.black.withOpacity(0.1),
+                                        Colors.transparent,
+                                        Colors.black.withOpacity(0.4),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.5),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(Icons.drag_indicator,
+                                      color: Colors.white.withOpacity(0.9),
+                                      size: 16),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 8,
+                                left: 8,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'VOUS',
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.9),
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        clipBehavior: Clip.hardEdge,
-                        child: CameraPreview(_cameraController!),
                       ),
                     ),
                 ],
               ),
             ),
-            
+
             // Bottom Area
             Padding(
               padding: const EdgeInsets.all(32.0),
@@ -440,25 +703,43 @@ class _SimulationLivePageState extends State<SimulationLivePage>
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: _isMicOn ? AppColors.orange : const Color(0xFFEBE9E4), 
-                        width: 2
-                      ),
+                          color: _isMicOn
+                              ? AppColors.orange
+                              : (_isTranscribing
+                                  ? Colors.blue
+                                  : const Color(0xFFEBE9E4)),
+                          width: 2),
                     ),
                     child: Row(
                       children: [
-                        if (_isMicOn) 
+                        if (_isMicOn)
                           const Padding(
                             padding: EdgeInsets.only(left: 16.0),
                             child: Icon(Icons.mic, color: AppColors.orange),
+                          ),
+                        if (_isTranscribing)
+                          const Padding(
+                            padding: EdgeInsets.only(left: 16.0),
+                            child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.blue)),
                           ),
                         Expanded(
                           child: TextField(
                             controller: _textController,
                             decoration: InputDecoration(
-                              hintText: _isMicOn ? 'Écoute en cours...' : 'Tapez votre réponse ou utilisez le micro...',
-                              hintStyle: const TextStyle(color: AppColors.textGray),
+                              hintText: _isMicOn
+                                  ? 'Enregistrement en cours (Whisper)...'
+                                  : (_isTranscribing
+                                      ? 'Transcription par Whisper...'
+                                      : 'Tapez votre réponse ou utilisez le micro...'),
+                              hintStyle:
+                                  const TextStyle(color: AppColors.textGray),
                               border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 16),
                             ),
                             onSubmitted: (_) => _sendAnswerToBackend(),
                           ),
@@ -467,10 +748,13 @@ class _SimulationLivePageState extends State<SimulationLivePage>
                           padding: const EdgeInsets.only(right: 8.0),
                           child: IconButton(
                             onPressed: _sendAnswerToBackend,
-                            icon: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                            icon: const Icon(Icons.send_rounded,
+                                color: Colors.white, size: 20),
                             style: IconButton.styleFrom(
-                              backgroundColor: AppColors.orange.withOpacity(0.8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              backgroundColor:
+                                  AppColors.orange.withOpacity(0.8),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
                         ),
@@ -501,6 +785,9 @@ class _SimulationLivePageState extends State<SimulationLivePage>
                         isActive: _isScreenOn,
                         onTap: () => setState(() => _isScreenOn = !_isScreenOn),
                       ),
+                      const SizedBox(width: 16),
+                      // Language Selector
+                      _buildLanguageButton(),
                     ],
                   )
                 ],
@@ -545,6 +832,105 @@ class _SimulationLivePageState extends State<SimulationLivePage>
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageButton() {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedLanguage = _selectedLanguage == 'fr' ? 'en' : 'fr';
+
+          // If we haven't started talking yet, or if we want to restart with new language
+          if (_chatHistory.length <= 1) {
+            _chatHistory.clear();
+            _isGenerating = true;
+            _startSimulationBackend();
+          }
+        });
+      },
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEBE9E4),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.navy.withOpacity(0.2)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.language, size: 18, color: AppColors.navy),
+            const SizedBox(width: 8),
+            Text(
+              _selectedLanguage.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: AppColors.navy,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChatBubble(bool isUser, String text) {
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isUser ? AppColors.orange : const Color(0xFFEBE9E4),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(isUser ? 16 : 0),
+            bottomRight: Radius.circular(isUser ? 0 : 16),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        constraints: const BoxConstraints(maxWidth: 450),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: isUser ? Colors.white : AppColors.navy,
+            fontSize: 14,
+            height: 1.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingBubble() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: const BoxDecoration(
+          color: Color(0xFFEBE9E4),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(16),
+            topRight: Radius.circular(16),
+            bottomRight: Radius.circular(16),
+          ),
+        ),
+        child: const SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(
+              strokeWidth: 2, color: AppColors.orange),
         ),
       ),
     );

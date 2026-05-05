@@ -7,8 +7,7 @@ import 'package:skillspace/shared/widgets/hover_scale.dart';
 import 'package:skillspace/core/l10n/app_localizations.dart';
 import 'package:skillspace/features/dashboard_shell/dashboard_shell.dart';
 import 'package:skillspace/shared/widgets/app_sidebar.dart';
-import 'package:skillspace/features/recruiter/presentation/pages/recruiter_shell.dart';
-import 'package:skillspace/features/recruiter/presentation/widgets/recruiter_sidebar.dart';
+import 'package:recruiter_profile/recruiter_profile.dart';
 import 'package:pfe/features/auth/presentation/pages/auth_page.dart';
 import 'package:skillspace/features/auth/presentation/pages/field_selection_page.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
@@ -132,8 +131,8 @@ class _HeroText extends StatelessWidget {
                                       initialTab: DashboardTab.profil,
                                       initialUserData: user,
                                     )
-                                  : (user?['sector']?.toString().isEmpty ??
-                                          true)
+                                  : (user?['sector'] == null ||
+                                          user!['sector'].toString().isEmpty)
                                       ? const FieldSelectionPage()
                                       : DashboardShell(
                                           initialTab: DashboardTab.profil,

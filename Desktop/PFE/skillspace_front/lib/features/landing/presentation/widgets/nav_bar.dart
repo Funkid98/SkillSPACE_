@@ -11,8 +11,7 @@ import 'package:skillspace/features/auth/presentation/pages/field_selection_page
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:skillspace/features/dashboard_shell/dashboard_shell.dart';
 import 'package:skillspace/shared/widgets/app_sidebar.dart';
-import 'package:skillspace/features/recruiter/presentation/pages/recruiter_shell.dart';
-import 'package:skillspace/features/recruiter/presentation/widgets/recruiter_sidebar.dart';
+import 'package:recruiter_profile/recruiter_profile.dart';
 import 'package:trainer_profile/screens/main_navigation_screen.dart';
 import '../pages/landing_page.dart';
 
@@ -54,7 +53,7 @@ class NavBar extends StatelessWidget {
                     );
                   } else {
                     final sector = userData?['sector'];
-                    if (sector == null || sector.isEmpty) {
+                    if (sector == null || sector.toString().isEmpty) {
                       return const FieldSelectionPage();
                     }
                     return DashboardShell(

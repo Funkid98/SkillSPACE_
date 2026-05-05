@@ -7,6 +7,7 @@ import '../../cubit/profile_cubit.dart';
 import '../../data/models/profile_model.dart';
 import '../../../../core/app_colors.dart';
 import '../../../../core/utils/app_toast.dart';
+import 'recommendations_modal.dart';
 
 class QuizModal extends StatefulWidget {
   final ProfileSkill skill;
@@ -34,6 +35,7 @@ class _QuizModalState extends State<QuizModal> {
   String _evaluationFeedback = '';
   String _determinedLevel = '';
   List<dynamic> _answersAnalysis = [];
+  int _finalScore = 0; // computed score after evaluation
 
   Future<void> _generateQuiz() async {
     setState(() => _step = 1);
@@ -121,6 +123,7 @@ class _QuizModalState extends State<QuizModal> {
         }
 
         setState(() {
+          _finalScore = score;
           _determinedLevel = displayLevel;
           _evaluationFeedback = data['feedback'] ?? '';
           _answersAnalysis = data['answers_analysis'] ?? [];
@@ -398,16 +401,58 @@ class _QuizModalState extends State<QuizModal> {
               );
             }),
             const SizedBox(height: 24),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.orange,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 45)),
-              onPressed: () {
-                Navigator.of(context).pop();
-                AppToast.showSuccess(context, 'Niveau mis à jour!');
-              },
-              child: const Text('Fermer et sauvegarder'),
+            // ── Action Buttons ──────────────────────────────────────
+            Row(
+              children: [
+                // Save button
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.save_rounded, size: 18),
+                    label: const Text('Sauvegarder'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.navy,
+                      side: const BorderSide(color: AppColors.navy, width: 1.5),
+                      minimumSize: const Size(0, 48),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      AppToast.showSuccess(context, 'Niveau mis à jour !');
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // See Formations button
+                Expanded(
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.school_rounded, size: 18),
+                    label: const Text('Voir formations',
+                        style: TextStyle(fontSize: 13)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.orange,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(0, 48),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      // Open recommendations modal with full quiz context
+                      showDialog(
+                        context: widget.parentContext,
+                        builder: (_) => RecommendationsModal(
+                          skill: widget.skill.name,
+                          score: _finalScore,
+                          claimedLevel: _selectedLevel,
+                          answersAnalysis: _answersAnalysis,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ],
         ),

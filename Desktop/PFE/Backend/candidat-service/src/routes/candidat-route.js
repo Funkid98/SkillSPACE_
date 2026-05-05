@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { register, login, getProfile, updateProfile, getRecentCandidatesBySector, getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer, applyToOffer, receiveNotification, getNotifications, markNotificationRead, internalUpdateApplication, deleteNotification, clearAllNotifications } = require('../controllers/candidat-controller')
+const { register, login, getProfile, updateProfile, getRecentCandidatesBySector, getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer, applyToOffer, receiveNotification, getNotifications, markNotificationRead, internalUpdateApplication, deleteNotification, clearAllNotifications, enrollFormation, getEnrolledFormations, completeFormation, getEnrolledCandidatesByFormation } = require('../controllers/candidat-controller')
 const auth = require('../middleware/auth-middleware')
 
 
@@ -31,5 +31,11 @@ router.get('/internal/:id', async (req, res) => {
     if (!user) return res.status(404).json({ error: 'Not found' })
     res.json(user)
 })
+
+// Formation Enrollment
+router.post('/enroll/:formationId', auth, enrollFormation)
+router.post('/internal/complete/:candidateId/:formationId', completeFormation)
+router.get('/internal/enrolled/:formationId', getEnrolledCandidatesByFormation)
+router.get('/formations', auth, getEnrolledFormations)
 
 module.exports = router

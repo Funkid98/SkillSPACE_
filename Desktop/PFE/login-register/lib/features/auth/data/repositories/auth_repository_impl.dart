@@ -172,6 +172,9 @@ class AuthRepositoryImpl implements AuthRepository {
       if (!isRecruiter) 'role': role,
     });
 
+    print('Login Response Status: ${response.statusCode}');
+    print('Login Response Body: ${response.body}');
+
     final data = jsonDecode(response.body);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -180,7 +183,9 @@ class AuthRepositoryImpl implements AuthRepository {
           : UserModel.fromJson(data['user']);
       await _saveAuthData(data['token'], user);
       return user;
-    } else if (response.statusCode == 403 && data['requiresVerification'] == true) {
+    } else if ((response.statusCode == 403 || response.statusCode == 401) && 
+               data['requiresVerification'] == true) {
+      print('Triggering NeedsVerificationException for ${data['email'] ?? email}');
       throw NeedsVerificationException(
           data['email'] ?? email, data['message'] ?? 'Vérification requise');
     } else {

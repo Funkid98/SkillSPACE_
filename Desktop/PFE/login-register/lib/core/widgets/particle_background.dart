@@ -1,11 +1,10 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme.dart';
 
 class ParticleBackground extends StatefulWidget {
   final Widget child;
 
-  const ParticleBackground({Key? key, required this.child}) : super(key: key);
+  const ParticleBackground({super.key, required this.child});
 
   @override
   State<ParticleBackground> createState() => _ParticleBackgroundState();
@@ -140,15 +139,16 @@ class _TrailPainter extends CustomPainter {
     // Calculate the current color based on the global animation progress
     int section = (progress * (colors.length - 1)).floor();
     double subProgress = (progress * (colors.length - 1)) - section;
-    Color currentColor = Color.lerp(colors[section], colors[section + 1], subProgress)!;
+    Color currentColor =
+        Color.lerp(colors[section], colors[section + 1], subProgress)!;
 
     for (int i = trail.length - 2; i >= 0; i--) {
       double t = 1.0 - (i / trail.length);
-      _paint.strokeWidth = 24.0 * t;
+      _paint.strokeWidth = 8.0 * t;
 
       // The color also fades out towards the tail
       _paint.color = currentColor.withOpacity(t);
-      _paint.blendMode = BlendMode.src; 
+      _paint.blendMode = BlendMode.src;
 
       canvas.drawLine(trail[i], trail[i + 1], _paint);
     }

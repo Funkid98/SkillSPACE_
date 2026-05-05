@@ -28,6 +28,12 @@ const userSchema = new mongoose.Schema({
     },
     cv_path: { type: String, default: '' },
     completion_percent: { type: Number, default: 30 },
+    enrolledFormations: [{
+        formationId: { type: String, required: true },
+        enrolledAt: { type: Date, default: Date.now },
+        aiReason: { type: String, default: '' },
+        status: { type: String, enum: ['ENROLLED', 'COMPLETED'], default: 'ENROLLED' },
+    }],
     resetOtp: {
         type: String,
         default: null,

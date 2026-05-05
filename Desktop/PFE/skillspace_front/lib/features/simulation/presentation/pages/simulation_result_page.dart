@@ -6,11 +6,13 @@ import '../../../../core/app_colors.dart';
 class SimulationResultPage extends StatefulWidget {
   final List<Map<String, dynamic>> chatHistory;
   final String roleTitle;
+  final String language;
 
   const SimulationResultPage({
     super.key,
     required this.chatHistory,
     required this.roleTitle,
+    this.language = 'fr',
   });
 
   @override
@@ -43,6 +45,7 @@ class _SimulationResultPageState extends State<SimulationResultPage>
         body: jsonEncode({
           'history': widget.chatHistory,
           'roleTitle': widget.roleTitle,
+          'language': widget.language,
         }),
       );
 
@@ -87,16 +90,20 @@ class _SimulationResultPageState extends State<SimulationResultPage>
             children: [
               const CircularProgressIndicator(color: AppColors.orange),
               const SizedBox(height: 24),
-              const Text(
-                'Analyse de l\'entretien en cours...',
-                style: TextStyle(
+              Text(
+                widget.language == 'en' 
+                  ? 'Analyzing interview...' 
+                  : 'Analyse de l\'entretien en cours...',
+                style: const TextStyle(
                     fontSize: 18,
                     color: AppColors.navy,
                     fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
-                'Notre IA génère vos résultats et recommandations...',
+                widget.language == 'en'
+                  ? 'Our AI is generating your results and recommendations...'
+                  : 'Notre IA génère vos résultats et recommandations...',
                 style: TextStyle(
                     fontSize: 14, color: AppColors.textGray.withOpacity(0.8)),
               ),
@@ -365,17 +372,14 @@ class _SimulationResultPageState extends State<SimulationResultPage>
                             ],
                           ),
                           const SizedBox(height: 16),
-                          ...improvements
-                              .map((imp) => Padding(
-                                    padding:
-                                        const EdgeInsets.only(bottom: 12.0),
-                                    child: _buildImprovementItem(
-                                        imp['title'] ?? 'Amélioration',
-                                        imp['description'] ?? '',
-                                        Icons.auto_awesome,
-                                        AppColors.orange),
-                                  ))
-                              .toList(),
+                          ...improvements.map((imp) => Padding(
+                                padding: const EdgeInsets.only(bottom: 12.0),
+                                child: _buildImprovementItem(
+                                    imp['title'] ?? 'Amélioration',
+                                    imp['description'] ?? '',
+                                    Icons.auto_awesome,
+                                    AppColors.orange),
+                              )),
                         ],
                       ),
                     ),
@@ -468,7 +472,7 @@ class _SimulationResultPageState extends State<SimulationResultPage>
         LinearProgressIndicator(
           value: value,
           backgroundColor: Colors.white,
-          valueColor: AlwaysStoppedAnimation<Color>(AppColors.navy),
+          valueColor: const AlwaysStoppedAnimation<Color>(AppColors.navy),
           minHeight: 6,
           borderRadius: BorderRadius.circular(3),
         ),
@@ -497,7 +501,7 @@ class _SimulationResultPageState extends State<SimulationResultPage>
           LinearProgressIndicator(
             value: value,
             backgroundColor: Colors.white,
-            valueColor: AlwaysStoppedAnimation<Color>(AppColors.navy),
+            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.navy),
             minHeight: 4,
             borderRadius: BorderRadius.circular(2),
           ),

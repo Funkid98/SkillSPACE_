@@ -8,8 +8,7 @@ import '../../../../shared/widgets/hover_scale.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../features/dashboard_shell/dashboard_shell.dart';
 import '../../../../shared/widgets/app_sidebar.dart';
-import 'package:skillspace/features/recruiter/presentation/pages/recruiter_shell.dart';
-import 'package:skillspace/features/recruiter/presentation/widgets/recruiter_sidebar.dart';
+import 'package:recruiter_profile/recruiter_profile.dart';
 import 'package:pfe/features/auth/presentation/pages/auth_page.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -58,7 +57,8 @@ class AudienceSection extends StatelessWidget {
               MaterialPageRoute(
                 builder: (context) => role == UserRole.recruteur
                     ? const RecruiterShell(initialTab: RecruiterTab.profile)
-                    : (user?['sector']?.toString().isEmpty ?? true)
+                    : (user?['sector'] == null ||
+                            user!['sector'].toString().isEmpty)
                         ? const FieldSelectionPage()
                         : DashboardShell(
                             initialTab: DashboardTab.profil,
@@ -92,7 +92,7 @@ class AudienceSection extends StatelessWidget {
                             );
                           } else {
                             final sector = user?['sector'];
-                            if (sector == null || sector.isEmpty) {
+                            if (sector == null || sector.toString().isEmpty) {
                               return const FieldSelectionPage();
                             }
                             return DashboardShell(
@@ -156,7 +156,7 @@ class AudienceSection extends StatelessWidget {
                       builder: (_) {
                         final user = currentAuthState.loggedInUser;
                         final sector = user?['sector'];
-                        if (sector == null || sector.isEmpty) {
+                        if (sector == null || sector.toString().isEmpty) {
                           return const FieldSelectionPage();
                         }
                         return DashboardShell(
@@ -192,14 +192,15 @@ class AudienceSection extends StatelessWidget {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => role == UserRole.formateur
-                    ? DashboardShell(
-                        initialTab: DashboardTab.profil,
-                        initialUserData: user,
-                      )
-                    : role == UserRole.recruteur
-                        ? const RecruiterShell(initialTab: RecruiterTab.profile)
-                        : (user?['sector']?.toString().isEmpty ?? true)
+                builder: (context) => role == UserRole.recruteur
+                    ? const RecruiterShell(initialTab: RecruiterTab.profile)
+                    : role == UserRole.formateur
+                        ? DashboardShell(
+                            initialTab: DashboardTab.profil,
+                            initialUserData: user,
+                          )
+                        : (user?['sector'] == null ||
+                                user!['sector'].toString().isEmpty)
                             ? const FieldSelectionPage()
                             : DashboardShell(
                                 initialTab: DashboardTab.profil,
@@ -370,24 +371,28 @@ class _AudienceCard extends StatelessWidget {
           ...data.features.map(
             (f) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: Row(children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                      color: AppColors.orange, shape: BoxShape.circle),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(f,
-                      style: TextStyle(
-                          color: hl
-                              ? Colors.white.withValues(alpha: 0.9)
-                              : AppColors.textDark,
-                          fontSize: 13,
-                          height: 1.4)),
-                ),
-              ]),
+              child: Row(
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: hl ? Colors.white70 : AppColors.orange,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(f,
+                        style: TextStyle(
+                            color: hl
+                                ? Colors.white.withValues(alpha: 0.9)
+                                : AppColors.textDark,
+                            fontSize: 13,
+                            height: 1.4)),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 20),

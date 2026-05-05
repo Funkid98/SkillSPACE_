@@ -895,10 +895,162 @@ const internalUpdateApplication = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+// Enroll in a formation (saves locally + increments student count on trainer service)
+const enrollFormation = async (req, res) => {
+    try {
+        const candidateId = req.userId;
+        const { formationId } = req.params;
+        const { aiReason } = req.body;
+
+        if (!formationId) return res.status(400).json({ error: 'formationId is required' });
+
+        const user = await User.findById(candidateId);
+        if (!user) return res.status(404).json({ error: 'Candidate not found' });
+
+        // Check if already enrolled
+        const alreadyEnrolled = (user.enrolledFormations || []).some(
+            ef => ef.formationId === formationId
+        );
+        if (alreadyEnrolled) {
+            return res.status(409).json({ error: 'Déjà inscrit à cette formation' });
+        }
+
+        // Save enrollment locally
+        user.enrolledFormations.push({
+            formationId,
+            aiReason: aiReason || '',
+            enrolledAt: new Date(),
+        });
+        await user.save();
+
+        // Increment student count on trainer service (fire and forget)
+        try {
+            await axios.post(`http://127.0.0.1:5004/api/formateur/formations/item/${formationId}/enroll`);
+        } catch (e) {
+            console.error('Failed to increment student count on trainer service:', e.message);
+        }
+
+        res.status(200).json({ message: 'Inscrit avec succès' });
+    } catch (err) {
+        console.error('enrollFormation error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Get all formations the candidate is enrolled in (fetches details from trainer service)
+const getEnrolledFormations = async (req, res) => {
+    try {
+        const candidateId = req.userId;
+        const user = await User.findById(candidateId).lean();
+        if (!user) return res.status(404).json({ error: 'Candidate not found' });
+
+        const enrolled = user.enrolledFormations || [];
+        if (enrolled.length === 0) return res.json([]);
+
+        // Fetch full formation details from trainer service for each enrolled formation
+        const formations = await Promise.all(enrolled.map(async (enrollment) => {
+            try {
+                const response = await axios.get(`http://127.0.0.1:5004/api/formateur/formations/item/${enrollment.formationId}`);
+                if (response.data) {
+                    return {
+                        ...response.data,
+                        aiReason: enrollment.aiReason || '',
+                        enrolledAt: enrollment.enrolledAt,
+                        status: enrollment.status || 'ENROLLED'
+                    };
+                }
+            } catch (e) {
+                console.error(`Failed to fetch formation ${enrollment.formationId}:`, e.message);
+            }
+            return null;
+        }));
+
+        res.json(formations.filter(Boolean));
+    } catch (err) {
+        console.error('getEnrolledFormations error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Mark a formation as completed for a SPECIFIC candidate (Called by trainer service or admin)
+const completeFormation = async (req, res) => {
+    try {
+        const { candidateId, formationId } = req.params;
+
+        const user = await User.findById(candidateId);
+        if (!user) return res.status(404).json({ error: 'Candidate not found' });
+
+        const enrollment = user.enrolledFormations.find(f => f.formationId === formationId);
+        if (!enrollment) return res.status(404).json({ error: 'Not enrolled in this formation' });
+
+        if (enrollment.status === 'COMPLETED') {
+            return res.status(400).json({ error: 'Formation déjà terminée' });
+        }
+
+        // 1. Mark as completed
+        enrollment.status = 'COMPLETED';
+
+        // 2. Fetch formation details to get skills (tags)
+        try {
+            const response = await axios.get(`http://127.0.0.1:5004/api/formateur/formations/item/${formationId}`);
+            const formation = response.data;
+
+            if (formation && formation.tags) {
+                // 3. Update candidate skills based on tags
+                formation.tags.forEach(tag => {
+                    const skillName = tag.trim();
+                    const existingSkill = user.skills.find(s => s.name.toLowerCase() === skillName.toLowerCase());
+
+                    if (existingSkill) {
+                        existingSkill.percent = Math.min(100, (existingSkill.percent || 0) + 20);
+                    } else {
+                        user.skills.push({ name: skillName, percent: 50 });
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('Failed to fetch formation tags for skill update:', e.message);
+        }
+
+        await user.save();
+        res.status(200).json({ message: 'Formation terminée ! Compétences mises à jour.', skills: user.skills });
+    } catch (err) {
+        console.error('completeFormation error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Get all candidates enrolled in a specific formation (For trainer)
+const getEnrolledCandidatesByFormation = async (req, res) => {
+    try {
+        const { formationId } = req.params;
+        const candidates = await User.find({
+            "enrolledFormations.formationId": formationId
+        }).select('prenom nom email enrolledFormations').lean();
+
+        // Format to only include relevant enrollment for this specific formation
+        const formatted = candidates.map(c => {
+            const enrollment = c.enrolledFormations.find(f => f.formationId === formationId);
+            return {
+                _id: c._id,
+                name: `${c.prenom} ${c.nom}`,
+                email: c.email,
+                enrolledAt: enrollment.enrolledAt,
+                status: enrollment.status
+            };
+        });
+
+        res.json(formatted);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
 
 module.exports = {
     register, login, getProfile, updateProfile, getRecentCandidatesBySector,
     getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer,
     applyToOffer, receiveNotification, getNotifications, markNotificationRead,
-    internalUpdateApplication, deleteNotification, clearAllNotifications
+    internalUpdateApplication, deleteNotification, clearAllNotifications,
+    enrollFormation, getEnrolledFormations, completeFormation,
+    getEnrolledCandidatesByFormation
 };

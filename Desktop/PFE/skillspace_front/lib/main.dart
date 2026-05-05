@@ -10,7 +10,7 @@ import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:pfe/features/auth/presentation/cubit/forgot_password_cubit.dart';
 import 'package:skillspace/features/landing/presentation/pages/landing_page.dart';
 import 'package:skillspace/features/dashboard_shell/dashboard_shell.dart';
-import 'package:skillspace/features/recruiter/presentation/pages/recruiter_shell.dart';
+import 'package:recruiter_profile/recruiter_profile.dart' as recruiter;
 import 'package:trainer_profile/screens/main_navigation_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -59,7 +59,10 @@ class SkillSpaceApp extends StatelessWidget {
             if (authState.loggedInUser != null) {
               if (authState.role == UserRole.recruteur) {
                 home = Builder(
-                  builder: (ctx) => RecruiterShell(
+                  builder: (ctx) => recruiter.RecruiterShell(
+                    currentLocale: locale,
+                    onLocaleChanged: (newLocale) =>
+                        ctx.read<L10nCubit>().setLocale(newLocale),
                     onLogout: () async {
                       await ctx.read<AuthCubit>().logout();
                       if (ctx.mounted) {
@@ -124,6 +127,7 @@ class SkillSpaceApp extends StatelessWidget {
               ],
               localizationsDelegates: const [
                 AppLocalizationsDelegate(),
+                recruiter.RecruiterLocalizationsDelegate(),
                 GlobalMaterialLocalizations.delegate,
                 GlobalWidgetsLocalizations.delegate,
                 GlobalCupertinoLocalizations.delegate,

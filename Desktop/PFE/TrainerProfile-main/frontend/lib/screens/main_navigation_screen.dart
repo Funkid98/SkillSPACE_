@@ -8,7 +8,6 @@ import '../services/formateur_service.dart';
 import '../services/dashboard_service.dart';
 import '../cubits/trainer_cubit.dart';
 import '../cubits/trainer_state.dart';
-import 'package:awesome_dialog/awesome_dialog.dart';
 // Removed invalid cross-package imports to fix URI error
 
 class MainNavigationScreen extends StatefulWidget {
@@ -87,7 +86,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             : Row(
                 children: [
                   // Sidebar (only on desktop)
-                  if (!isMobile) Builder(builder: (sideCtx) => _buildSidebar(sideCtx)),
+                  if (!isMobile)
+                    Builder(builder: (sideCtx) => _buildSidebar(sideCtx)),
                   // Main content
                   Expanded(
                     child: _pages[_selectedIndex == 2 ? 0 : _selectedIndex],
@@ -187,9 +187,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                   const SizedBox(height: 40),
                   // Nav Items
-                  _buildNavItem(sideCtx, 0, 'Tableau de bord', Icons.grid_view_outlined),
+                  _buildNavItem(
+                      sideCtx, 0, 'Tableau de bord', Icons.grid_view_outlined),
                   _buildNavItem(sideCtx, 1, 'Mon profil', Icons.person_outline),
-                  _buildNavItem(sideCtx, 2, 'Mes formations', Icons.school_outlined),
+                  _buildNavItem(
+                      sideCtx, 2, 'Mes formations', Icons.school_outlined),
                   const Spacer(),
                   // Logout
                   const Divider(),
@@ -205,7 +207,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
-  Widget _buildNavItem(BuildContext context, int index, String title, IconData icon, {Color? color}) {
+  Widget _buildNavItem(
+      BuildContext context, int index, String title, IconData icon,
+      {Color? color}) {
     // Both Dashboard (0) and Mes formations (2) are active when _selectedIndex is 0 or 2
     bool isDashboardActive = _selectedIndex == 0 || _selectedIndex == 2;
     bool isSelected = false;

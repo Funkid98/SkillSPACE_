@@ -1,13 +1,19 @@
-require('dotenv').config()
-const express = require('express')
-const cors = require('cors')
-const candidatRoutes = require('./src/routes/candidat-route')
-const cvRoutes = require('./src/routes/cv-route')
-const quizRoutes = require('./src/routes/quiz-route')
-const mongoose = require('mongoose')
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, './.env') });
 
+const express = require('express');
+const cors = require('cors');
+const candidatRoutes = require('./src/routes/candidat-route');
+const cvRoutes = require('./src/routes/cv-route');
+const quizRoutes = require('./src/routes/quiz-route');
+const mongoose = require('mongoose');
 
-const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/skillspace';
+const mongoURI = process.env.MONGODB_URI;
+
+if (!mongoURI) {
+    console.error('❌ FATAL ERROR: MONGODB_URI is not defined in .env');
+    process.exit(1);
+}
 
 const app = express()
 app.use(cors({

@@ -41,6 +41,14 @@ const formateurSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  signupOtp: {
+    type: String,
+    default: null,
+  },
+  signupOtpExpires: {
+    type: Date,
+    default: null,
+  },
   isVerified: {
     type: Boolean,
     default: false,

@@ -11,6 +11,8 @@ import '../job_offers/presentation/pages/job_offers_page.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import '../../core/l10n/app_localizations.dart';
 import '../simulation/presentation/pages/simulation_selection_page.dart';
+import '../profile/presentation/pages/candidate_formations_page.dart';
+import '../profile/cubit/formations_cubit.dart';
 
 class DashboardShell extends StatefulWidget {
   final DashboardTab initialTab;
@@ -116,31 +118,10 @@ class _DashboardShellState extends State<DashboardShell> {
           child: const SimulationSelectionPage(),
         );
       case DashboardTab.formations:
-        return _ComingSoon(label: l10n.training);
+        return BlocProvider(
+          create: (_) => FormationsCubit()..fetchFormations(),
+          child: const CandidateFormationsPage(),
+        );
     }
-  }
-}
-
-class _ComingSoon extends StatelessWidget {
-  final String label;
-  const _ComingSoon({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.construction_outlined,
-              size: 48, color: Color(0xFF6B7280)),
-          const SizedBox(height: 16),
-          Text(
-            '$label — ${l10n.comingSoon}',
-            style: const TextStyle(fontSize: 18, color: Color(0xFF6B7280)),
-          ),
-        ],
-      ),
-    );
   }
 }

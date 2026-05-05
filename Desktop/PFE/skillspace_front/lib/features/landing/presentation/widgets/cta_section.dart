@@ -11,8 +11,7 @@ import 'package:skillspace/features/dashboard_shell/dashboard_shell.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
 import 'package:skillspace/shared/widgets/app_sidebar.dart';
-import 'package:skillspace/features/recruiter/presentation/pages/recruiter_shell.dart';
-import 'package:skillspace/features/recruiter/presentation/widgets/recruiter_sidebar.dart';
+import 'package:recruiter_profile/recruiter_profile.dart';
 
 import '../../../auth/presentation/pages/field_selection_page.dart';
 

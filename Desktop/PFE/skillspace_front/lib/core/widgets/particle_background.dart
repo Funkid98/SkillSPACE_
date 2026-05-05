@@ -1,11 +1,10 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../app_colors.dart';
 
 class ParticleBackground extends StatefulWidget {
   final Widget child;
 
-  const ParticleBackground({Key? key, required this.child}) : super(key: key);
+  const ParticleBackground({super.key, required this.child});
 
   @override
   State<ParticleBackground> createState() => _ParticleBackgroundState();
@@ -24,7 +23,8 @@ class _ParticleBackgroundState extends State<ParticleBackground>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 12), // Slightly slower cycle for landing
+      duration:
+          const Duration(seconds: 12), // Slightly slower cycle for landing
     )..addListener(_updateTrail);
 
     _controller.repeat();
@@ -130,20 +130,22 @@ class _TrailPainter extends CustomPainter {
     final colors = [
       const Color(0xFF1E2B6B), // Navy
       const Color(0xFFE8622A), // Orange
-      const Color(0xFF4CAF50), // Green (bringing back the brand green in the cycle)
+      const Color(
+          0xFF4CAF50), // Green (bringing back the brand green in the cycle)
       const Color(0xFF1E6B6B), // Teal
       const Color(0xFF1E2B6B), // Back to Navy
     ];
 
     int section = (progress * (colors.length - 1)).floor();
     double subProgress = (progress * (colors.length - 1)) - section;
-    Color currentColor = Color.lerp(colors[section], colors[section + 1], subProgress)!;
+    Color currentColor =
+        Color.lerp(colors[section], colors[section + 1], subProgress)!;
 
     for (int i = trail.length - 2; i >= 0; i--) {
       double t = 1.0 - (i / trail.length);
-      _paint.strokeWidth = 24.0 * t;
+      _paint.strokeWidth = 8.0 * t;
       _paint.color = currentColor.withOpacity(t);
-      _paint.blendMode = BlendMode.src; 
+      _paint.blendMode = BlendMode.src;
 
       canvas.drawLine(trail[i], trail[i + 1], _paint);
     }

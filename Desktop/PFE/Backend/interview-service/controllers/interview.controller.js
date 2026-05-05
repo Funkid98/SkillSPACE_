@@ -1,8 +1,42 @@
 const Groq = require('groq-sdk');
+const fs = require('fs');
+const path = require('path');
 
 const groq = new Groq({
   apiKey: "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",
 });
+
+exports.transcribeAudio = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No audio file provided." });
+    }
+
+    const { language } = req.body; // 'fr' or 'en'
+
+    // Create transcription using Groq Whisper
+    const transcription = await groq.audio.transcriptions.create({
+      file: fs.createReadStream(req.file.path),
+      model: "whisper-large-v3",
+      language: language || 'fr',
+      response_format: "json",
+    });
+
+    // Clean up temporary file
+    fs.unlinkSync(req.file.path);
+
+    res.status(200).json({
+      success: true,
+      text: transcription.text
+    });
+  } catch (error) {
+    console.error("Transcription error:", error);
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 exports.startSimulation = async (req, res) => {
   try {
@@ -62,19 +96,19 @@ exports.chatWithAI = async (req, res) => {
     const aiResponse = chatCompletion.choices[0]?.message?.content || "C'est intéressant. Pourriez-vous détailler un peu plus ?";
 
     res.status(200).json({
-success: true,
-  reply: aiResponse
+      success: true,
+      reply: aiResponse
     });
   } catch (error) {
-  console.error(error);
-  res.status(500).json({ success: false, message: error.message });
-}
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 exports.finishSimulation = async (req, res) => {
   try {
     const { history = [], roleTitle } = req.body;
-    
+
     if (history.length === 0) {
       return res.status(400).json({ success: false, message: "No conversation history provided for evaluation." });
     }
@@ -118,7 +152,7 @@ ${transcript}`;
       temperature: 0.2,
       max_tokens: 1000,
     });
-    
+
     let evaluationData;
     try {
       const responseText = chatCompletion.choices[0]?.message?.content || "{}";
