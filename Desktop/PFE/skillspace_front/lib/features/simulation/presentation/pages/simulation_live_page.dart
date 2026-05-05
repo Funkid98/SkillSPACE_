@@ -7,6 +7,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:camera/camera.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'dart:typed_data';
 import '../../../../core/app_colors.dart';
 import 'simulation_result_page.dart';
 
@@ -26,6 +28,7 @@ class _SimulationLivePageState extends State<SimulationLivePage>
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<Map<String, dynamic>> _chatHistory = [];
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   // Audio Recording (Whisper)
   final AudioRecorder _audioRecorder = AudioRecorder();
@@ -38,7 +41,7 @@ class _SimulationLivePageState extends State<SimulationLivePage>
 
   bool _isMicOn = false;
   bool _isCamOn = true;
-  bool _isScreenOn = false;
+  final bool _isScreenOn = false;
 
   // PiP Position
   double? _pipTop;
@@ -157,6 +160,12 @@ class _SimulationLivePageState extends State<SimulationLivePage>
             _chatHistory.add({'isUser': false, 'text': _currentQuestion});
             _isGenerating = false;
           });
+
+          if (data['audioBase64'] != null) {
+            Uint8List audioBytes = base64Decode(data['audioBase64']);
+            _audioPlayer.play(BytesSource(audioBytes));
+          }
+
           _startTimer();
           _scrollToBottom();
         }
@@ -214,6 +223,12 @@ class _SimulationLivePageState extends State<SimulationLivePage>
             _chatHistory.add({'isUser': false, 'text': _currentQuestion});
             _isGenerating = false;
           });
+
+          if (data['audioBase64'] != null) {
+            Uint8List audioBytes = base64Decode(data['audioBase64']);
+            _audioPlayer.play(BytesSource(audioBytes));
+          }
+
           _startTimer();
           _scrollToBottom();
         }
@@ -361,6 +376,7 @@ class _SimulationLivePageState extends State<SimulationLivePage>
     _scrollController.dispose();
     _audioRecorder.dispose();
     _cameraController?.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -777,13 +793,6 @@ class _SimulationLivePageState extends State<SimulationLivePage>
                         label: _isCamOn ? 'Caméra ON' : 'Caméra OFF',
                         isActive: _isCamOn,
                         onTap: _toggleCamera,
-                      ),
-                      const SizedBox(width: 16),
-                      _buildControlButton(
-                        icon: Icons.monitor,
-                        label: 'Écran',
-                        isActive: _isScreenOn,
-                        onTap: () => setState(() => _isScreenOn = !_isScreenOn),
                       ),
                       const SizedBox(width: 16),
                       // Language Selector

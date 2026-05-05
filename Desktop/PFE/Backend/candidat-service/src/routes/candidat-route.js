@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { register, login, getProfile, updateProfile, getRecentCandidatesBySector, getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer, applyToOffer, receiveNotification, getNotifications, markNotificationRead, internalUpdateApplication, deleteNotification, clearAllNotifications, enrollFormation, getEnrolledFormations, completeFormation, getEnrolledCandidatesByFormation } = require('../controllers/candidat-controller')
+const { register, login, getProfile, updateProfile, getRecentCandidatesBySector, getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer, applyToOffer, receiveNotification, getNotifications, markNotificationRead, internalUpdateApplication, deleteNotification, clearAllNotifications, enrollFormation, getEnrolledFormations, completeFormation, getEnrolledCandidatesByFormation, getAcceptedOffers } = require('../controllers/candidat-controller')
 const auth = require('../middleware/auth-middleware')
 
 
@@ -13,6 +13,7 @@ router.put('/me', auth, updateProfile)
 router.get('/recent/:sector', auth, getRecentCandidatesBySector)
 router.get('/matching-offers', auth, getMatchingOffersForCandidate)
 router.get('/grouped-matches', auth, getMatchingCandidatesGroupedByOffer)
+router.get('/accepted-offers', auth, getAcceptedOffers)
 
 // Internal route for offer-service to trigger re-matching after job update
 router.post('/trigger-match/offer/:id', reMatchOffer)

@@ -1046,11 +1046,56 @@ const getEnrolledCandidatesByFormation = async (req, res) => {
     }
 };
 
+// Get all offers a candidate was accepted in (for simulation context)
+const getAcceptedOffers = async (req, res) => {
+    try {
+        const candidateId = req.userId;
+        
+        // Find accepted or interview planned applications
+        const applications = await Application.find({
+            candidateId,
+            status: { $in: ['ACCEPTED', 'INTERVIEW_PLANNED'] }
+        }).lean();
+
+        if (!applications || applications.length === 0) {
+            return res.json([]);
+        }
+
+        // Fetch all offers from offer-service
+        let allOffers = [];
+        try {
+            const { default: axios } = require('axios'); // if not required globally
+            const offerRes = await axios.get('http://127.0.0.1:5003/api/offers', { timeout: 5000 });
+            allOffers = offerRes.data;
+        } catch (err) {
+            console.error('Error fetching offers:', err.message);
+            return res.status(502).json({ error: 'Could not reach offer service' });
+        }
+
+        // Map applications to full offer details
+        const acceptedOffers = applications.map(app => {
+            const offer = allOffers.find(o => String(o._id) === String(app.offerId));
+            if (!offer) return null;
+            return {
+                ...offer,
+                applicationStatus: app.status,
+                interviewDate: app.interviewDate,
+                interviewTime: app.interviewTime
+            };
+        }).filter(Boolean);
+
+        res.json(acceptedOffers);
+    } catch (err) {
+        console.error('getAcceptedOffers error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+
 module.exports = {
     register, login, getProfile, updateProfile, getRecentCandidatesBySector,
     getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer,
     applyToOffer, receiveNotification, getNotifications, markNotificationRead,
     internalUpdateApplication, deleteNotification, clearAllNotifications,
     enrollFormation, getEnrolledFormations, completeFormation,
-    getEnrolledCandidatesByFormation
+    getEnrolledCandidatesByFormation, getAcceptedOffers
 };

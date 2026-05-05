@@ -38,15 +38,79 @@ exports.transcribeAudio = async (req, res) => {
   }
 };
 
+async function generateAudio(text, langCode = 'fr') {
+  try {
+    // Using Rachel (English) and the custom voice provided (French)
+    const voiceId = langCode === 'en' ? '21m00Tcm4TlvDq8ikWAM' : 'O31r762Gb3WFygrEOGh0';
+    const modelId = 'eleven_multilingual_v2';
+
+    const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Accept': 'audio/mpeg',
+        'xi-api-key': 'sk_8f401235d65db4da772e3a030668e254be7099fddc623b5e',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        text: text,
+        model_id: modelId,
+        voice_settings: {
+          stability: 0.50, // Increased to prevent the voice from breaking or sounding weird
+          similarity_boost: 0.75,
+          style: 0.30, // Reduced so the AI doesn't overact when reading technical lists
+          use_speaker_boost: true
+        }
+      })
+    });
+
+    if (!response.ok) {
+      console.error("ElevenLabs error:", await response.text());
+      return null;
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer).toString('base64');
+  } catch (err) {
+    console.error("ElevenLabs request failed:", err);
+    return null;
+  }
+}
+
 exports.startSimulation = async (req, res) => {
   try {
-    const { role } = req.body;
+    const { role, language } = req.body;
     const jobTitle = role || 'Développeur';
+    const langCode = language || 'fr';
+
+    const targetLanguage = langCode === 'en' ? 'English' : 'French';
+    const systemPrompt = `You are Sophie Martin, an expert hiring manager.
+    You are starting a job interview for the following context: ${jobTitle}.
+    Generate the VERY FIRST greeting and opening question for the candidate.
+    Make it professional, welcoming, and specific to the company and role if they are provided in the context.
+    Talk naturally! You can use slight hesitations or warm conversational fillers (like "Bonjour et bienvenue... Alors...").
+    If the context contains a list of skills, do NOT recite them like a robotic list. Integrate them naturally into your sentence, or simply say "les compétences requises".
+    IMPORTANT: You must write your ENTIRE response strictly in ${targetLanguage}. If the context contains English words, TRANSLATE them into ${targetLanguage} or adapt them so the text is 100% ${targetLanguage}.
+    Do not output anything else except the spoken text.`;
+
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [{ role: "system", content: systemPrompt }],
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.7,
+      max_tokens: 150,
+    });
+
+    const initialMessage = chatCompletion.choices[0]?.message?.content ||
+      (langCode === 'en' ? `Hello and welcome! Let's start the interview for ${jobTitle}. Tell me about yourself.`
+        : `Bonjour et bienvenue ! Commençons l'entretien pour le poste de ${jobTitle}. Parlez-moi de vous.`);
+
+    const audioBase64 = await generateAudio(initialMessage, langCode);
 
     res.status(200).json({
       success: true,
       message: 'Simulation started successfully',
-      initialMessage: `Bonjour et bienvenue ! Je suis votre recruteur pour le poste de ${jobTitle}. Parlez-moi d'un projet dont vous êtes particulièrement fier.`
+      initialMessage: initialMessage,
+      audioBase64: audioBase64
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -56,17 +120,20 @@ exports.startSimulation = async (req, res) => {
 exports.chatWithAI = async (req, res) => {
   try {
     const { message, roleTitle, history = [] } = req.body;
+    const langCode = req.body.language || 'fr';
+    const langString = langCode === 'en' ? 'English' : 'French';
 
     // Construct the detailed system prompt
     const systemPrompt = `You are Sophie Martin, an experienced hiring manager conducting a realistic job interview.
 
 **Role & Context:**
-* Position: ${roleTitle}
-* Company type: Tech Company
+* Position Context: ${roleTitle}
+* Goal: You are recruiting the candidate for the company specified in the Position Context.
 * Candidate level: Junior/Mid-level
 
 **Interview Style:**
 * Be professional, neutral, and slightly challenging (like a real interviewer).
+* Talk naturally as human being! Use conversational fillers occasionally (e.g., "Mmm...", "D'accord...", "Je vois...", "Alors..."). This is CRITICAL for the voice synthesizer to sound human.
 * Ask one question at a time.
 * Wait for the candidate's answer before asking the next question.
 * Ask follow-up questions based on the candidate's responses (dig deeper when needed).
@@ -74,7 +141,7 @@ exports.chatWithAI = async (req, res) => {
 * Do NOT answer for the candidate.
 * Do NOT give feedback until the interview is finished.
 * Keep the experience as realistic as possible.
-* Reply in French.`;
+* IMPORTANT: You must write your ENTIRE response strictly in ${langString}. If the candidate uses English technical terms, TRANSLATE them into ${langString} or adapt them naturally so the text is 100% ${langString}.`;
 
     // Map frontend history to Groq format
     const formattedHistory = history.map(msg => ({
@@ -94,10 +161,12 @@ exports.chatWithAI = async (req, res) => {
     });
 
     const aiResponse = chatCompletion.choices[0]?.message?.content || "C'est intéressant. Pourriez-vous détailler un peu plus ?";
+    const audioBase64 = await generateAudio(aiResponse, langCode);
 
     res.status(200).json({
       success: true,
-      reply: aiResponse
+      reply: aiResponse,
+      audioBase64: audioBase64
     });
   } catch (error) {
     console.error(error);

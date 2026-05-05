@@ -10,6 +10,7 @@ import '../job_offers/cubit/job_offers_cubit.dart';
 import '../job_offers/presentation/pages/job_offers_page.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import '../../core/l10n/app_localizations.dart';
+import '../simulation/cubit/simulation_cubit.dart';
 import '../simulation/presentation/pages/simulation_selection_page.dart';
 import '../profile/presentation/pages/candidate_formations_page.dart';
 import '../profile/cubit/formations_cubit.dart';
@@ -113,8 +114,7 @@ class _DashboardShellState extends State<DashboardShell> {
         );
       case DashboardTab.simulation:
         return BlocProvider(
-          create: (_) => ProfileCubit(initialUserData: widget.initialUserData)
-            ..loadProfile(),
+          create: (_) => SimulationCubit()..fetchAcceptedOffers(),
           child: const SimulationSelectionPage(),
         );
       case DashboardTab.formations:
