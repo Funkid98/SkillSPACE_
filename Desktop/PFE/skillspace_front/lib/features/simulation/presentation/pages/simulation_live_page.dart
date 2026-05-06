@@ -52,6 +52,8 @@ class _SimulationLivePageState extends State<SimulationLivePage>
       ? "Generating question..."
       : "Génération de la question en cours...";
   bool _isGenerating = true;
+  bool _checkingPermissions = true;
+  bool _hasPermissions = false;
 
   // Timer
   Timer? _timer;
@@ -68,9 +70,65 @@ class _SimulationLivePageState extends State<SimulationLivePage>
     _pulseAnimation =
         Tween<double>(begin: 0.8, end: 1.2).animate(_pulseController);
 
-    _initSpeech();
-    _initCamera();
-    _startSimulationBackend();
+    _checkAllPermissions();
+  }
+
+  Future<void> _checkAllPermissions() async {
+    setState(() {
+      _checkingPermissions = true;
+    });
+
+    try {
+      // 1. Check Microphone Permission
+      final micPermission = await _audioRecorder.hasPermission();
+      if (!micPermission) {
+        setState(() {
+          _hasPermissions = false;
+          _checkingPermissions = false;
+        });
+        return;
+      }
+
+      // 2. Check Camera Permission by attempting initialization
+      _cameras = await availableCameras();
+      if (_cameras == null || _cameras!.isEmpty) {
+        setState(() {
+          _hasPermissions = false;
+          _checkingPermissions = false;
+        });
+        return;
+      }
+
+      final frontCamera = _cameras!.firstWhere(
+          (camera) => camera.lensDirection == CameraLensDirection.front,
+          orElse: () => _cameras!.first);
+
+      final tempController = CameraController(
+        frontCamera,
+        ResolutionPreset.low,
+        enableAudio: false,
+      );
+
+      await tempController.initialize();
+      await tempController.dispose(); // Close it after successful check
+
+      // If we reached here, both are granted
+      setState(() {
+        _hasPermissions = true;
+        _checkingPermissions = false;
+      });
+      
+      _initSpeech();
+      _initCamera(); // This will re-initialize the real controller
+      _startSimulationBackend();
+      
+    } catch (e) {
+      print("Permission Check Error: $e");
+      setState(() {
+        _hasPermissions = false;
+        _checkingPermissions = false;
+      });
+    }
   }
 
   Future<void> _initSpeech() async {
@@ -162,7 +220,7 @@ class _SimulationLivePageState extends State<SimulationLivePage>
           });
 
           if (data['audioBase64'] != null) {
-            Uint8List audioBytes = base64Decode(data['audioBase64']);
+            final Uint8List audioBytes = base64Decode(data['audioBase64']);
             _audioPlayer.play(BytesSource(audioBytes));
           }
 
@@ -225,7 +283,7 @@ class _SimulationLivePageState extends State<SimulationLivePage>
           });
 
           if (data['audioBase64'] != null) {
-            Uint8List audioBytes = base64Decode(data['audioBase64']);
+            final Uint8List audioBytes = base64Decode(data['audioBase64']);
             _audioPlayer.play(BytesSource(audioBytes));
           }
 
@@ -243,7 +301,9 @@ class _SimulationLivePageState extends State<SimulationLivePage>
   void _fallbackResponse() {
     if (mounted) {
       setState(() {
-        _currentQuestion = "Intéressant. Pouvez-vous élaborer davantage ?";
+        _currentQuestion = _selectedLanguage == 'en'
+            ? 'Interesting. Could you elaborate a bit more?'
+            : 'Intéressant. Pouvez-vous élaborer davantage ?';
         _chatHistory.add({'isUser': false, 'text': _currentQuestion});
         _isGenerating = false;
       });
@@ -394,6 +454,64 @@ class _SimulationLivePageState extends State<SimulationLivePage>
 
   @override
   Widget build(BuildContext context) {
+    if (_checkingPermissions) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.orange),
+        ),
+      );
+    }
+
+    if (!_hasPermissions) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF5F3EF),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.videocam_off_outlined,
+                    size: 80, color: Colors.redAccent),
+                const SizedBox(height: 24),
+                const Text(
+                  'Accès requis',
+                  style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.navy),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Pour commencer l\'entretien, nous avons besoin d\'accéder à votre caméra et à votre microphone.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, color: AppColors.textGray),
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: _checkAllPermissions,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.orange,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Autoriser l\'accès',
+                      style: TextStyle(color: Colors.white, fontSize: 16)),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Retour',
+                      style: TextStyle(color: AppColors.textGray)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F3EF),
       body: SafeArea(
@@ -464,7 +582,7 @@ class _SimulationLivePageState extends State<SimulationLivePage>
                                   borderRadius: BorderRadius.circular(24),
                                   image: const DecorationImage(
                                     image: NetworkImage(
-                                        'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400'),
+                                        'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=400'),
                                     fit: BoxFit.cover,
                                   ),
                                   boxShadow: const [
@@ -517,14 +635,14 @@ class _SimulationLivePageState extends State<SimulationLivePage>
                           ),
                           const SizedBox(height: 16),
                           const Text(
-                            'Sophie Martin',
+                            'Thomas Lefebvre',
                             style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.navy),
                           ),
                           const Text(
-                            'Recruteuse IA',
+                            'Recruteur IA',
                             style: TextStyle(
                                 fontSize: 14, color: AppColors.textGray),
                           ),

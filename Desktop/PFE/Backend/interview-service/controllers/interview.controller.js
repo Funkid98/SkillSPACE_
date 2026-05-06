@@ -40,8 +40,8 @@ exports.transcribeAudio = async (req, res) => {
 
 async function generateAudio(text, langCode = 'fr') {
   try {
-    // Using Rachel (English) and the custom voice provided (French)
-    const voiceId = langCode === 'en' ? '21m00Tcm4TlvDq8ikWAM' : 'O31r762Gb3WFygrEOGh0';
+    // Use standard default voice (George) specified by the user
+    const voiceId = 'JBFqnCBsd6RMkjVDRZzb';
     const modelId = 'eleven_multilingual_v2';
 
     const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
@@ -56,23 +56,23 @@ async function generateAudio(text, langCode = 'fr') {
         text: text,
         model_id: modelId,
         voice_settings: {
-          stability: 0.50, // Increased to prevent the voice from breaking or sounding weird
+          stability: 0.50,
           similarity_boost: 0.75,
-          style: 0.30, // Reduced so the AI doesn't overact when reading technical lists
+          style: 0.30,
           use_speaker_boost: true
         }
       })
     });
 
     if (!response.ok) {
-      console.error("ElevenLabs error:", await response.text());
+      console.error('ElevenLabs error:', await response.text());
       return null;
     }
 
     const arrayBuffer = await response.arrayBuffer();
     return Buffer.from(arrayBuffer).toString('base64');
   } catch (err) {
-    console.error("ElevenLabs request failed:", err);
+    console.error('ElevenLabs request failed:', err);
     return null;
   }
 }
@@ -84,20 +84,21 @@ exports.startSimulation = async (req, res) => {
     const langCode = language || 'fr';
 
     const targetLanguage = langCode === 'en' ? 'English' : 'French';
-    const systemPrompt = `You are Sophie Martin, an expert hiring manager.
+    const systemPrompt = `You are Thomas Lefebvre, an expert hiring manager.
     You are starting a job interview for the following context: ${jobTitle}.
     Generate the VERY FIRST greeting and opening question for the candidate.
     Make it professional, welcoming, and specific to the company and role if they are provided in the context.
     Talk naturally! You can use slight hesitations or warm conversational fillers (like "Bonjour et bienvenue... Alors...").
     If the context contains a list of skills, do NOT recite them like a robotic list. Integrate them naturally into your sentence, or simply say "les compétences requises".
     IMPORTANT: You must write your ENTIRE response strictly in ${targetLanguage}. If the context contains English words, TRANSLATE them into ${targetLanguage} or adapt them so the text is 100% ${targetLanguage}.
+    CRITICAL: Always finish your sentences and ensure the thought is complete.
     Do not output anything else except the spoken text.`;
 
     const chatCompletion = await groq.chat.completions.create({
       messages: [{ role: "system", content: systemPrompt }],
       model: "llama-3.3-70b-versatile",
       temperature: 0.7,
-      max_tokens: 150,
+      max_tokens: 350,
     });
 
     const initialMessage = chatCompletion.choices[0]?.message?.content ||
@@ -124,7 +125,7 @@ exports.chatWithAI = async (req, res) => {
     const langString = langCode === 'en' ? 'English' : 'French';
 
     // Construct the detailed system prompt
-    const systemPrompt = `You are Sophie Martin, an experienced hiring manager conducting a realistic job interview.
+    const systemPrompt = `You are Thomas Lefebvre, an experienced hiring manager conducting a realistic job interview.
 
 **Role & Context:**
 * Position Context: ${roleTitle}
@@ -141,7 +142,8 @@ exports.chatWithAI = async (req, res) => {
 * Do NOT answer for the candidate.
 * Do NOT give feedback until the interview is finished.
 * Keep the experience as realistic as possible.
-* IMPORTANT: You must write your ENTIRE response strictly in ${langString}. If the candidate uses English technical terms, TRANSLATE them into ${langString} or adapt them naturally so the text is 100% ${langString}.`;
+* IMPORTANT: You must write your ENTIRE response strictly in ${langString}. If the candidate uses English technical terms, TRANSLATE them into ${langString} or adapt them naturally so the text is 100% ${langString}.
+* CRITICAL: Always finish your sentences and ensure the thought is complete.`;
 
     // Map frontend history to Groq format
     const formattedHistory = history.map(msg => ({
@@ -157,12 +159,13 @@ exports.chatWithAI = async (req, res) => {
       ],
       model: "llama-3.3-70b-versatile",
       temperature: 0.7,
-      max_tokens: 250,
+      max_tokens: 500,
     });
 
     const aiResponse = chatCompletion.choices[0]?.message?.content || "C'est intéressant. Pourriez-vous détailler un peu plus ?";
     const audioBase64 = await generateAudio(aiResponse, langCode);
 
+    // TTS is handled client-side via Puter.js
     res.status(200).json({
       success: true,
       reply: aiResponse,
