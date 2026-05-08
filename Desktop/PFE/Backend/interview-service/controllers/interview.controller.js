@@ -40,6 +40,9 @@ exports.transcribeAudio = async (req, res) => {
 
 async function generateAudio(text, langCode = 'fr') {
   try {
+    // Truncate text to a reasonable limit to save credits/prevent errors
+    const truncatedText = text.substring(0, 1000);
+
     // Use standard default voice (George) specified by the user
     const voiceId = 'JBFqnCBsd6RMkjVDRZzb';
     const modelId = 'eleven_multilingual_v2';
@@ -53,7 +56,7 @@ async function generateAudio(text, langCode = 'fr') {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        text: text,
+        text: truncatedText,
         model_id: modelId,
         voice_settings: {
           stability: 0.50,
@@ -65,7 +68,14 @@ async function generateAudio(text, langCode = 'fr') {
     });
 
     if (!response.ok) {
-      console.error('ElevenLabs error:', await response.text());
+      const errorText = await response.text();
+      console.error('ElevenLabs error:', errorText);
+
+      // If quota exceeded or other API error, try fallback
+      if (response.status === 401 || response.status === 429 || errorText.includes('quota_exceeded')) {
+        console.warn('Falling back to Google TTS due to ElevenLabs limitation...');
+        return await generateFallbackAudio(truncatedText, langCode);
+      }
       return null;
     }
 
@@ -73,6 +83,27 @@ async function generateAudio(text, langCode = 'fr') {
     return Buffer.from(arrayBuffer).toString('base64');
   } catch (err) {
     console.error('ElevenLabs request failed:', err);
+    return await generateFallbackAudio(text, langCode);
+  }
+}
+
+/**
+ * Free fallback using Google Translate TTS
+ * This ensures the app remains functional even without credits.
+ */
+async function generateFallbackAudio(text, langCode = 'fr') {
+  try {
+    const lang = langCode === 'en' ? 'en' : 'fr';
+    // Google Translate TTS (unofficial but works for short snippets)
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text.substring(0, 200))}&tl=${lang}&client=tw-ob`;
+
+    const response = await fetch(url);
+    if (!response.ok) return null;
+
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer).toString('base64');
+  } catch (e) {
+    console.error('Fallback TTS failed:', e);
     return null;
   }
 }
@@ -90,6 +121,7 @@ exports.startSimulation = async (req, res) => {
     Make it professional, welcoming, and specific to the company and role if they are provided in the context.
     Talk naturally! You can use slight hesitations or warm conversational fillers (like "Bonjour et bienvenue... Alors...").
     If the context contains a list of skills, do NOT recite them like a robotic list. Integrate them naturally into your sentence, or simply say "les compétences requises".
+    IMPORTANT: Keep your response VERY CONCISE (maximum 2 short sentences).
     IMPORTANT: You must write your ENTIRE response strictly in ${targetLanguage}. If the context contains English words, TRANSLATE them into ${targetLanguage} or adapt them so the text is 100% ${targetLanguage}.
     CRITICAL: Always finish your sentences and ensure the thought is complete.
     Do not output anything else except the spoken text.`;
@@ -126,24 +158,25 @@ exports.chatWithAI = async (req, res) => {
 
     // Construct the detailed system prompt
     const systemPrompt = `You are Thomas Lefebvre, an experienced hiring manager conducting a realistic job interview.
-
-**Role & Context:**
-* Position Context: ${roleTitle}
-* Goal: You are recruiting the candidate for the company specified in the Position Context.
-* Candidate level: Junior/Mid-level
-
-**Interview Style:**
-* Be professional, neutral, and slightly challenging (like a real interviewer).
-* Talk naturally as human being! Use conversational fillers occasionally (e.g., "Mmm...", "D'accord...", "Je vois...", "Alors..."). This is CRITICAL for the voice synthesizer to sound human.
-* Ask one question at a time.
-* Wait for the candidate's answer before asking the next question.
-* Ask follow-up questions based on the candidate's responses (dig deeper when needed).
-* Occasionally challenge unclear or weak answers.
-* Do NOT answer for the candidate.
-* Do NOT give feedback until the interview is finished.
-* Keep the experience as realistic as possible.
-* IMPORTANT: You must write your ENTIRE response strictly in ${langString}. If the candidate uses English technical terms, TRANSLATE them into ${langString} or adapt them naturally so the text is 100% ${langString}.
-* CRITICAL: Always finish your sentences and ensure the thought is complete.`;
+ 
+ **Role & Context:**
+ * Position Context: ${roleTitle}
+ * Goal: You are recruiting the candidate for the company specified in the Position Context.
+ * Candidate level: Junior/Mid-level
+ 
+ **Interview Style:**
+ * Be professional, neutral, and slightly challenging (like a real interviewer).
+ * Talk naturally as human being! Use conversational fillers occasionally (e.g., "Mmm...", "D'accord...", "Je vois...", "Alors..."). This is CRITICAL for the voice synthesizer to sound human.
+ * Ask one question at a time.
+ * Wait for the candidate's answer before asking the next question.
+ * Ask follow-up questions based on the candidate's responses (dig deeper when needed).
+ * Occasionally challenge unclear or weak answers.
+ * Do NOT answer for the candidate.
+ * Do NOT give feedback until the interview is finished.
+ * Keep the experience as realistic as possible.
+ * CONCISENESS: Keep your responses short and direct (maximum 2-3 sentences). Avoid long monologues.
+ * IMPORTANT: You must write your ENTIRE response strictly in ${langString}. If the candidate uses English technical terms, TRANSLATE them into ${langString} or adapt them naturally so the text is 100% ${langString}.
+ * CRITICAL: Always finish your sentences and ensure the thought is complete.`;
 
     // Map frontend history to Groq format
     const formattedHistory = history.map(msg => ({

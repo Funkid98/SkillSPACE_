@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Animation;
+import 'package:flutter/animation.dart' as anim;
 import 'package:http/http.dart' as http;
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
@@ -11,6 +12,8 @@ import 'package:audioplayers/audioplayers.dart';
 import 'dart:typed_data';
 import '../../../../core/app_colors.dart';
 import 'simulation_result_page.dart';
+import 'package:lottie/lottie.dart';
+
 
 class SimulationLivePage extends StatefulWidget {
   final String roleTitle;
@@ -21,10 +24,7 @@ class SimulationLivePage extends StatefulWidget {
   State<SimulationLivePage> createState() => _SimulationLivePageState();
 }
 
-class _SimulationLivePageState extends State<SimulationLivePage>
-    with TickerProviderStateMixin {
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnimation;
+class _SimulationLivePageState extends State<SimulationLivePage> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<Map<String, dynamic>> _chatHistory = [];
@@ -60,16 +60,11 @@ class _SimulationLivePageState extends State<SimulationLivePage>
   int _secondsRemaining = 90; // 90 seconds per answer
   static const int _maxResponseTime = 90;
 
+
+
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    )..repeat(reverse: true);
-    _pulseAnimation =
-        Tween<double>(begin: 0.8, end: 1.2).animate(_pulseController);
-
     _checkAllPermissions();
   }
 
@@ -117,11 +112,10 @@ class _SimulationLivePageState extends State<SimulationLivePage>
         _hasPermissions = true;
         _checkingPermissions = false;
       });
-      
+
       _initSpeech();
       _initCamera(); // This will re-initialize the real controller
       _startSimulationBackend();
-      
     } catch (e) {
       print("Permission Check Error: $e");
       setState(() {
@@ -431,7 +425,6 @@ class _SimulationLivePageState extends State<SimulationLivePage>
   @override
   void dispose() {
     _timer?.cancel();
-    _pulseController.dispose();
     _textController.dispose();
     _scrollController.dispose();
     _audioRecorder.dispose();
@@ -571,25 +564,58 @@ class _SimulationLivePageState extends State<SimulationLivePage>
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Video Container (AI Recruiter)
+                          // 2.5D Animated Recruiter (Thomas Lefebvre)
                           Stack(
                             children: [
                               Container(
                                 width: 280,
                                 height: 280,
                                 decoration: BoxDecoration(
-                                  color: Colors.black12,
-                                  borderRadius: BorderRadius.circular(24),
-                                  image: const DecorationImage(
-                                    image: NetworkImage(
-                                        'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=400'),
-                                    fit: BoxFit.cover,
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColors.navy.withOpacity(0.8),
+                                      AppColors.navy,
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
                                   ),
-                                  boxShadow: const [
+                                  borderRadius: BorderRadius.circular(32),
+                                  boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black12,
-                                      blurRadius: 20,
-                                      offset: Offset(0, 10),
+                                      color: AppColors.navy.withOpacity(0.3),
+                                      blurRadius: 30,
+                                      offset: const Offset(0, 15),
+                                    ),
+                                  ],
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.1),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                clipBehavior: Clip.hardEdge,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    // The Static Recruiter Photo
+                                    Image.asset(
+                                      'assets/recruiter.png',
+                                      width: 280,
+                                      height: 280,
+                                      fit: BoxFit.cover,
+                                    ),
+                                    
+                                    // Subtle gradient overlay for depth
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Colors.transparent,
+                                            AppColors.navy.withOpacity(0.4),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -599,52 +625,86 @@ class _SimulationLivePageState extends State<SimulationLivePage>
                                 right: 16,
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 4),
+                                      horizontal: 10, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.9),
-                                    borderRadius: BorderRadius.circular(12),
+                                    color: Colors.white.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.3),
+                                      width: 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 10,
+                                      ),
+                                    ],
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      ScaleTransition(
-                                        scale: _pulseAnimation,
-                                        child: Container(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
                                           width: 8,
                                           height: 8,
                                           decoration: const BoxDecoration(
-                                            color: Colors.green,
+                                            color: Color(0xFF00FF88),
                                             shape: BoxShape.circle,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Color(0xFF00FF88),
+                                                blurRadius: 4,
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      const Text(
-                                        'EN DIRECT',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black87,
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'EN DIRECT',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w900,
+                                            color: Colors.white.withOpacity(0.9),
+                                            letterSpacing: 0.5,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 16),
-                          const Text(
-                            'Thomas Lefebvre',
-                            style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.navy),
+                           Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text(
+                                'Thomas Lefebvre',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.navy,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Icon(
+                                Icons.verified_rounded,
+                                size: 18,
+                                color: Colors.blue.shade400,
+                              ),
+                            ],
                           ),
                           const Text(
-                            'Recruteur IA',
+                            'RECRUTEUR IA • SKILLSPACE',
                             style: TextStyle(
-                                fontSize: 14, color: AppColors.textGray),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textGray,
+                              letterSpacing: 1.2,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           // Timer Display

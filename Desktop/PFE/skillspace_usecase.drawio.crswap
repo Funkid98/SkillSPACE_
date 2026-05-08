@@ -1,0 +1,222 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Use Case General" id="uc1">
+    <mxGraphModel dx="2778" dy="686" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="1">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="sys" parent="1" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;strokeWidth=2;rounded=1;arcSize=8;verticalAlign=top;fontStyle=1;fontSize=18;fontColor=#0f172a;dashed=0;" value="SkillSPACE" vertex="1">
+          <mxGeometry height="1320" width="1650" x="-270" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="actC" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fillColor=#4F46E5;strokeColor=#4F46E5;fontStyle=1;fontSize=12;" value="Candidat" vertex="1">
+          <mxGeometry height="60" width="40" x="30" y="207.5" as="geometry" />
+        </mxCell>
+        <mxCell id="actR" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fillColor=#059669;strokeColor=#059669;fontStyle=1;fontSize=12;" value="Recruteur" vertex="1">
+          <mxGeometry height="60" width="40" x="100" y="680" as="geometry" />
+        </mxCell>
+        <mxCell id="actF" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fillColor=#0891B2;strokeColor=#0891B2;fontStyle=1;fontSize=12;" value="Formatteur" vertex="1">
+          <mxGeometry height="60" width="40" x="150" y="980" as="geometry" />
+        </mxCell>
+        <mxCell id="actIA" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fillColor=#64748B;strokeColor=#64748B;fontStyle=1;fontSize=12;" value="Systeme IA&#xa;(secondaire)" vertex="1">
+          <mxGeometry height="60" width="40" x="1480" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="pkgGC" parent="1" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#FFF9DB;strokeColor=#F59E0B;strokeWidth=1.5;rounded=1;arcSize=8;verticalAlign=top;fontStyle=1;fontSize=13;fontColor=#92400E;" value="Gestion du Compte" vertex="1">
+          <mxGeometry height="142.5" width="520" x="-230" y="387.5" as="geometry" />
+        </mxCell>
+        <mxCell id="uc1v" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#F59E0B;fontSize=11;" value="1. S&#39;inscrire /&#xa;Se connecter" vertex="1">
+          <mxGeometry height="55" width="120" x="-220" y="422.5" as="geometry" />
+        </mxCell>
+        <mxCell id="uc1a" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FEF9C3;strokeColor=#EAB308;fontSize=10;" value="1a. Connexion&#xa;via Google" vertex="1">
+          <mxGeometry height="45" width="110" x="-25" y="412.5" as="geometry" />
+        </mxCell>
+        <mxCell id="uc1b" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FEF9C3;strokeColor=#EAB308;fontSize=10;" value="1b. Connexion&#xa;via GitHub" vertex="1">
+          <mxGeometry height="45" width="110" x="-40" y="477.5" as="geometry" />
+        </mxCell>
+        <mxCell id="uc2" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#F59E0B;fontSize=11;" value="2. Gerer son&#xa;Profil" vertex="1">
+          <mxGeometry height="55" width="120" x="120" y="437.5" as="geometry" />
+        </mxCell>
+        <mxCell id="pkgMC" parent="1" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#EEF2FF;strokeColor=#4F46E5;strokeWidth=1.5;rounded=1;arcSize=8;verticalAlign=top;fontStyle=1;fontSize=13;fontColor=#3730A3;" value="Module Candidat" vertex="1">
+          <mxGeometry height="440" width="540" x="300" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="uc3" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#E0E7FF;strokeColor=#6366F1;fontSize=11;" value="3. Passer un Quiz&#xa;de Competences" vertex="1">
+          <mxGeometry height="55" width="150" x="320" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="uc4" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#E0E7FF;strokeColor=#6366F1;fontSize=11;" value="4. Consulter les&#xa;Recommandations IA" vertex="1">
+          <mxGeometry height="55" width="150" x="320" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="uc5" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#E0E7FF;strokeColor=#6366F1;fontSize=11;" value="5. Acceder aux&#xa;Formations" vertex="1">
+          <mxGeometry height="55" width="150" x="320" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="uc6" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#E0E7FF;strokeColor=#6366F1;fontSize=11;" value="6. Consulter les&#xa;Offres d&#39;Emploi" vertex="1">
+          <mxGeometry height="55" width="150" x="320" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="uc7" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#E0E7FF;strokeColor=#6366F1;fontSize=11;" value="7. Postuler a&#xa;une Offre" vertex="1">
+          <mxGeometry height="55" width="150" x="530" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="uc8" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#DDD6FE;strokeColor=#7C3AED;fontSize=11;fontStyle=1;" value="8. Passer l&#39;Entretien&#xa;IA Live" vertex="1">
+          <mxGeometry height="55" width="150" x="530" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="uc9" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#DDD6FE;strokeColor=#7C3AED;fontSize=11;" value="9. Repondre aux&#xa;Questions Vocales" vertex="1">
+          <mxGeometry height="55" width="150" x="320" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="uc10" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#DDD6FE;strokeColor=#7C3AED;fontSize=11;" value="10. Consulter Score&#xa;et Feedbacks" vertex="1">
+          <mxGeometry height="55" width="150" x="310" y="565" as="geometry" />
+        </mxCell>
+        <mxCell id="pkgIA" parent="1" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#F1F5F9;strokeColor=#64748B;strokeWidth=1.5;rounded=1;arcSize=8;verticalAlign=top;fontStyle=1;fontSize=13;fontColor=#475569;" value="Services IA" vertex="1">
+          <mxGeometry height="270" width="460" x="900" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="sia" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#E2E8F0;strokeColor=#64748B;fontSize=11;" value="A. Generer Questions&#xa;(Llama)" vertex="1">
+          <mxGeometry height="55" width="150" x="920" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="sib" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#E2E8F0;strokeColor=#64748B;fontSize=11;" value="B. Synthetiser Voix&#xa;(ElevenLabs TTS)" vertex="1">
+          <mxGeometry height="55" width="150" x="1100" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="sic" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#E2E8F0;strokeColor=#64748B;fontSize=11;" value="C. Analyser&#xa;Reponses" vertex="1">
+          <mxGeometry height="55" width="150" x="920" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="sid" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#E2E8F0;strokeColor=#64748B;fontSize=11;" value="D. Recommander&#xa;des Formations" vertex="1">
+          <mxGeometry height="55" width="150" x="1100" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="pkgMR" parent="1" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#059669;strokeWidth=1.5;rounded=1;arcSize=8;verticalAlign=top;fontStyle=1;fontSize=13;fontColor=#065F46;" value="Module Recruteur" vertex="1">
+          <mxGeometry height="200" width="430" x="300" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="uc11" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;fontSize=11;" value="11. Creer et Gerer&#xa;les Offres" vertex="1">
+          <mxGeometry height="55" width="140" x="300" y="650" as="geometry" />
+        </mxCell>
+        <mxCell id="uc12" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;fontSize=11;" value="12. Definir Criteres&#xa;de Competences" vertex="1">
+          <mxGeometry height="55" width="140" x="310" y="750" as="geometry" />
+        </mxCell>
+        <mxCell id="uc13" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;fontSize=11;" value="13. Filtrer les&#xa;Candidatures" vertex="1">
+          <mxGeometry height="55" width="140" x="450" y="662.5" as="geometry" />
+        </mxCell>
+        <mxCell id="uc14" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;fontSize=11;" value="14. Accepter /&#xa;Refuser Candidat" vertex="1">
+          <mxGeometry height="55" width="140" x="460" y="750" as="geometry" />
+        </mxCell>
+        <mxCell id="uc15" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;fontSize=11;" value="15. Consulter les&#xa;Performances" vertex="1">
+          <mxGeometry height="55" width="140" x="590" y="705" as="geometry" />
+        </mxCell>
+        <mxCell id="pkgMF" parent="1" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#F0FDFA;strokeColor=#0891B2;strokeWidth=1.5;rounded=1;arcSize=8;verticalAlign=top;fontStyle=1;fontSize=13;fontColor=#155E75;" value="Module Formateur" vertex="1">
+          <mxGeometry height="320" width="180" x="300" y="870" as="geometry" />
+        </mxCell>
+        <mxCell id="uc16" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#CCFBF1;strokeColor=#0891B2;fontSize=11;" value="16. Creer Modules&#xa;de Formation" vertex="1">
+          <mxGeometry height="55" width="150" x="320" y="910" as="geometry" />
+        </mxCell>
+        <mxCell id="uc17" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#CCFBF1;strokeColor=#0891B2;fontSize=11;" value="17. Gerer Contenus&#xa;Pedagogiques" vertex="1">
+          <mxGeometry height="55" width="150" x="315" y="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="uc18" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#CCFBF1;strokeColor=#0891B2;fontSize=11;" value="18. Suivre Progression&#xa;des Apprenants" vertex="1">
+          <mxGeometry height="55" width="150" x="310" y="1090" as="geometry" />
+        </mxCell>
+        <mxCell id="cUC1" edge="1" parent="1" source="actC" style="strokeColor=#4F46E5;strokeWidth=1.5;" target="uc1v">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cUC2" edge="1" parent="1" source="actC" style="strokeColor=#4F46E5;strokeWidth=1.5;" target="uc2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cUC3" edge="1" parent="1" source="actC" style="strokeColor=#4F46E5;strokeWidth=1.5;" target="uc3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cUC4" edge="1" parent="1" source="actC" style="strokeColor=#4F46E5;strokeWidth=1.5;" target="uc4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cUC5" edge="1" parent="1" source="actC" style="strokeColor=#4F46E5;strokeWidth=1.5;" target="uc5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cUC6" edge="1" parent="1" source="actC" style="strokeColor=#4F46E5;strokeWidth=1.5;" target="uc6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cUC8" edge="1" parent="1" source="actC" style="strokeColor=#4F46E5;strokeWidth=1.5;" target="uc8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cUC9" edge="1" parent="1" source="actC" style="strokeColor=#4F46E5;strokeWidth=1.5;" target="uc9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cUC10" edge="1" parent="1" source="actC" style="strokeColor=#4F46E5;strokeWidth=1.5;" target="uc10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rUC1" edge="1" parent="1" source="actR" style="strokeColor=#059669;strokeWidth=1.5;" target="uc1v">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rUC2" edge="1" parent="1" source="actR" style="strokeColor=#059669;strokeWidth=1.5;" target="uc2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rUC11" edge="1" parent="1" source="actR" style="strokeColor=#059669;strokeWidth=1.5;" target="uc11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rUC12" edge="1" parent="1" source="actR" style="strokeColor=#059669;strokeWidth=1.5;" target="uc12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rUC13" edge="1" parent="1" source="actR" style="strokeColor=#059669;strokeWidth=1.5;" target="uc13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rUC14" edge="1" parent="1" source="actR" style="strokeColor=#059669;strokeWidth=1.5;" target="uc14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rUC15" edge="1" parent="1" source="actR" style="strokeColor=#059669;strokeWidth=1.5;" target="uc15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fUC1" edge="1" parent="1" source="actF" style="strokeColor=#0891B2;strokeWidth=1.5;" target="uc1v">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fUC2" edge="1" parent="1" source="actF" style="strokeColor=#0891B2;strokeWidth=1.5;" target="uc2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fUC16" edge="1" parent="1" source="actF" style="strokeColor=#0891B2;strokeWidth=1.5;" target="uc16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fUC17" edge="1" parent="1" source="actF" style="strokeColor=#0891B2;strokeWidth=1.5;" target="uc17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fUC18" edge="1" parent="1" source="actF" style="strokeColor=#0891B2;strokeWidth=1.5;" target="uc18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iaSIA" edge="1" parent="1" source="actIA" style="strokeColor=#64748B;strokeWidth=1.5;" target="sia">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iaSIB" edge="1" parent="1" source="actIA" style="strokeColor=#64748B;strokeWidth=1.5;" target="sib">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iaSIC" edge="1" parent="1" source="actIA" style="strokeColor=#64748B;strokeWidth=1.5;" target="sic">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iaSID" edge="1" parent="1" source="actIA" style="strokeColor=#64748B;strokeWidth=1.5;" target="sid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext1a" edge="1" parent="1" source="uc1v" style="strokeColor=#E67E22;strokeWidth=1.5;dashed=1;fontSize=10;fontColor=#E67E22;" target="uc1a" value="&lt;&lt;extend&gt;&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext1b" edge="1" parent="1" source="uc1v" style="strokeColor=#E67E22;strokeWidth=1.5;dashed=1;fontSize=10;fontColor=#E67E22;" target="uc1b" value="&lt;&lt;extend&gt;&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext67" edge="1" parent="1" source="uc6" style="strokeColor=#E67E22;strokeWidth=1.5;dashed=1;fontSize=10;fontColor=#E67E22;" target="uc7" value="&lt;&lt;extend&gt;&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext3d" edge="1" parent="1" source="uc3" style="strokeColor=#E67E22;strokeWidth=1.5;dashed=1;fontSize=10;fontColor=#E67E22;" target="sid" value="&lt;&lt;extend&gt;&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext148" edge="1" parent="1" source="uc14" style="strokeColor=#E67E22;strokeWidth=1.5;dashed=1;fontSize=10;fontColor=#E67E22;" target="uc8" value="&lt;&lt;extend&gt;&gt;">
+          <mxGeometry relative="1" x="0.3321" y="-17" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="630" y="660" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ext8c" edge="1" parent="1" source="uc8" style="strokeColor=#E67E22;strokeWidth=1.5;dashed=1;fontSize=10;fontColor=#E67E22;" target="sic" value="&lt;&lt;extend&gt;&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="inc8a" edge="1" parent="1" source="uc8" style="strokeColor=#2563EB;strokeWidth=1.5;dashed=1;fontSize=10;fontColor=#2563EB;" target="sia" value="&lt;&lt;include&gt;&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="inc8b" edge="1" parent="1" source="uc8" style="strokeColor=#2563EB;strokeWidth=1.5;dashed=1;fontSize=10;fontColor=#2563EB;" target="sib" value="&lt;&lt;include&gt;&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="incc10" edge="1" parent="1" source="sic" style="strokeColor=#2563EB;strokeWidth=1.5;dashed=1;fontSize=10;fontColor=#2563EB;" target="uc10" value="&lt;&lt;include&gt;&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="N5MEaQmc9-A6tAa-Rmpr-1" edge="1" parent="1" source="uc17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="uc17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

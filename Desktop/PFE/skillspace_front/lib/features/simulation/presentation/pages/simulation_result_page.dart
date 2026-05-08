@@ -91,9 +91,9 @@ class _SimulationResultPageState extends State<SimulationResultPage>
               const CircularProgressIndicator(color: AppColors.orange),
               const SizedBox(height: 24),
               Text(
-                widget.language == 'en' 
-                  ? 'Analyzing interview...' 
-                  : 'Analyse de l\'entretien en cours...',
+                widget.language == 'en'
+                    ? 'Analyzing interview...'
+                    : 'Analyse de l\'entretien en cours...',
                 style: const TextStyle(
                     fontSize: 18,
                     color: AppColors.navy,
@@ -102,8 +102,8 @@ class _SimulationResultPageState extends State<SimulationResultPage>
               const SizedBox(height: 8),
               Text(
                 widget.language == 'en'
-                  ? 'Our AI is generating your results and recommendations...'
-                  : 'Notre IA génère vos résultats et recommandations...',
+                    ? 'Our AI is generating your results and recommendations...'
+                    : 'Notre IA génère vos résultats et recommandations...',
                 style: TextStyle(
                     fontSize: 14, color: AppColors.textGray.withOpacity(0.8)),
               ),
