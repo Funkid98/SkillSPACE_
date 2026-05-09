@@ -101,19 +101,22 @@ class AppLocalizations {
       'feat_6_title': 'Tendances du marché',
       'feat_6_desc':
           'Restez informé des compétences les plus demandées dans votre secteur.',
-      'section_steps_title': '4 étapes vers votre premier emploi',
+      'section_steps_title': '5 étapes vers votre premier emploi',
       'step_1_title': 'Créez votre profil',
       'step_1_desc':
           'Inscrivez-vous et importez votre CV. L\'IA analyse vos compétences en quelques secondes.',
       'step_2_title': 'Recevez des matchs',
       'step_2_desc':
           'Notre algorithme vous propose les offres les plus adaptées avec un score de compatibilité.',
-      'step_3_title': 'Préparez-vous',
+      'step_3_title': 'Formez-vous',
       'step_3_desc':
-          'Simulez des entretiens avec l\'IA et suivez des formations pour combler vos lacunes.',
-      'step_4_title': 'Décrochez le poste',
+          'Suivez des formations recommandées par l\'IA pour combler vos lacunes et booster votre profil.',
+      'step_4_title': 'Postulez en un clic',
       'step_4_desc':
-          'Postulez en toute confiance avec un profil optimisé et une préparation solide.',
+          'Candidatez aux offres qui vous correspondent en toute simplicité.',
+      'step_5_title': 'Préparez vos entretiens',
+      'step_5_desc':
+          'Simulez des entretiens avec l\'IA pour arriver confiant le jour J.',
       'section_audience_label': 'POUR QUI ?',
       'section_audience_title':
           'Une plateforme pour chaque Jeunes diplômés , Recruteur , Formatteur',
@@ -275,19 +278,22 @@ class AppLocalizations {
       'feat_6_title': 'Market Trends',
       'feat_6_desc':
           'Stay informed about the most in-demand skills in your sector.',
-      'section_steps_title': '4 steps to your first job',
+      'section_steps_title': '5 steps to your first job',
       'step_1_title': 'Create your profile',
       'step_1_desc':
           'Sign up and upload your CV. AI analyzes your skills in seconds.',
       'step_2_title': 'Receive matches',
       'step_2_desc':
           'Our algorithm proposes the most suitable offers with a compatibility score.',
-      'step_3_title': 'Get prepared',
+      'step_3_title': 'Get trained',
       'step_3_desc':
-          'Simulate interviews with AI and take training to fill your gaps.',
-      'step_4_title': 'Get the job',
+          'Follow AI-recommended training to fill your gaps and boost your profile.',
+      'step_4_title': 'Apply in one click',
       'step_4_desc':
-          'Apply with confidence with an optimized profile and solid preparation.',
+          'Easily apply to the job offers that match your profile.',
+      'step_5_title': 'Prepare your interviews',
+      'step_5_desc':
+          'Simulate interviews with AI to arrive confident on the big day.',
       'section_audience_label': 'FOR WHOM?',
       'section_audience_title':
           'A platform for Fresh graduates , Recruiter , Trainer ',
@@ -444,18 +450,22 @@ class AppLocalizations {
       'feat_5_desc': 'يتطور النظام باستمرار بفضل البيانات التي يتم جمعها.',
       'feat_6_title': 'اتجاهات السوق',
       'feat_6_desc': 'ابق على اطلاع بأكثر المهارات طلباً في قطاعك.',
-      'section_steps_title': '4 خطوات نحو وظيفتك الأولى',
+      'section_steps_title': '5 خطوات نحو وظيفتك الأولى',
       'step_1_title': 'أنشئ ملفك الشخصي',
       'step_1_desc':
           'سجل وارفع سيرتك الذاتية. يقوم الذكاء الاصطناعي بتحليل مهاراتك في ثوانٍ.',
       'step_2_title': 'استلم المطابقات',
       'step_2_desc':
           'تقترح خوارزميتنا العروض الأكثر ملاءمة مع كشف نسبة المطابقة.',
-      'step_3_title': 'استعد جيداً',
+      'step_3_title': 'تدرب وطور مهاراتك',
       'step_3_desc':
-          'حاكي المقابلات مع الذكاء الاصطناعي وتابع التدريبات لسد الفجوات.',
-      'step_4_title': 'احصل على الوظيفة',
-      'step_4_desc': 'تقدم بثقة بملف شخصي محسّن واستعداد قوي.',
+          'تابع التدريبات الموصى بها من قبل الذكاء الاصطناعي لسد فجواتك وتعزيز ملفك الشخصي.',
+      'step_4_title': 'تقدم بضغطة زر',
+      'step_4_desc':
+          'تقدم بسهولة لعروض العمل التي تناسب ملفك الشخصي.',
+      'step_5_title': 'استعد لمقابلاتك',
+      'step_5_desc':
+          'قم بمحاكاة المقابلات مع الذكاء الاصطناعي لتكون واثقاً يوم المقابلة.',
       'section_audience_label': 'لمن؟',
       'section_audience_title':
           'منصة لكل الخريجين الجدد ، أرباب العمل ، والمدربين',
@@ -673,6 +683,8 @@ class AppLocalizations {
   String get step3Desc => translate('step_3_desc');
   String get step4Title => translate('step_4_title');
   String get step4Desc => translate('step_4_desc');
+  String get step5Title => translate('step_5_title');
+  String get step5Desc => translate('step_5_desc');
   String get sectionAudienceLabel => translate('section_audience_label');
   String get sectionAudienceTitle => translate('section_audience_title');
   String get roleRecruiter => translate('role_recruiter');

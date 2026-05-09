@@ -111,42 +111,104 @@ class FeaturesSection extends StatelessWidget {
   }
 }
 
-class _FeatureCard extends StatelessWidget {
+class _FeatureCard extends StatefulWidget {
   final _FeatureItem item;
   const _FeatureCard({required this.item});
 
   @override
+  State<_FeatureCard> createState() => _FeatureCardState();
+}
+
+class _FeatureCardState extends State<_FeatureCard>
+    with SingleTickerProviderStateMixin {
+  bool _hovered = false;
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+  late final Animation<double> _rotation;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _scale = Tween<double>(begin: 1.0, end: 1.15).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack),
+    );
+    _rotation = Tween<double>(begin: 0.0, end: 0.05).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+    return MouseRegion(
+      onEnter: (_) {
+        setState(() => _hovered = true);
+        _ctrl.forward();
+      },
+      onExit: (_) {
+        setState(() => _hovered = false);
+        _ctrl.reverse();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        transform: _hovered
+            ? (Matrix4.identity()..translate(0, -4))
+            : Matrix4.identity(),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _hovered
+                ? AppColors.orange.withValues(alpha: 0.3)
+                : Colors.transparent,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.iconBg,
-              borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: _hovered
+                  ? AppColors.orange.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.04),
+              blurRadius: _hovered ? 20 : 12,
+              offset: const Offset(0, 4),
             ),
-            child: Icon(item.icon, color: AppColors.orange, size: 22),
-          ),
-          const SizedBox(height: 16),
-          Text(item.title, style: AppTextStyles.cardTitle),
-          const SizedBox(height: 8),
-          Text(item.desc, style: AppTextStyles.cardDesc),
-        ],
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: _hovered
+                    ? AppColors.orange.withValues(alpha: 0.12)
+                    : AppColors.iconBg,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: ScaleTransition(
+                scale: _scale,
+                child: RotationTransition(
+                  turns: _rotation,
+                  child: Icon(widget.item.icon,
+                      color: AppColors.orange, size: 22),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(widget.item.title, style: AppTextStyles.cardTitle),
+            const SizedBox(height: 8),
+            Text(widget.item.desc, style: AppTextStyles.cardDesc),
+          ],
+        ),
       ),
     );
   }

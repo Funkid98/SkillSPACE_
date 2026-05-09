@@ -172,9 +172,6 @@ class AuthRepositoryImpl implements AuthRepository {
       if (!isRecruiter) 'role': role,
     });
 
-    print('Login Response Status: ${response.statusCode}');
-    print('Login Response Body: ${response.body}');
-
     final data = jsonDecode(response.body);
 
     if (response.statusCode == 200 || response.statusCode == 201) {

@@ -140,16 +140,18 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
               physics: const BouncingScrollPhysics(),
               child: Column(
                 children: [
-                    const _HeroPanel(),
-                    const _TrailLine(),
+                  const _HeroPanel(),
+                  const _TrailLine(),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(22, 20, 22, 32),
                     child: BlocBuilder<AuthCubit, AuthState>(
                       builder: (context, authState) {
-                        print('AuthPage Build: awaitingVerification=${authState.awaitingVerification}, error=${authState.error}');
+                        print(
+                            'AuthPage Build: awaitingVerification=${authState.awaitingVerification}, error=${authState.error}');
                         return Column(
                           children: [
-                            if (!_showForgot && !authState.awaitingVerification) ...[
+                            if (!_showForgot &&
+                                !authState.awaitingVerification) ...[
                               _TabSwitcher(
                                 selected: authState.tab,
                                 onSwitch: _onTabSwitch,
@@ -588,116 +590,135 @@ class _LoginForm extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Bon retour ! ',
-              style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.textDark,
-                  letterSpacing: -0.5)),
+          const _StaggeredReveal(
+              index: 0,
+              child: Text('Bon retour ! ',
+                  style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.textDark,
+                      letterSpacing: -0.5))),
           const SizedBox(height: 4),
-          const Text('Connectez-vous pour continuer',
-              style: TextStyle(fontSize: 13.5, color: AppTheme.textGrey)),
+          const _StaggeredReveal(
+              index: 1,
+              child: Text('Connectez-vous pour continuer',
+                  style: TextStyle(fontSize: 13.5, color: AppTheme.textGrey))),
           const SizedBox(height: 26),
           if (state.error != null) ...[
-            _ErrorBanner(state.error!),
+            _StaggeredReveal(index: 2, child: _ErrorBanner(state.error!)),
             const SizedBox(height: 10),
           ],
-          const _Label('Email'),
-          TextFormField(
-            controller: emailCtrl,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              hintText: 'vous@exemple.com',
-              prefixIcon: Icon(Icons.mail_outline_rounded,
-                  size: 18, color: AppTheme.textGrey),
-            ),
-            validator: ValidationBuilder()
-                .required('Email requis')
-                .email('Email invalide')
-                .build(),
-          ),
+          const _StaggeredReveal(index: 3, child: _Label('Email')),
+          _StaggeredReveal(
+              index: 4,
+              child: TextFormField(
+                controller: emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  hintText: 'vous@exemple.com',
+                  prefixIcon: Icon(Icons.mail_outline_rounded,
+                      size: 18, color: AppTheme.textGrey),
+                ),
+                validator: ValidationBuilder()
+                    .required('Email requis')
+                    .email('Email invalide')
+                    .build(),
+              )),
           const SizedBox(height: 16),
-          const _Label('Mot de passe'),
-          TextFormField(
-            controller: passCtrl,
-            obscureText: !state.passwordVisible,
-            decoration: InputDecoration(
-              hintText: '••••••••',
-              prefixIcon: const Icon(Icons.lock_outline_rounded,
-                  size: 18, color: AppTheme.textGrey),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  state.passwordVisible
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined,
-                  color: AppTheme.textGrey,
-                  size: 18,
-                ),
-                onPressed: () => context.read<AuthCubit>().togglePassword(),
-              ),
-            ),
-            validator:
-                ValidationBuilder().required('Mot de passe requis').build(),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              SizedBox(
-                height: 24,
-                width: 24,
-                child: Checkbox(
-                  value: state.staySignedIn,
-                  activeColor: AppTheme.accent,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4)),
-                  onChanged: (_) =>
-                      context.read<AuthCubit>().toggleStaySignedIn(),
-                ),
-              ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () => context.read<AuthCubit>().toggleStaySignedIn(),
-                child: const Text(
-                  'Rester connecté(e)',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppTheme.textDark,
-                    fontWeight: FontWeight.w500,
+          const _StaggeredReveal(index: 5, child: _Label('Mot de passe')),
+          _StaggeredReveal(
+              index: 6,
+              child: TextFormField(
+                controller: passCtrl,
+                obscureText: !state.passwordVisible,
+                decoration: InputDecoration(
+                  hintText: '••••••••',
+                  prefixIcon: const Icon(Icons.lock_outline_rounded,
+                      size: 18, color: AppTheme.textGrey),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      state.passwordVisible
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      color: AppTheme.textGrey,
+                      size: 18,
+                    ),
+                    onPressed: () => context.read<AuthCubit>().togglePassword(),
                   ),
                 ),
-              ),
-            ],
-          ),
+                validator:
+                    ValidationBuilder().required('Mot de passe requis').build(),
+              )),
           const SizedBox(height: 20),
-          _RoleSelector(selected: state.role),
+          _StaggeredReveal(
+              index: 7,
+              child: Row(
+                children: [
+                  SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: Checkbox(
+                      value: state.staySignedIn,
+                      activeColor: AppTheme.accent,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4)),
+                      onChanged: (_) =>
+                          context.read<AuthCubit>().toggleStaySignedIn(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => context.read<AuthCubit>().toggleStaySignedIn(),
+                    child: const Text(
+                      'Rester connecté(e)',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppTheme.textDark,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              )),
+          const SizedBox(height: 20),
+          _StaggeredReveal(
+              index: 8, child: _RoleSelector(selected: state.role)),
           const SizedBox(height: 28),
-          _SubmitButton(
-            label: 'Se connecter',
-            isLoading: state.isLoading,
-            onTap: () {
-              if (formKey.currentState?.validate() ?? false) {
-                context.read<AuthCubit>().login(emailCtrl.text, passCtrl.text);
-              }
-            },
-          ),
+          _StaggeredReveal(
+              index: 9,
+              child: _SubmitButton(
+                label: 'Se connecter',
+                isLoading: state.isLoading,
+                onTap: () {
+                  if (formKey.currentState?.validate() ?? false) {
+                    context
+                        .read<AuthCubit>()
+                        .login(emailCtrl.text, passCtrl.text);
+                  }
+                },
+              )),
           const SizedBox(height: 24),
-          const _OrDivider(),
+          const _StaggeredReveal(index: 10, child: _OrDivider()),
           const SizedBox(height: 24),
-          _SocialLoginButtons(
-            isLoading: state.isLoading,
-            onGoogleTap: () => context.read<AuthCubit>().signInWithGoogle(),
-            onGithubTap: () => context.read<AuthCubit>().signInWithGithub(),
-          ),
+          _StaggeredReveal(
+              index: 11,
+              child: _SocialLoginButtons(
+                isLoading: state.isLoading,
+                onGoogleTap: () => context.read<AuthCubit>().signInWithGoogle(),
+                onGithubTap: () => context.read<AuthCubit>().signInWithGithub(),
+              )),
           const SizedBox(height: 14),
-          Center(
-            child: TextButton(
-              onPressed: onForgot,
-              style: TextButton.styleFrom(foregroundColor: AppTheme.accent),
-              child: const Text('Mot de passe oublié ?',
-                  style:
-                      TextStyle(fontWeight: FontWeight.w500, fontSize: 13.5)),
-            ),
-          ),
+          _StaggeredReveal(
+              index: 12,
+              child: Center(
+                child: TextButton(
+                  onPressed: onForgot,
+                  style: TextButton.styleFrom(foregroundColor: AppTheme.accent),
+                  child: const Text('Mot de passe oublié ?',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w500, fontSize: 13.5)),
+                ),
+              )),
         ],
       ),
     );
@@ -730,164 +751,188 @@ class _RegisterForm extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Créer un compte ',
-              style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.textDark,
-                  letterSpacing: -0.5)),
+          const _StaggeredReveal(
+              index: 0,
+              child: Text('Créer un compte ',
+                  style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.textDark,
+                      letterSpacing: -0.5))),
           const SizedBox(height: 4),
-          const Text('Commencez votre parcours SkillSpace',
-              style: TextStyle(fontSize: 13.5, color: AppTheme.textGrey)),
+          const _StaggeredReveal(
+              index: 1,
+              child: Text('Commencez votre parcours SkillSpace',
+                  style: TextStyle(fontSize: 13.5, color: AppTheme.textGrey))),
           const SizedBox(height: 26),
           if (state.error != null) ...[
-            _ErrorBanner(state.error!),
+            _StaggeredReveal(index: 2, child: _ErrorBanner(state.error!)),
             const SizedBox(height: 10),
           ],
           if (state.role != UserRole.recruteur)
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const _Label('Prénom'),
-                        TextFormField(
-                          controller: firstCtrl,
-                          textCapitalization: TextCapitalization.words,
-                          decoration: const InputDecoration(hintText: 'Jean'),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                                RegExp(r'[a-zA-ZÀ-ÿ\s-]')),
-                          ],
-                          validator: ValidationBuilder()
-                              .required('Prénom requis')
-                              .minLength(4, 'Minimum 4 caractères')
-                              .build(),
-                        ),
-                      ]),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const _Label('Nom'),
-                        TextFormField(
-                          controller: lastCtrl,
-                          textCapitalization: TextCapitalization.words,
-                          decoration: const InputDecoration(hintText: 'Dupont'),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                                RegExp(r'[a-zA-ZÀ-ÿ\s-]')),
-                          ],
-                          validator: ValidationBuilder()
-                              .required('Nom requis')
-                              .minLength(4, 'Minimum 4 caractères')
-                              .build(),
-                        ),
-                      ]),
-                ),
-              ],
-            ),
+            _StaggeredReveal(
+                index: 3,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const _Label('Prénom'),
+                            TextFormField(
+                              controller: firstCtrl,
+                              textCapitalization: TextCapitalization.words,
+                              decoration:
+                                  const InputDecoration(hintText: 'Jean'),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                    RegExp(r'[a-zA-ZÀ-ÿ\s-]')),
+                              ],
+                              validator: ValidationBuilder()
+                                  .required('Prénom requis')
+                                  .minLength(4, 'Minimum 4 caractères')
+                                  .build(),
+                            ),
+                          ]),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const _Label('Nom'),
+                            TextFormField(
+                              controller: lastCtrl,
+                              textCapitalization: TextCapitalization.words,
+                              decoration:
+                                  const InputDecoration(hintText: 'Dupont'),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                    RegExp(r'[a-zA-ZÀ-ÿ\s-]')),
+                              ],
+                              validator: ValidationBuilder()
+                                  .required('Nom requis')
+                                  .minLength(4, 'Minimum 4 caractères')
+                                  .build(),
+                            ),
+                          ]),
+                    ),
+                  ],
+                )),
           if (state.role == UserRole.recruteur) ...[
             const SizedBox(height: 16),
-            const _Label('Nom de l\'entreprise'),
-            TextFormField(
-              controller: entrepriseCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                hintText: 'SkillSpace Inc.',
-                prefixIcon: Icon(Icons.business_rounded,
-                    size: 18, color: AppTheme.textGrey),
-              ),
-              validator: state.role == UserRole.recruteur
-                  ? ValidationBuilder()
-                      .required('Nom de l\'entreprise requis')
-                      .build()
-                  : null,
-            ),
+            const _StaggeredReveal(
+                index: 3, child: _Label('Nom de l\'entreprise')),
+            _StaggeredReveal(
+                index: 4,
+                child: TextFormField(
+                  controller: entrepriseCtrl,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    hintText: 'SkillSpace Inc.',
+                    prefixIcon: Icon(Icons.business_rounded,
+                        size: 18, color: AppTheme.textGrey),
+                  ),
+                  validator: state.role == UserRole.recruteur
+                      ? ValidationBuilder()
+                          .required('Nom de l\'entreprise requis')
+                          .build()
+                      : null,
+                )),
           ],
           const SizedBox(height: 16),
-          const _Label('Email'),
-          TextFormField(
-            controller: emailCtrl,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              hintText: 'vous@exemple.com',
-              prefixIcon: Icon(Icons.mail_outline_rounded,
-                  size: 18, color: AppTheme.textGrey),
-            ),
-            validator: ValidationBuilder()
-                .required('Email requis')
-                .email('Email invalide')
-                .build(),
-          ),
-          const SizedBox(height: 16),
-          const _Label('Mot de passe'),
-          TextFormField(
-            controller: passCtrl,
-            obscureText: !state.passwordVisible,
-            decoration: InputDecoration(
-              hintText: '••••••••',
-              prefixIcon: const Icon(Icons.lock_outline_rounded,
-                  size: 18, color: AppTheme.textGrey),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  state.passwordVisible
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined,
-                  color: AppTheme.textGrey,
-                  size: 18,
+          const _StaggeredReveal(index: 5, child: _Label('Email')),
+          _StaggeredReveal(
+              index: 6,
+              child: TextFormField(
+                controller: emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  hintText: 'vous@exemple.com',
+                  prefixIcon: Icon(Icons.mail_outline_rounded,
+                      size: 18, color: AppTheme.textGrey),
                 ),
-                onPressed: () => context.read<AuthCubit>().togglePassword(),
-              ),
-            ),
-            validator: ValidationBuilder()
-                .required('Mot de passe requis')
-                .minLength(6, 'Minimum 6 caractères')
-                .build(),
-          ),
+                validator: ValidationBuilder()
+                    .required('Email requis')
+                    .email('Email invalide')
+                    .build(),
+              )),
+          const SizedBox(height: 16),
+          const _StaggeredReveal(index: 7, child: _Label('Mot de passe')),
+          _StaggeredReveal(
+              index: 8,
+              child: TextFormField(
+                controller: passCtrl,
+                obscureText: !state.passwordVisible,
+                decoration: InputDecoration(
+                  hintText: '••••••••',
+                  prefixIcon: const Icon(Icons.lock_outline_rounded,
+                      size: 18, color: AppTheme.textGrey),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      state.passwordVisible
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      color: AppTheme.textGrey,
+                      size: 18,
+                    ),
+                    onPressed: () => context.read<AuthCubit>().togglePassword(),
+                  ),
+                ),
+                validator: ValidationBuilder()
+                    .required('Mot de passe requis')
+                    .minLength(6, 'Minimum 6 caractères')
+                    .build(),
+              )),
           const SizedBox(height: 20),
-          _RoleSelector(selected: state.role, sectionLabel: 'Je suis un(e)'),
-          const SizedBox(height: 20),
-          _SubmitButton(
-            label: 'Créer mon compte',
-            isLoading: state.isLoading,
-            onTap: () {
-              if (formKey.currentState?.validate() ?? false) {
-                context.read<AuthCubit>().register(
-                      firstCtrl.text,
-                      lastCtrl.text,
-                      emailCtrl.text,
-                      passCtrl.text,
-                      entreprise: entrepriseCtrl.text,
-                    );
-              }
-            },
-          ),
+          _StaggeredReveal(
+              index: 9,
+              child: _RoleSelector(
+                  selected: state.role, sectionLabel: 'Je suis un(e)')),
+          const SizedBox(height: 28),
+          _StaggeredReveal(
+              index: 10,
+              child: _SubmitButton(
+                label: 'Créer mon compte',
+                isLoading: state.isLoading,
+                onTap: () {
+                  if (formKey.currentState?.validate() ?? false) {
+                    context.read<AuthCubit>().register(
+                          firstCtrl.text,
+                          lastCtrl.text,
+                          emailCtrl.text,
+                          passCtrl.text,
+                          entreprise: entrepriseCtrl.text,
+                        );
+                  }
+                },
+              )),
           const SizedBox(height: 24),
-          Center(
-            child: RichText(
-              textAlign: TextAlign.center,
-              text: const TextSpan(
-                style: TextStyle(fontSize: 11.5, color: AppTheme.textGrey),
-                children: [
-                  TextSpan(text: 'En vous inscrivant, vous acceptez nos '),
-                  TextSpan(
-                      text: 'CGU',
-                      style: TextStyle(
-                          color: AppTheme.accent, fontWeight: FontWeight.w600)),
-                  TextSpan(text: ' et '),
-                  TextSpan(
-                      text: 'politique de confidentialité',
-                      style: TextStyle(
-                          color: AppTheme.accent, fontWeight: FontWeight.w600)),
-                  TextSpan(text: '.'),
-                ],
-              ),
-            ),
-          ),
+          _StaggeredReveal(
+              index: 11,
+              child: Center(
+                child: RichText(
+                  textAlign: TextAlign.center,
+                  text: const TextSpan(
+                    style: TextStyle(fontSize: 11.5, color: AppTheme.textGrey),
+                    children: [
+                      TextSpan(text: 'En vous inscrivant, vous acceptez nos '),
+                      TextSpan(
+                          text: 'CGU',
+                          style: TextStyle(
+                              color: AppTheme.accent,
+                              fontWeight: FontWeight.w600)),
+                      TextSpan(text: ' et '),
+                      TextSpan(
+                          text: 'politique de confidentialité',
+                          style: TextStyle(
+                              color: AppTheme.accent,
+                              fontWeight: FontWeight.w600)),
+                      TextSpan(text: '.'),
+                    ],
+                  ),
+                ),
+              )),
         ],
       ),
     );
@@ -1567,6 +1612,60 @@ class _SocialButton extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ─── Staggered Reveal Animation ───────────────────────────────────────────────
+class _StaggeredReveal extends StatefulWidget {
+  final Widget child;
+  final int index;
+  final int delayMs;
+  const _StaggeredReveal({
+    required this.child,
+    this.index = 0,
+    this.delayMs = 100,
+  });
+
+  @override
+  State<_StaggeredReveal> createState() => _StaggeredRevealState();
+}
+
+class _StaggeredRevealState extends State<_StaggeredReveal>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _fade;
+  late Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 500));
+    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _slide = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+
+    Future.delayed(Duration(milliseconds: widget.delayMs + (widget.index * 60)),
+        () {
+      if (mounted) _ctrl.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fade,
+      child: SlideTransition(
+        position: _slide,
+        child: widget.child,
       ),
     );
   }

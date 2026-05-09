@@ -15,8 +15,35 @@ import 'package:recruiter_profile/recruiter_profile.dart';
 
 import '../../../auth/presentation/pages/field_selection_page.dart';
 
-class CtaSection extends StatelessWidget {
+class CtaSection extends StatefulWidget {
   const CtaSection({super.key});
+
+  @override
+  State<CtaSection> createState() => _CtaSectionState();
+}
+
+class _CtaSectionState extends State<CtaSection>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _glow;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+    )..repeat(reverse: true);
+    _glow = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,102 +58,112 @@ class CtaSection extends StatelessWidget {
       ),
       child: AnimatedReveal(
         direction: RevealDirection.fromBottom,
-        child: Container(
-          width: double.infinity,
-          padding: EdgeInsets.symmetric(
-            horizontal: isMobile ? 24 : 60,
-            vertical: isMobile ? 40 : 60,
-          ),
-          decoration: BoxDecoration(
-            color: AppColors.navy,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            children: [
-              AnimatedReveal(
-                direction: RevealDirection.fromTop,
-                delay: const Duration(milliseconds: 200),
-                child: Text(
-                  l10n.ctaTitle,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800),
+        child: AnimatedBuilder(
+          animation: _glow,
+          builder: (_, child) => Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 24 : 60,
+              vertical: isMobile ? 40 : 60,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.navy,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.navy.withValues(alpha: 0.15 + 0.15 * _glow.value),
+                  blurRadius: 20 + 20 * _glow.value,
+                  offset: const Offset(0, 8),
                 ),
-              ),
-              const SizedBox(height: 12),
-              AnimatedReveal(
-                direction: RevealDirection.fade,
-                delay: const Duration(milliseconds: 300),
-                child: Text(
-                  l10n.ctaSubtitle,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      color: Colors.white70, fontSize: 15, height: 1.6),
+              ],
+            ),
+            child: Column(
+              children: [
+                AnimatedReveal(
+                  direction: RevealDirection.fromTop,
+                  delay: const Duration(milliseconds: 200),
+                  child: Text(
+                    l10n.ctaTitle,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 28),
-              AnimatedReveal(
-                direction: RevealDirection.fromBottom,
-                delay: const Duration(milliseconds: 400),
-                child: HoverScale(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      final authCubit = context.read<AuthCubit>();
-                      authCubit.switchTab(AuthTab.register);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (ctaContext) => AuthPage(
-                            onSuccess: () {
-                              final authState = authCubit.state;
-                              final role = authState.role;
-                              final user = authState.loggedInUser;
+                const SizedBox(height: 12),
+                AnimatedReveal(
+                  direction: RevealDirection.fade,
+                  delay: const Duration(milliseconds: 300),
+                  child: Text(
+                    l10n.ctaSubtitle,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 15, height: 1.6),
+                  ),
+                ),
+                const SizedBox(height: 28),
+                AnimatedReveal(
+                  direction: RevealDirection.fromBottom,
+                  delay: const Duration(milliseconds: 400),
+                  child: HoverScale(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final authCubit = context.read<AuthCubit>();
+                        authCubit.switchTab(AuthTab.register);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (ctaContext) => AuthPage(
+                              onSuccess: () {
+                                final authState = authCubit.state;
+                                final role = authState.role;
+                                final user = authState.loggedInUser;
 
-                              Navigator.of(ctaContext).pushAndRemoveUntil(
-                                MaterialPageRoute(
-                                  builder: (_) {
-                                    if (role == UserRole.recruteur) {
-                                      return const RecruiterShell(
-                                          initialTab: RecruiterTab.profile);
-                                    } else if (role == UserRole.formateur) {
-                                      return DashboardShell(
-                                        initialTab: DashboardTab.profil,
-                                        initialUserData: user,
-                                      );
-                                    } else {
-                                      final sector = user?['sector'];
-                                      if (sector == null || sector.isEmpty) {
-                                        return const FieldSelectionPage();
+                                Navigator.of(ctaContext).pushAndRemoveUntil(
+                                  MaterialPageRoute(
+                                    builder: (_) {
+                                      if (role == UserRole.recruteur) {
+                                        return const RecruiterShell(
+                                            initialTab: RecruiterTab.profile);
+                                      } else if (role == UserRole.formateur) {
+                                        return DashboardShell(
+                                          initialTab: DashboardTab.profil,
+                                          initialUserData: user,
+                                        );
+                                      } else {
+                                        final sector = user?['sector'];
+                                        if (sector == null || sector.isEmpty) {
+                                          return const FieldSelectionPage();
+                                        }
+                                        return DashboardShell(
+                                          initialTab: DashboardTab.profil,
+                                          initialUserData: user,
+                                        );
                                       }
-                                      return DashboardShell(
-                                        initialTab: DashboardTab.profil,
-                                        initialUserData: user,
-                                      );
-                                    }
-                                  },
-                                ),
-                                (route) => false,
-                              );
-                            },
+                                    },
+                                  ),
+                                  (route) => false,
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 32, vertical: 16),
-                    ),
-                    child: Text(
-                      l10n.btnCreateProfile,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 15),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 32, vertical: 16),
+                      ),
+                      child: Text(
+                        l10n.btnCreateProfile,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700, fontSize: 15),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

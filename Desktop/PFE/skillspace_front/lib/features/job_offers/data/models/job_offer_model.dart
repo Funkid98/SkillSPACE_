@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pfe/core/network/api_client.dart';
 import 'dart:convert';
+import 'package:timeago/timeago.dart' as timeago;
 import '../../../../core/l10n/app_localizations.dart';
 
 enum ContractType { cdi, cdd, freelance, stage }
@@ -39,7 +40,9 @@ class JobOffer {
   final List<String> matchedSkills;
   final List<String> missingSkills;
   final String status;
+  final String? applicationStatus;
   final bool isSaved;
+  final DateTime? createdAt;
 
   const JobOffer({
     required this.id,
@@ -59,10 +62,12 @@ class JobOffer {
     this.matchedSkills = const [],
     this.missingSkills = const [],
     this.status = 'COMPLETED',
+    this.applicationStatus,
     this.isSaved = false,
+    this.createdAt,
   });
 
-  JobOffer copyWith({bool? isSaved}) {
+  JobOffer copyWith({bool? isSaved, String? applicationStatus}) {
     return JobOffer(
       id: id,
       title: title,
@@ -81,7 +86,9 @@ class JobOffer {
       matchedSkills: matchedSkills,
       missingSkills: missingSkills,
       status: status,
+      applicationStatus: applicationStatus ?? this.applicationStatus,
       isSaved: isSaved ?? this.isSaved,
+      createdAt: createdAt,
     );
   }
 
@@ -91,6 +98,7 @@ class JobOffer {
       final response = await client.get('/candidat/matching-offers');
 
       if (response.statusCode == 200) {
+        timeago.setLocaleMessages('fr', timeago.FrMessages());
         final List data = jsonDecode(response.body);
         return data.map((json) {
           final contractStr = json['type'] ?? 'Full-time';
@@ -104,6 +112,11 @@ class JobOffer {
           else
             mappedType = ContractType.cdi;
 
+          final DateTime? createdAt = json['createdAt'] != null ? DateTime.tryParse(json['createdAt']) : null;
+          final String postedAgo = createdAt != null 
+              ? timeago.format(createdAt, locale: 'fr') 
+              : 'Récemment';
+
           return JobOffer(
             id: json['_id']?.toString() ?? '',
             title: json['title'] ?? 'Sans titre',
@@ -112,7 +125,7 @@ class JobOffer {
             recruiterId: json['recruiterId']?.toString(),
             contractType: mappedType,
             salaryRange: json['salary'] ?? 'N/A',
-            postedAgo: 'Récemment',
+            postedAgo: postedAgo,
             compatibilityPercent: (json['compatibilityPercent'] as num?)?.round() ?? 0,
             matchingSkills: (json['matchingSkills'] as num?)?.round() ?? 0,
             totalSkills: (json['totalSkills'] as num?)?.round() ?? 0,
@@ -122,6 +135,8 @@ class JobOffer {
             matchedSkills: List<String>.from(json['matchedSkills'] ?? []),
             missingSkills: List<String>.from(json['missingSkills'] ?? []),
             status: json['status'] ?? 'COMPLETED',
+            applicationStatus: json['applicationStatus'],
+            createdAt: createdAt,
           );
         }).toList();
       }

@@ -253,6 +253,32 @@ class _JobCardState extends State<_JobCard> {
     return Colors.grey.shade500;
   }
 
+  String _getApplyButtonLabel(JobOffer offer, AppLocalizations l10n) {
+    if (offer.applicationStatus == 'PENDING') {
+      return 'Candidature envoyée';
+    } else if (offer.applicationStatus == 'ACCEPTED') {
+      return 'Candidature acceptée';
+    } else if (offer.applicationStatus == 'INTERVIEW_PLANNED') {
+      return 'Entretien planifié';
+    } else if (offer.applicationStatus == 'REJECTED') {
+      return l10n.apply;
+    }
+    return l10n.apply;
+  }
+
+  Color _getApplyButtonColor(JobOffer offer) {
+    if (offer.applicationStatus == 'PENDING') {
+      return AppColors.navy;
+    } else if (offer.applicationStatus == 'ACCEPTED') {
+      return AppColors.success;
+    } else if (offer.applicationStatus == 'INTERVIEW_PLANNED') {
+      return Colors.indigoAccent;
+    } else if (offer.compatibilityPercent < 80 || offer.status == 'ANALYSING') {
+      return Colors.grey.shade400; // Slightly darker for white text contrast
+    }
+    return AppColors.orange;
+  }
+
   @override
   Widget build(BuildContext context) {
     final offer = widget.offer;
@@ -710,8 +736,14 @@ class _JobCardState extends State<_JobCard> {
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: (offer.compatibilityPercent < 80 || offer.status == 'ANALYSING') ? null : () async {
+                  child: _HoverGradientButton(
+                    baseColor: _getApplyButtonColor(offer),
+                    label: _getApplyButtonLabel(offer, l10n),
+                    onPressed: (offer.compatibilityPercent < 80 || 
+                                offer.status == 'ANALYSING' || 
+                                (offer.applicationStatus != null && offer.applicationStatus != 'REJECTED')) 
+                        ? null 
+                        : () async {
                       final cubit = context.read<JobOffersCubit>();
                       // Show loading
                       showDialog(
@@ -776,21 +808,6 @@ class _JobCardState extends State<_JobCard> {
                         }
                       }
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: (offer.compatibilityPercent < 80 || offer.status == 'ANALYSING') 
-                          ? Colors.grey.shade400 
-                          : AppColors.orange,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                    ),
-                    child: Text(
-                      l10n.apply,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 15),
-                    ),
                   ),
                 ),
               ],
@@ -910,6 +927,78 @@ class _ContractBadge extends StatelessWidget {
         type.label(context),
         style:
             TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color),
+      ),
+    );
+  }
+}
+
+class _HoverGradientButton extends StatefulWidget {
+  final VoidCallback? onPressed;
+  final String label;
+  final Color baseColor;
+
+  const _HoverGradientButton({
+    required this.onPressed,
+    required this.label,
+    required this.baseColor,
+  });
+
+  @override
+  State<_HoverGradientButton> createState() => _HoverGradientButtonState();
+}
+
+class _HoverGradientButtonState extends State<_HoverGradientButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDisabled = widget.onPressed == null;
+    
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          gradient: !_isHovered
+              ? LinearGradient(colors: [widget.baseColor, widget.baseColor])
+              : LinearGradient(
+                  colors: [
+                    widget.baseColor,
+                    widget.baseColor.withValues(alpha: 0.85),
+                    widget.baseColor.withBlue(255).withRed(100).withValues(alpha: 0.9),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+          boxShadow: _isHovered && !isDisabled
+              ? [
+                  BoxShadow(
+                    color: widget.baseColor.withValues(alpha: 0.4),
+                    blurRadius: 15,
+                    offset: const Offset(0, 8),
+                  )
+                ]
+              : [],
+        ),
+        child: ElevatedButton(
+          onPressed: widget.onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            disabledBackgroundColor: Colors.transparent,
+            foregroundColor: Colors.white,
+            disabledForegroundColor: Colors.white,
+            shadowColor: Colors.transparent,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+          child: Text(
+            widget.label,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+        ),
       ),
     );
   }

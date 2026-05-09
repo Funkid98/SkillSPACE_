@@ -51,15 +51,27 @@ class UserSkill {
 class UpcomingInterview {
   final String role;
   final String company;
-  final DateTime date;
+  final String rawDate;
+  final String rawTime;
   final String format;
+  final String? meetingLink;
+  final String applicationStatus;
 
   const UpcomingInterview({
     required this.role,
     required this.company,
-    required this.date,
+    required this.rawDate,
+    required this.rawTime,
     required this.format,
+    this.meetingLink,
+    this.applicationStatus = 'ACCEPTED',
   });
+}
+
+class CoachTask {
+  final String text;
+  final bool isDone;
+  const CoachTask({required this.text, required this.isDone});
 }
 
 class DashboardData {
@@ -70,6 +82,8 @@ class DashboardData {
   final List<UpcomingInterview> upcomingInterviews;
   final int profileViewsCount;
   final int profileViewsPercentChange;
+  final String coachAdvice;
+  final List<CoachTask> coachTasks;
 
   const DashboardData({
     required this.userName,
@@ -79,6 +93,8 @@ class DashboardData {
     required this.upcomingInterviews,
     required this.profileViewsCount,
     required this.profileViewsPercentChange,
+    required this.coachAdvice,
+    required this.coachTasks,
   });
 
   static Future<DashboardData> fetch() async {
@@ -139,6 +155,49 @@ class DashboardData {
       }
     } catch (_) {}
 
+    // Fetch upcoming interviews (accepted offers)
+    List<UpcomingInterview> realInterviews = [];
+    try {
+      final interviewsRes = await apiClient.get('/candidat/accepted-offers');
+      if (interviewsRes.statusCode == 200) {
+        final List interviewsData = jsonDecode(interviewsRes.body);
+        realInterviews = interviewsData.map((i) {
+          final status = i['applicationStatus'] ?? 'ACCEPTED';
+          return UpcomingInterview(
+            role: i['title'] ?? 'Entretien',
+            company: i['company'] ?? 'Entreprise',
+            rawDate: i['interviewDate'] ?? 'Date à définir',
+            rawTime: i['interviewTime'] ?? 'Heure à définir',
+            format: status == 'INTERVIEW_PLANNED' ? 'Entretien en direct' : 'Simulation IA',
+            meetingLink: i['meetingLink'],
+            applicationStatus: status,
+          );
+        }).toList();
+      }
+    } catch (_) {}
+
+    // Fetch Coach Advice
+    String realCoachAdvice = 'Analysez votre profil pour obtenir des conseils personnalisés.';
+    List<CoachTask> realCoachTasks = [
+      const CoachTask(text: 'CV analysé par l\'IA', isDone: true),
+      const CoachTask(text: 'Profil complet à 85%', isDone: false),
+    ];
+
+    try {
+      final coachRes = await apiClient.get('/candidat/coach-advice');
+      if (coachRes.statusCode == 200) {
+        final coachData = jsonDecode(coachRes.body);
+        realCoachAdvice = coachData['advice'] ?? realCoachAdvice;
+        final List tasksRaw = coachData['tasks'] ?? [];
+        if (tasksRaw.isNotEmpty) {
+          realCoachTasks = tasksRaw.map((t) => CoachTask(
+            text: t['text'] ?? '',
+            isDone: t['isDone'] ?? false,
+          )).toList();
+        }
+      }
+    } catch (_) {}
+
     // Stats derived from profile completion & real offers count
     return DashboardData(
       userName: userName,
@@ -147,18 +206,20 @@ class DashboardData {
         offresMatcheesSubtitle: offresMatcheesReal == 0
             ? 'Aucun match > 80%'
             : 'Forte compatibilité',
-        candidaturesEnvoyees: 0,
-        candidaturesSubtitle: 'Aucune pour le moment',
+        candidaturesEnvoyees: realInterviews.length,
+        candidaturesSubtitle: 'Candidatures acceptées',
         scoreMoyenMatch: completionPercent,
         scoreSubtitle: 'Profil complété à $completionPercent%',
-        entretiensSimules: 0,
-        entretiensSubtitle: 'Commencez un entretien',
+        entretiensSimules: realInterviews.length,
+        entretiensSubtitle: 'Prêts pour la simulation',
       ),
       recentOffers: realOffers,
       skills: skills,
-      upcomingInterviews: const [],
+      upcomingInterviews: realInterviews,
       profileViewsCount: hasAnalysing ? -1 : 0, // Hack to pass analysing state to Cubit without rewriting whole model
       profileViewsPercentChange: 0,
+      coachAdvice: realCoachAdvice,
+      coachTasks: realCoachTasks,
     );
   }
 

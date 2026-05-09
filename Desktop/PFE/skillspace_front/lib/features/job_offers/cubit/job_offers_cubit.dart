@@ -75,7 +75,8 @@ class JobOffersCubit extends Cubit<JobOffersState> {
       // 1. Check search query
       final matchesQuery = q.isEmpty ||
           o.title.toLowerCase().contains(q) ||
-          o.company.toLowerCase().contains(q);
+          o.company.toLowerCase().contains(q) ||
+          o.city.toLowerCase().contains(q);
 
       // 2. Check contract filte
       // If contract is null or we can't match it to a specific type, we assume "All"

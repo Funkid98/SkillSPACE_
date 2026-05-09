@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart' hide Animation;
-import 'package:flutter/animation.dart' as anim;
 import 'package:http/http.dart' as http;
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
@@ -12,8 +11,6 @@ import 'package:audioplayers/audioplayers.dart';
 import 'dart:typed_data';
 import '../../../../core/app_colors.dart';
 import 'simulation_result_page.dart';
-import 'package:lottie/lottie.dart';
-
 
 class SimulationLivePage extends StatefulWidget {
   final String roleTitle;
@@ -59,8 +56,6 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
   Timer? _timer;
   int _secondsRemaining = 90; // 90 seconds per answer
   static const int _maxResponseTime = 90;
-
-
 
   @override
   void initState() {
@@ -603,7 +598,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                                       height: 280,
                                       fit: BoxFit.cover,
                                     ),
-                                    
+
                                     // Subtle gradient overlay for depth
                                     Container(
                                       decoration: BoxDecoration(
@@ -665,7 +660,8 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                                           style: TextStyle(
                                             fontSize: 10,
                                             fontWeight: FontWeight.w900,
-                                            color: Colors.white.withOpacity(0.9),
+                                            color:
+                                                Colors.white.withOpacity(0.9),
                                             letterSpacing: 0.5,
                                           ),
                                         ),
@@ -677,7 +673,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                           Row(
+                          Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               const Text(

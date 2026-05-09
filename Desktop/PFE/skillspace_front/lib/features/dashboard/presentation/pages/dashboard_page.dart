@@ -6,6 +6,9 @@ import '../../../../core/app_colors.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../shared/widgets/animated_reveal.dart';
 import '../../../../core/l10n/app_localizations.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -103,9 +106,10 @@ class _DashboardContent extends StatelessWidget {
                       const SizedBox(height: 20),
                       AnimatedReveal(
                           delay: const Duration(milliseconds: 1000),
-                          child: _ProfileVisibilityCard(
-                              viewsCount: data.profileViewsCount,
-                              percentChange: data.profileViewsPercentChange)),
+                          child: _AICoachCard(
+                            advice: data.coachAdvice,
+                            tasks: data.coachTasks,
+                          )),
                     ],
                   )
                 : Row(
@@ -141,10 +145,10 @@ class _DashboardContent extends StatelessWidget {
                             const SizedBox(height: 24),
                             AnimatedReveal(
                                 delay: const Duration(milliseconds: 1000),
-                                child: _ProfileVisibilityCard(
-                                    viewsCount: data.profileViewsCount,
-                                    percentChange:
-                                        data.profileViewsPercentChange)),
+                                child: _AICoachCard(
+                                  advice: data.coachAdvice,
+                                  tasks: data.coachTasks,
+                                )),
                           ],
                         ),
                       ),
@@ -376,85 +380,113 @@ class _RecentOffersCard extends StatelessWidget {
   }
 }
 
-class _OfferRow extends StatelessWidget {
+class _OfferRow extends StatefulWidget {
   final RecentOffer offer;
   const _OfferRow({required this.offer});
 
+  @override
+  State<_OfferRow> createState() => _OfferRowState();
+}
+
+class _OfferRowState extends State<_OfferRow> {
+  bool _isVisible = false;
+
   Color get _barColor {
-    if (offer.compatibilityPercent >= 85) return AppColors.orange;
-    if (offer.compatibilityPercent >= 70) return AppColors.orangeLight;
+    if (widget.offer.compatibilityPercent >= 85) return AppColors.orange;
+    if (widget.offer.compatibilityPercent >= 70) return AppColors.orangeLight;
     return Colors.grey.shade400;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.bg,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.business_rounded,
-                color: AppColors.navy, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  offer.title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${offer.company} · ${offer.city}',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textGray,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${offer.compatibilityPercent}%',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  color: _barColor,
-                ),
+    return VisibilityDetector(
+      key: Key('offer_${widget.offer.title}_${widget.offer.company}'),
+      onVisibilityChanged: (info) {
+        if (info.visibleFraction > 0.1 && !_isVisible) {
+          setState(() {
+            _isVisible = true;
+          });
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.bg,
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(height: 6),
-              SizedBox(
-                width: 70,
-                height: 6,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(3),
-                  child: LinearProgressIndicator(
-                    value: offer.compatibilityPercent / 100,
-                    backgroundColor: AppColors.border,
-                    valueColor: AlwaysStoppedAnimation<Color>(_barColor),
+              child: const Icon(Icons.business_rounded,
+                  color: AppColors.navy, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.offer.title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textDark,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${widget.offer.company} · ${widget.offer.city}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textGray,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ],
+            ),
+            const SizedBox(width: 16),
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(
+                  begin: 0,
+                  end: _isVisible
+                      ? widget.offer.compatibilityPercent.toDouble()
+                      : 0),
+              duration: const Duration(milliseconds: 1200),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, child) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${value.toInt()}%',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        color: _barColor,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    SizedBox(
+                      width: 70,
+                      height: 6,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          value: value / 100,
+                          backgroundColor: AppColors.border,
+                          valueColor: AlwaysStoppedAnimation<Color>(_barColor),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -494,8 +526,8 @@ class _SkillsCardState extends State<_SkillsCard> {
     final sortedSkills = List<UserSkill>.from(widget.skills)
       ..sort((a, b) => b.percent.compareTo(a.percent));
 
-    final displaySkills = sortedSkills.take(3).toList();
-    final hasMore = sortedSkills.length > 3;
+    final displaySkills = sortedSkills.take(4).toList();
+    final hasMore = sortedSkills.length > 4;
 
     return Container(
       width: double.infinity,
@@ -558,7 +590,7 @@ class _SkillsCardState extends State<_SkillsCard> {
                     children: [
                       Flexible(
                         child: Text(
-                          'Voir les ${widget.skills.length - 3} autres',
+                          'Voir les ${widget.skills.length - 4} autres',
                           style: const TextStyle(
                             color: AppColors.textGray,
                             fontSize: 13,
@@ -649,43 +681,13 @@ class _SkillsModalContent extends StatelessWidget {
                         .map((entry) => _SkillRow(
                               skill: entry.value,
                               index: entry.key,
-                              editing: true,
+                              editing: false,
                             ))
                         .toList(),
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton.icon(
-                  onPressed: isSaving
-                      ? null
-                      : () async {
-                          await context.read<DashboardCubit>().saveSkills();
-                          if (context.mounted) {
-                            Navigator.pop(context);
-                          }
-                        },
-                  icon: isSaving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.save_rounded, size: 20),
-                  label: Text(isSaving ? 'Enregistrement...' : 'Enregistrer'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.orange,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                ),
-              ),
+              const SizedBox(height: 16),
             ],
           ),
         );
@@ -694,7 +696,7 @@ class _SkillsModalContent extends StatelessWidget {
   }
 }
 
-class _SkillRow extends StatelessWidget {
+class _SkillRow extends StatefulWidget {
   final UserSkill skill;
   final int index;
   final bool editing;
@@ -702,71 +704,74 @@ class _SkillRow extends StatelessWidget {
       {required this.skill, required this.index, required this.editing});
 
   @override
+  State<_SkillRow> createState() => _SkillRowState();
+}
+
+class _SkillRowState extends State<_SkillRow> {
+  bool _isVisible = false;
+
+  @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  skill.name,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textDark,
+    return VisibilityDetector(
+      key: Key('skill_${widget.skill.name}_${widget.index}'),
+      onVisibilityChanged: (info) {
+        if (info.visibleFraction > 0.1 && !_isVisible) {
+          setState(() {
+            _isVisible = true;
+          });
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: TweenAnimationBuilder<double>(
+          tween: Tween<double>(
+              begin: 0, end: _isVisible ? widget.skill.percent.toDouble() : 0),
+          duration: const Duration(milliseconds: 1200),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, child) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.skill.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textDark,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      '${value.toInt()}%',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.navy,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: value / 100,
+                    minHeight: 8,
+                    backgroundColor: AppColors.border,
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(AppColors.navy),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              Text(
-                '${skill.percent}%',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.navy,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          if (editing)
-            SliderTheme(
-              data: SliderThemeData(
-                activeTrackColor: AppColors.navy,
-                inactiveTrackColor: AppColors.border,
-                thumbColor: AppColors.orange,
-                overlayColor: AppColors.orange.withValues(alpha: 0.15),
-                trackHeight: 8,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
-              ),
-              child: Slider(
-                value: skill.percent.toDouble(),
-                min: 0,
-                max: 100,
-                divisions: 20,
-                onChanged: (val) {
-                  context
-                      .read<DashboardCubit>()
-                      .updateSkillPercent(index, val.round());
-                },
-              ),
-            )
-          else
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: LinearProgressIndicator(
-                value: skill.percent / 100,
-                minHeight: 8,
-                backgroundColor: AppColors.border,
-                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.navy),
-              ),
-            ),
-        ],
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -858,8 +863,7 @@ class _InterviewRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateStr =
-        '${interview.date.day.toString().padLeft(2, '0')}/${interview.date.month.toString().padLeft(2, '0')} à ${interview.date.hour.toString().padLeft(2, '0')}h${interview.date.minute.toString().padLeft(2, '0')}';
+    final dateStr = '${interview.rawDate} à ${interview.rawTime}';
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -899,124 +903,194 @@ class _InterviewRow extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              interview.format,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: AppColors.success,
+          if (interview.meetingLink != null &&
+              interview.meetingLink!.isNotEmpty)
+            Container(
+              padding:
+                  const EdgeInsets.only(left: 14, right: 4, top: 4, bottom: 4),
+              decoration: BoxDecoration(
+                color: AppColors.bg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 120),
+                    child: Text(
+                      interview.meetingLink!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textGray,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      maxLines: 1,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 2,
+                          offset: const Offset(0, 1),
+                        )
+                      ],
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.copy_rounded,
+                          size: 16, color: AppColors.navy),
+                      constraints:
+                          const BoxConstraints(minWidth: 32, minHeight: 32),
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        Clipboard.setData(
+                            ClipboardData(text: interview.meetingLink!));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content:
+                                  Text('Lien copié dans le presse-papiers')),
+                        );
+                      },
+                      tooltip: 'Copier le lien',
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.success.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                interview.format,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.success,
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
   }
 }
 
-// ─── Profile Visibility Card ───────────────────────────────────────────────
-class _ProfileVisibilityCard extends StatelessWidget {
-  final int viewsCount;
-  final int percentChange;
+// ─── AI Coach Card ────────────────────────────────────────────────────────
+class _AICoachCard extends StatelessWidget {
+  final String advice;
+  final List<CoachTask> tasks;
 
-  const _ProfileVisibilityCard({
-    required this.viewsCount,
-    required this.percentChange,
-  });
+  const _AICoachCard({required this.advice, required this.tasks});
 
   @override
   Widget build(BuildContext context) {
-    final isPositive = percentChange >= 0;
-    final l10n = AppLocalizations.of(context);
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.navy,
+            AppColors.navy.withOpacity(0.85),
+          ],
+        ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.navy.withOpacity(0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.visibility_rounded,
-                  size: 20, color: AppColors.textGray),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.psychology_rounded,
+                    color: AppColors.orange, size: 22),
+              ),
               const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  l10n.profileVisibility,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textDark,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              const Text(
+                'Coach IA',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 32),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                viewsCount.toString(),
-                style: const TextStyle(
-                  fontSize: 48,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.textDark,
-                  height: 0.8,
-                  letterSpacing: -1,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        isPositive
-                            ? Icons.trending_up_rounded
-                            : Icons.trending_down_rounded,
-                        size: 16,
-                        color: isPositive ? AppColors.success : AppColors.error,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${isPositive ? "+" : ""}$percentChange%',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color:
-                              isPositive ? AppColors.success : AppColors.error,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'vs dernier mois',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textGray,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          const SizedBox(height: 24),
+          const Text(
+            'CONSEIL DU JOUR',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              color: AppColors.orange,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            advice,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 28),
+          ...tasks.map((t) => _CoachCheckItem(text: t.text, isDone: t.isDone)),
+        ],
+      ),
+    );
+  }
+}
+
+class _CoachCheckItem extends StatelessWidget {
+  final String text;
+  final bool isDone;
+  const _CoachCheckItem({required this.text, required this.isDone});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Icon(
+            isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+            size: 18,
+            color: isDone ? AppColors.orange : Colors.white.withOpacity(0.3),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              color: isDone ? Colors.white : Colors.white.withOpacity(0.6),
+              fontWeight: isDone ? FontWeight.w600 : FontWeight.w400,
+            ),
           ),
         ],
       ),

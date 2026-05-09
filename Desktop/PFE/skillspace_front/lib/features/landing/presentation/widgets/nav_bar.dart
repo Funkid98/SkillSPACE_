@@ -15,9 +15,12 @@ import 'package:recruiter_profile/recruiter_profile.dart';
 import 'package:trainer_profile/screens/main_navigation_screen.dart';
 import '../pages/landing_page.dart';
 
+enum NavSection { features, steps, audience }
+
 class NavBar extends StatelessWidget {
   final void Function(GlobalKey) scrollTo;
-  const NavBar({super.key, required this.scrollTo});
+  final NavSection activeSection;
+  const NavBar({super.key, required this.scrollTo, this.activeSection = NavSection.features});
 
   void _scrollToSection(GlobalKey key) => scrollTo(key);
 
@@ -80,9 +83,16 @@ class NavBar extends StatelessWidget {
       duration: const Duration(milliseconds: 500),
       child: ClipRect(
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Container(
-            color: Colors.white.withValues(alpha: 0.4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.6),
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.black.withValues(alpha: 0.06),
+                ),
+              ),
+            ),
             padding: EdgeInsets.symmetric(
               horizontal: isMobile ? 16 : 48,
               vertical: 14,
@@ -93,12 +103,15 @@ class NavBar extends StatelessWidget {
             const Spacer(),
             if (!isMobile) ...[
               _NavLink(l10n.features,
+                  isActive: activeSection == NavSection.features,
                   onTap: () => _scrollToSection(SectionKeys.features)),
               const SizedBox(width: 28),
               _NavLink(l10n.howItWorks,
+                  isActive: activeSection == NavSection.steps,
                   onTap: () => _scrollToSection(SectionKeys.steps)),
               const SizedBox(width: 28),
               _NavLink(l10n.forWhom,
+                  isActive: activeSection == NavSection.audience,
                   onTap: () => _scrollToSection(SectionKeys.audience)),
               const SizedBox(width: 24),
               OutlinedButton(
@@ -128,11 +141,12 @@ class NavBar extends StatelessWidget {
   }
 }
 
-// Desktop nav link with hover effect
+// Desktop nav link with hover effect and active state
 class _NavLink extends StatefulWidget {
   final String label;
   final VoidCallback onTap;
-  const _NavLink(this.label, {required this.onTap});
+  final bool isActive;
+  const _NavLink(this.label, {required this.onTap, this.isActive = false});
 
   @override
   State<_NavLink> createState() => _NavLinkState();
@@ -143,21 +157,39 @@ class _NavLinkState extends State<_NavLink> {
 
   @override
   Widget build(BuildContext context) {
+    final color = widget.isActive
+        ? AppColors.orange
+        : (_hovered ? AppColors.orange : AppColors.textDark);
     return GestureDetector(
       onTap: widget.onTap,
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         onEnter: (_) => setState(() => _hovered = true),
         onExit: (_) => setState(() => _hovered = false),
-        child: AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 150),
-          style: TextStyle(
-            color: _hovered ? AppColors.orange : AppColors.textDark,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Inter',
-          ),
-          child: Text(widget.label),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 150),
+              style: TextStyle(
+                color: color,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Inter',
+              ),
+              child: Text(widget.label),
+            ),
+            const SizedBox(height: 2),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: widget.isActive ? 20 : 0,
+              height: 2,
+              decoration: BoxDecoration(
+                color: AppColors.orange,
+                borderRadius: BorderRadius.circular(1),
+              ),
+            ),
+          ],
         ),
       ),
     );

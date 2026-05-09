@@ -14,7 +14,8 @@ import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class HeroSection extends StatelessWidget {
-  const HeroSection({super.key});
+  final VoidCallback? onDiscoverTap;
+  const HeroSection({super.key, this.onDiscoverTap});
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +30,7 @@ class HeroSection extends StatelessWidget {
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _HeroText(),
+                _HeroText(onDiscoverTap: onDiscoverTap),
                 const SizedBox(height: 32),
                 SizedBox(width: double.infinity, child: _HeroImage()),
               ],
@@ -37,7 +38,7 @@ class HeroSection extends StatelessWidget {
           : Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Expanded(flex: 5, child: _HeroText()),
+                Expanded(flex: 5, child: _HeroText(onDiscoverTap: onDiscoverTap)),
                 const SizedBox(width: 48),
                 Expanded(flex: 5, child: _HeroImage()),
               ],
@@ -48,7 +49,8 @@ class HeroSection extends StatelessWidget {
 
 // ─── Hero Text ────────────────────────────────────────────────────────────────
 class _HeroText extends StatelessWidget {
-  const _HeroText();
+  final VoidCallback? onDiscoverTap;
+  const _HeroText({this.onDiscoverTap});
 
   @override
   Widget build(BuildContext context) {
@@ -189,14 +191,14 @@ class _HeroText extends StatelessWidget {
               ),
               HoverScale(
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: onDiscoverTap,
                   child: Text(l10n.btnDiscover),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 32),
         AnimatedReveal(
           direction: RevealDirection.fromBottom,
           delay: const Duration(milliseconds: 550),
@@ -205,9 +207,15 @@ class _HeroText extends StatelessWidget {
                 ? MainAxisAlignment.center
                 : (isAr ? MainAxisAlignment.end : MainAxisAlignment.start),
             children: [
-              _StatBadge('500+ ${l10n.statActiveCandidates}'),
-              const SizedBox(width: 24),
-              _StatBadge('50+ ${l10n.statCompanies}'),
+              _AnimatedStatBadge(
+                label: l10n.statActiveCandidates,
+                prefix: '500+',
+              ),
+              const SizedBox(width: 32),
+              _AnimatedStatBadge(
+                label: l10n.statCompanies,
+                prefix: '50+',
+              ),
             ],
           ),
         ),
@@ -216,27 +224,74 @@ class _HeroText extends StatelessWidget {
   }
 }
 
-class _StatBadge extends StatelessWidget {
-  final String text;
-  const _StatBadge(this.text);
+class _AnimatedStatBadge extends StatefulWidget {
+  final String label;
+  final String prefix;
+  const _AnimatedStatBadge({required this.label, required this.prefix});
+
+  @override
+  State<_AnimatedStatBadge> createState() => _AnimatedStatBadgeState();
+}
+
+class _AnimatedStatBadgeState extends State<_AnimatedStatBadge>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
+    _pulse = Tween<double>(begin: 0.9, end: 1.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: const BoxDecoration(
-              color: AppColors.navy, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 8),
-        Text(text,
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (_, child) => Transform.scale(
+        scale: _pulse.value,
+        child: child,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: AppColors.success,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.success.withValues(alpha: 0.4),
+                  blurRadius: 6,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '${widget.prefix} ${widget.label}',
             style: const TextStyle(
-                color: AppColors.textDark,
-                fontSize: 13,
-                fontWeight: FontWeight.w500)),
-      ],
+              color: AppColors.textDark,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -270,7 +325,6 @@ class _HeroImageState extends State<_HeroImage>
 
   @override
   Widget build(BuildContext context) {
-    // الصورة تجي من اليمين
     return AnimatedReveal(
       direction: RevealDirection.fromRight,
       delay: const Duration(milliseconds: 300),
@@ -282,27 +336,157 @@ class _HeroImageState extends State<_HeroImage>
           clipBehavior: Clip.none,
           children: [
             Container(
-              height: 340,
+              height: 380,
               width: double.infinity,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(24),
                 gradient: const LinearGradient(
                   colors: [Color(0xFFE8815A), Color(0xFF1B2D6B)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.navy.withValues(alpha: 0.2),
+                    blurRadius: 30,
+                    offset: const Offset(0, 15),
+                  ),
+                ],
               ),
-              child: Center(
-                child: Image.asset(
-                  'assets/hero_image.png',
-                  fit: BoxFit.cover,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Stack(
+                  children: [
+                    Image.asset(
+                      'assets/hero_image.png',
+                      fit: BoxFit.contain,
+                      width: double.infinity,
+                      height: double.infinity,
+                      errorBuilder: (_, __, ___) => _HeroIllustration(),
+                    ),
+                    _FloatingElements(),
+                  ],
                 ),
               ),
             ),
             const Positioned(
-              bottom: 20,
-              left: 20,
+              bottom: -10,
+              left: -10,
               child: _SatisfactionBadge(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FloatingElements extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return const Stack(
+      children: [
+        Positioned(
+          top: 20,
+          right: 20,
+          child: _FloatingDot(delay: 0, color: Colors.white38),
+        ),
+        Positioned(
+          top: 60,
+          right: 60,
+          child: _FloatingDot(delay: 400, color: Colors.white24),
+        ),
+        Positioned(
+          bottom: 40,
+          right: 30,
+          child: _FloatingDot(delay: 800, color: Colors.white30),
+        ),
+      ],
+    );
+  }
+}
+
+class _FloatingDot extends StatefulWidget {
+  final int delay;
+  final Color color;
+  const _FloatingDot({required this.delay, required this.color});
+
+  @override
+  State<_FloatingDot> createState() => _FloatingDotState();
+}
+
+class _FloatingDotState extends State<_FloatingDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2500),
+    );
+    Future.delayed(Duration(milliseconds: widget.delay), () {
+      if (mounted) _ctrl.repeat(reverse: true);
+    });
+    _anim = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, child) => Transform.translate(
+        offset: Offset(0, -8 * _anim.value),
+        child: Opacity(opacity: 0.3 + 0.5 * _anim.value, child: child),
+      ),
+      child: Container(
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(
+          color: widget.color,
+          shape: BoxShape.circle,
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroIllustration extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          colors: [Color(0xFFE8815A), Color(0xFF1B2D6B)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.rocket_launch_rounded,
+                color: Colors.white, size: 64),
+            const SizedBox(height: 16),
+            Text(
+              'SkillSpace',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),
