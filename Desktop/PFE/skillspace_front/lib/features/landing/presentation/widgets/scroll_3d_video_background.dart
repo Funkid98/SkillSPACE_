@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
+import 'package:video_player/video_player.dart';
 
 class Scroll3DVideoBackground extends StatefulWidget {
   final ScrollController scrollController;
@@ -15,31 +15,61 @@ class Scroll3DVideoBackground extends StatefulWidget {
   State<Scroll3DVideoBackground> createState() => _Scroll3DVideoBackgroundState();
 }
 
-class _Scroll3DVideoBackgroundState extends State<Scroll3DVideoBackground>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _lottieController;
+class _Scroll3DVideoBackgroundState extends State<Scroll3DVideoBackground> {
+  late VideoPlayerController _controller;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _lottieController = AnimationController(vsync: this);
+    _controller = VideoPlayerController.asset('assets/scrollvideo.mp4')
+      ..initialize().then((_) {
+        if (mounted) {
+          _controller.setVolume(0.0);
+          _controller.setLooping(true); // Enable internal looping just in case
+          setState(() {
+            _isInitialized = true;
+          });
+          _onScroll(); // Set initial position
+        }
+      });
     widget.scrollController.addListener(_onScroll);
   }
 
+  double _lastProgress = -1.0;
+
   void _onScroll() {
-    if (!mounted) return;
+    if (!mounted || !_isInitialized) return;
+
     final offset = widget.scrollController.offset;
-    final maxScroll = widget.scrollController.position.maxScrollExtent > 0
-        ? widget.scrollController.position.maxScrollExtent
-        : 3000.0;
-    double progress = (offset / maxScroll).clamp(0.0, 1.0);
-    _lottieController.value = progress;
+    
+    // Define how many pixels of scroll correspond to one full video loop
+    // 2000px is a good balance for a smooth experience
+    const double pixelsPerLoop = 2000.0;
+    
+    // Use modulo to create a looping progress value (0.0 to 1.0)
+    // This handles both forward and reverse scroll naturally
+    double progress = (offset / pixelsPerLoop) % 1.0;
+    if (progress < 0) progress = 1.0 + progress; // Handle negative offset (bouncing)
+
+    // Only seek if progress has changed enough to be noticeable
+    if ((progress - _lastProgress).abs() < 0.0005) return;
+    _lastProgress = progress;
+    
+    // Calculate target duration
+    final totalDuration = _controller.value.duration;
+    final targetDuration = Duration(
+      milliseconds: (totalDuration.inMilliseconds * progress).toInt(),
+    );
+    
+    // Seek to the calculated position
+    _controller.seekTo(targetDuration);
   }
 
   @override
   void dispose() {
     widget.scrollController.removeListener(_onScroll);
-    _lottieController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -47,21 +77,25 @@ class _Scroll3DVideoBackgroundState extends State<Scroll3DVideoBackground>
   Widget build(BuildContext context) {
     return Stack(
       children: [
+        // Background Video
         Positioned.fill(
           child: IgnorePointer(
-            child: Lottie.asset(
-              'assets/network_animation.json',
-              controller: _lottieController,
-              onLoaded: (composition) {
-                _lottieController.duration = composition.duration;
-              },
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return const SizedBox.shrink();
-              },
-            ),
+            child: _isInitialized
+                ? FittedBox(
+                    fit: BoxFit.cover,
+                    child: SizedBox(
+                      width: _controller.value.size.width,
+                      height: _controller.value.size.height,
+                      child: VideoPlayer(_controller),
+                    ),
+                  )
+                : Container(
+                    color: const Color(0xFF001220), // Dark fallback color
+                  ),
           ),
         ),
+        
+        // Dark overlay for better text readability
         Positioned.fill(
           child: IgnorePointer(
             child: Container(
@@ -70,14 +104,18 @@ class _Scroll3DVideoBackgroundState extends State<Scroll3DVideoBackground>
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
+                    Colors.black.withValues(alpha: 0.3),
                     Colors.transparent,
-                    Colors.black.withValues(alpha: 0.15),
+                    Colors.black.withValues(alpha: 0.4),
                   ],
+                  stops: const [0.0, 0.5, 1.0],
                 ),
               ),
             ),
           ),
         ),
+        
+        // The actual content
         widget.child,
       ],
     );
