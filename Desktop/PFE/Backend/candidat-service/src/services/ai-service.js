@@ -327,4 +327,61 @@ function buildGapDescription(skill, score, claimedLevel, achievedLevel, wrongTop
   }
 }
 
-module.exports = { extractSkillsFromText, matchCvWithJob, generateQuiz, evaluateQuiz, getCourseRecommendationsAI }
+const generateCoachAdvice = async (candidate) => {
+  const profileSummary = `
+  - Prenom: ${candidate.prenom}
+  - Nom: ${candidate.nom}
+  - Job Title: ${candidate.jobtitle || 'Not specified'}
+  - Skills: ${(candidate.skills || []).map(s => typeof s === 'string' ? s : s.name).join(', ')}
+  - Bio: ${candidate.bio || 'Empty'}
+  - Projects: ${(candidate.projects || []).join(', ')}
+  - Localisation: ${candidate.localisation || 'Not specified'}
+  - Secteur: ${candidate.sector || 'Not specified'}
+  `;
+
+  const response = await groq.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    messages: [
+      {
+        role: 'system',
+        content: `You are an expert AI Career Coach. Your goal is to analyze a candidate's profile, find what's missing, and provide a unique, motivating advice for the day.
+        
+        Analyze these areas:
+        - Profile completeness (Bio, Job Title, Localisation)
+        - Skills depth (if they have less than 5 skills, it's a gap)
+        - Projects (if empty, it's a major gap)
+        - Sector alignment
+        
+        Return ONLY a JSON object with:
+        1. advice: A short (1-2 sentences), highly motivational and unique advice for today, in French. Avoid generic phrases.
+        2. tasks: An array of 4-5 objects: { "text": "string in French", "isDone": boolean }. 
+           - Mark as true if they have the info.
+           - Mark as false if they need to add/improve it.
+        
+        Example task texts: "CV analysé par l'IA", "Simulations d'entretien", "Ajouter des projets GitHub", "Compléter votre bio", "Préciser votre localisation".`
+      },
+      {
+        role: 'user',
+        content: `Analyze this candidate profile and give coach advice:\n${profileSummary}`
+      }
+    ],
+    temperature: 0.7,
+    response_format: { type: 'json_object' },
+  })
+
+  const content = response.choices[0].message.content
+  try {
+    return JSON.parse(content)
+  } catch (err) {
+    console.error('Groq Coach Advice Parse Error:', err.message)
+    return { 
+      advice: "Continuez à persévérer, chaque effort vous rapproche de votre succès !",
+      tasks: [
+        { text: "CV analysé par l'IA", isDone: true },
+        { text: "Compléter votre profil", isDone: false }
+      ]
+    }
+  }
+}
+
+module.exports = { extractSkillsFromText, matchCvWithJob, generateQuiz, evaluateQuiz, getCourseRecommendationsAI, generateCoachAdvice }

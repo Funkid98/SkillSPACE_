@@ -40,9 +40,6 @@ exports.transcribeAudio = async (req, res) => {
 
 async function generateAudio(text, langCode = 'fr') {
   try {
-    // Truncate text to a reasonable limit to save credits/prevent errors
-    const truncatedText = text.substring(0, 1000);
-
     // Use standard default voice (George) specified by the user
     const voiceId = 'JBFqnCBsd6RMkjVDRZzb';
     const modelId = 'eleven_multilingual_v2';
@@ -56,7 +53,7 @@ async function generateAudio(text, langCode = 'fr') {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        text: truncatedText,
+        text: text,
         model_id: modelId,
         voice_settings: {
           stability: 0.50,
@@ -68,14 +65,7 @@ async function generateAudio(text, langCode = 'fr') {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('ElevenLabs error:', errorText);
-
-      // If quota exceeded or other API error, try fallback
-      if (response.status === 401 || response.status === 429 || errorText.includes('quota_exceeded')) {
-        console.warn('Falling back to Google TTS due to ElevenLabs limitation...');
-        return await generateFallbackAudio(truncatedText, langCode);
-      }
+      console.error('ElevenLabs error:', await response.text());
       return null;
     }
 
@@ -83,27 +73,6 @@ async function generateAudio(text, langCode = 'fr') {
     return Buffer.from(arrayBuffer).toString('base64');
   } catch (err) {
     console.error('ElevenLabs request failed:', err);
-    return await generateFallbackAudio(text, langCode);
-  }
-}
-
-/**
- * Free fallback using Google Translate TTS
- * This ensures the app remains functional even without credits.
- */
-async function generateFallbackAudio(text, langCode = 'fr') {
-  try {
-    const lang = langCode === 'en' ? 'en' : 'fr';
-    // Google Translate TTS (unofficial but works for short snippets)
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text.substring(0, 200))}&tl=${lang}&client=tw-ob`;
-
-    const response = await fetch(url);
-    if (!response.ok) return null;
-
-    const arrayBuffer = await response.arrayBuffer();
-    return Buffer.from(arrayBuffer).toString('base64');
-  } catch (e) {
-    console.error('Fallback TTS failed:', e);
     return null;
   }
 }
@@ -121,7 +90,6 @@ exports.startSimulation = async (req, res) => {
     Make it professional, welcoming, and specific to the company and role if they are provided in the context.
     Talk naturally! You can use slight hesitations or warm conversational fillers (like "Bonjour et bienvenue... Alors...").
     If the context contains a list of skills, do NOT recite them like a robotic list. Integrate them naturally into your sentence, or simply say "les compétences requises".
-    IMPORTANT: Keep your response VERY CONCISE (maximum 2 short sentences).
     IMPORTANT: You must write your ENTIRE response strictly in ${targetLanguage}. If the context contains English words, TRANSLATE them into ${targetLanguage} or adapt them so the text is 100% ${targetLanguage}.
     CRITICAL: Always finish your sentences and ensure the thought is complete.
     Do not output anything else except the spoken text.`;
@@ -158,25 +126,24 @@ exports.chatWithAI = async (req, res) => {
 
     // Construct the detailed system prompt
     const systemPrompt = `You are Thomas Lefebvre, an experienced hiring manager conducting a realistic job interview.
- 
- **Role & Context:**
- * Position Context: ${roleTitle}
- * Goal: You are recruiting the candidate for the company specified in the Position Context.
- * Candidate level: Junior/Mid-level
- 
- **Interview Style:**
- * Be professional, neutral, and slightly challenging (like a real interviewer).
- * Talk naturally as human being! Use conversational fillers occasionally (e.g., "Mmm...", "D'accord...", "Je vois...", "Alors..."). This is CRITICAL for the voice synthesizer to sound human.
- * Ask one question at a time.
- * Wait for the candidate's answer before asking the next question.
- * Ask follow-up questions based on the candidate's responses (dig deeper when needed).
- * Occasionally challenge unclear or weak answers.
- * Do NOT answer for the candidate.
- * Do NOT give feedback until the interview is finished.
- * Keep the experience as realistic as possible.
- * CONCISENESS: Keep your responses short and direct (maximum 2-3 sentences). Avoid long monologues.
- * IMPORTANT: You must write your ENTIRE response strictly in ${langString}. If the candidate uses English technical terms, TRANSLATE them into ${langString} or adapt them naturally so the text is 100% ${langString}.
- * CRITICAL: Always finish your sentences and ensure the thought is complete.`;
+
+**Role & Context:**
+* Position Context: ${roleTitle}
+* Goal: You are recruiting the candidate for the company specified in the Position Context.
+* Candidate level: Junior/Mid-level
+
+**Interview Style:**
+* Be professional, neutral, and slightly challenging (like a real interviewer).
+* Talk naturally as human being! Use conversational fillers occasionally (e.g., "Mmm...", "D'accord...", "Je vois...", "Alors..."). This is CRITICAL for the voice synthesizer to sound human.
+* Ask one question at a time.
+* Wait for the candidate's answer before asking the next question.
+* Ask follow-up questions based on the candidate's responses (dig deeper when needed).
+* Occasionally challenge unclear or weak answers.
+* Do NOT answer for the candidate.
+* Do NOT give feedback until the interview is finished.
+* Keep the experience as realistic as possible.
+* IMPORTANT: You must write your ENTIRE response strictly in ${langString}. If the candidate uses English technical terms, TRANSLATE them into ${langString} or adapt them naturally so the text is 100% ${langString}.
+* CRITICAL: Always finish your sentences and ensure the thought is complete.`;
 
     // Map frontend history to Groq format
     const formattedHistory = history.map(msg => ({
@@ -210,6 +177,82 @@ exports.chatWithAI = async (req, res) => {
   }
 };
 
+// Preprocess interview answers to compute speech fluency metrics( arije str 1)
+function analyzeSpeechFluency(history) {
+  const candidateMessages = history.filter(msg => msg.isUser);
+  const totalCandidateMessages = candidateMessages.length;
+
+  if (totalCandidateMessages === 0) {
+    return {
+      fillerCount: 0,
+      repetitionCount: 0,
+      pauseCount: 0,
+      wordsPerMinute: 0,
+      averageResponseLength: 0,
+      hesitationScore: 0
+    };
+  }
+
+  let fillerCount = 0;
+  let wordCount = 0;
+  let repetitionCount = 0;
+  let pauseCount = 0;
+
+  // Common French filler words and sounds
+  const fillers = ['euh', 'hmm', 'ben', 'bah', 'en fait', 'genre', 'tu vois', 'fin', 'donc', 'alors'];
+  const pauses = ['...', '…'];
+
+  candidateMessages.forEach(msg => {
+    // Ensure text exists
+    const text = (msg.text || '').toLowerCase();
+
+    // Count words (basic space separation)
+    const words = text.split(/\s+/).filter(w => w.length > 0);
+    wordCount += words.length;
+
+    // Count fillers
+    fillers.forEach(filler => {
+      // Use regex to match whole words for fillers(str1 arije)
+      const regex = new RegExp(`\\b${filler}\\b`, 'g');
+      const matches = text.match(regex);
+      if (matches) fillerCount += matches.length;
+    });
+
+    // Count pauses (approximate by counting ellipses de la 1 str)
+    pauses.forEach(pause => {
+      const matches = text.split(pause).length - 1;
+      pauseCount += matches;
+    });
+
+    // Count repetitions (str2 rija)
+    for (let i = 0; i < words.length - 1; i++) {
+      if (words[i] === words[i + 1] && words[i].length > 1) {
+        repetitionCount++;
+      }
+    }
+  });
+
+  const averageResponseLength = Math.round(wordCount / totalCandidateMessages);
+
+  // Hesitation score (0-100) based on fillers + pauses + repetitions per 100 words
+  const hesitationIndicators = fillerCount + pauseCount + repetitionCount;
+  // If hesitation indicators equal 10% of total words, score is ~50.
+  const hesitationScore = wordCount > 0 ? Math.min(100, Math.round((hesitationIndicators / wordCount) * 500)) : 0;
+
+  // Estimate WPM: assuming average candidate response takes ~15 seconds of speaking
+  const estimatedDurationMinutes = (totalCandidateMessages * 15) / 60;
+  const wordsPerMinute = estimatedDurationMinutes > 0 ? Math.round(wordCount / estimatedDurationMinutes) : 0;
+
+  return {
+    fillerCount,
+    repetitionCount,
+    pauseCount,
+    wordsPerMinute: wordsPerMinute > 0 ? wordsPerMinute : 120, // default average if 0
+    averageResponseLength,
+    hesitationScore
+  };
+}
+
 exports.finishSimulation = async (req, res) => {
   try {
     const { history = [], roleTitle } = req.body;
@@ -218,24 +261,102 @@ exports.finishSimulation = async (req, res) => {
       return res.status(400).json({ success: false, message: "No conversation history provided for evaluation." });
     }
 
+    const candidateMessages = history.filter(msg => msg.isUser);
+    const candidateWordCount = candidateMessages.reduce((count, msg) => count + (msg.text ? msg.text.trim().split(/\\s+/).length : 0), 0);
+
+    if (candidateMessages.length === 0 || candidateWordCount < 5) {
+      return res.status(200).json({
+        success: true,
+        globalScore: 0,
+        score: 0,
+        emotionalState: "Non évaluable",
+        starAnalysis: {
+          overallScore: 0,
+          situation: 0,
+          task: 0,
+          action: 0,
+          result: 0,
+          missingElements: ["Aucune réponse suffisante du candidat pour appliquer la méthode STAR."]
+        },
+        personality: {
+          openness: 0,
+          conscientiousness: 0,
+          extraversion: 0,
+          agreeableness: 0,
+          emotionalStability: 0
+        },
+        speechAnalysis: {
+          confidence: 0,
+          stress: 0,
+          calmness: 0,
+          uncertainty: 0,
+          fluencyFeedback: "Pas de discours détecté ou discours trop court.",
+          metrics: {
+            fillerCount: 0, repetitionCount: 0, pauseCount: 0,
+            wordsPerMinute: 0, averageResponseLength: 0, hesitationScore: 0
+          }
+        },
+        skills: { clarity: 0, relevance: 0, structure: 0 },
+        analysis: { stressLevel: 0, selfConfidence: 0, clarity: 0, engagement: 0 },
+        strengths: ["Aucun point fort détecté (entretien vide ou trop court)."],
+        improvements: [
+          { title: "Participation", description: "Il est nécessaire de répondre aux questions pour être évalué." },
+          { title: "Communication", description: "Assurez-vous que votre microphone fonctionne." },
+          { title: "Engagement", description: "Participez activement à l'échange." },
+          { title: "Contenu", description: "Fournissez des réponses détaillées." }
+        ]
+      });
+    }
+
     const transcript = history.map(msg => `${msg.isUser ? 'Candidat' : 'Recruteur'}: ${msg.text}`).join('\n');
 
-    const evaluationPrompt = `You are an expert HR evaluator. Review the following job interview transcript for a ${roleTitle} position.
-Based on the candidate's answers, provide a detailed evaluation in JSON format exactly matching this structure:
+    // 3. Speech fluency / disfluency analysis (Pre-processing str3 rija)
+    const speechMetrics = analyzeSpeechFluency(history);
+
+    const evaluationPrompt = `You are an expert HR evaluator, organizational psychologist, and linguist. 
+Review the following job interview transcript for a ${roleTitle} position.
+You also have the following speech fluency metrics analyzed from the candidate's audio responses (where hesitationScore 0=fluent, 100=highly hesitant):
+${JSON.stringify(speechMetrics, null, 2)}
+
+Based on the candidate's answers and speech metrics, provide a detailed psychometric and professional evaluation in JSON format exactly matching this structure:
 {
+  "globalScore": <number out of 100>,
   "score": <number out of 100>,
   "emotionalState": "<a brief string describing the emotional state e.g., 'Confiant', 'Stressé', 'Calme'>",
-  "analysis": {
-    "stressLevel": <number out of 100, where lower is better usually, but here 100 means perfectly managed stress>,
-    "selfConfidence": <number out of 100>,
-    "clarity": <number out of 100>,
-    "engagement": <number out of 100>
+  "starAnalysis": {
+    "overallScore": <number out of 100>,
+    "situation": <number out of 100>,
+    "task": <number out of 100>,
+    "action": <number out of 100>,
+    "result": <number out of 100>,
+    "missingElements": ["<Array of strings describing missing STAR elements, e.g., 'Le résultat concret manquait'>"]
+  },
+  "personality": {
+    "openness": <number out of 100>,
+    "conscientiousness": <number out of 100>,
+    "extraversion": <number out of 100>,
+    "agreeableness": <number out of 100>,
+    "emotionalStability": <number out of 100>
+  },
+  "speechAnalysis": {
+    "confidence": <number out of 100>,
+    "stress": <number out of 100>,
+    "calmness": <number out of 100>,
+    "uncertainty": <number out of 100>,
+    "fluencyFeedback": "<A short sentence in French summarizing their speech fluency based on the metrics>"
   },
   "skills": {
     "clarity": <number out of 100>,
     "relevance": <number out of 100>,
     "structure": <number out of 100>
   },
+  "analysis": {
+    "stressLevel": <number out of 100>,
+    "selfConfidence": <number out of 100>,
+    "clarity": <number out of 100>,
+    "engagement": <number out of 100>
+  },
+  "strengths": ["<Array of exactly 3 strong points>"],
   "improvements": [
     {
       "title": "<Short title of improvement>",
@@ -243,7 +364,12 @@ Based on the candidate's answers, provide a detailed evaluation in JSON format e
     }
   ]
 }
-Make sure the improvements array has exactly 4 items. Write all text responses in French. Do NOT wrap the JSON in Markdown formatting like \`\`\`json. Just return the raw JSON object.
+
+Requirements:
+- The improvements array must have EXACTLY 4 items.
+- All text responses MUST be in French.
+- Consider both the content (STAR elements) and the speechMetrics when inferring emotional state and personality traits.
+- Provide ONLY raw JSON without markdown formatting like \`\`\`json.
 
 Transcript:
 ${transcript}`;
@@ -255,28 +381,64 @@ ${transcript}`;
       ],
       model: "llama-3.3-70b-versatile",
       temperature: 0.2,
-      max_tokens: 1000,
+      max_tokens: 1500,
     });
 
     let evaluationData;
     try {
       const responseText = chatCompletion.choices[0]?.message?.content || "{}";
-      // Clean up markdown if AI still added it
+
       const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
       evaluationData = JSON.parse(cleanedText);
+
+      // Merge in our computed speech metrics for completeness in the final output
+      if (evaluationData.speechAnalysis) {
+        evaluationData.speechAnalysis.metrics = speechMetrics;
+      } else {
+        evaluationData.speechAnalysis = { metrics: speechMetrics };
+      }
     } catch (e) {
       console.error("Failed to parse AI evaluation:", e);
-      // Fallback
+      // Fallback representing the new comprehensive structure
       evaluationData = {
-        score: 75,
+        globalScore: 70,
+        score: 70,
         emotionalState: "Neutre",
-        analysis: { stressLevel: 50, selfConfidence: 70, clarity: 75, engagement: 80 },
-        skills: { clarity: 75, relevance: 70, structure: 65 },
+        starAnalysis: {
+          overallScore: 65,
+          situation: 70,
+          task: 70,
+          action: 60,
+          result: 60,
+          missingElements: ["Manque de résultats quantifiables", "L'action n'est pas toujours détaillée"]
+        },
+        personality: {
+          openness: 60,
+          conscientiousness: 75,
+          extraversion: 65,
+          agreeableness: 70,
+          emotionalStability: 60
+        },
+        speechAnalysis: {
+          confidence: 65,
+          stress: 40,
+          calmness: 60,
+          uncertainty: 30,
+          fluencyFeedback: "Le discours manque parfois de fluidité, avec quelques hésitations et répétitions.",
+          metrics: speechMetrics
+        },
+        skills: { clarity: 70, relevance: 75, structure: 65 },
+        analysis: { stressLevel: 40, selfConfidence: 65, clarity: 70, engagement: 75 },
+        strengths: [
+          "Bonne compréhension du poste",
+          "Attitude professionnelle",
+          "Connaissances techniques adéquates"
+        ],
         improvements: [
-          { title: "Structure des réponses", description: "Utilisez la méthode STAR." },
-          { title: "Précision", description: "Donnez des exemples plus concrets." },
-          { title: "Confiance", description: "Affirmez davantage vos réussites." },
-          { title: "Engagement", description: "Posez des questions à la fin." }
+          { title: "Méthode STAR", description: "Structurez vos réponses en détaillant la situation, la tâche, l'action et le résultat concret." },
+          { title: "Réduire les hésitations", description: "Prenez une courte pause avant de répondre au lieu d'utiliser des mots de remplissage." },
+          { title: "Quantifier les succès", description: "Apportez des chiffres et des metrics pour prouver vos résultats." },
+          { title: "Confiance en soi", description: "Adoptez un ton plus affirmatif lors de la description de vos réussites." }
         ]
       };
     }

@@ -301,6 +301,7 @@ const getMatchingOffersForCandidate = async (req, res) => {
 
             // 1. Check Cache FIRST
             const existingMatch = await Match.findOne({ candidateId: candidate._id, offerId: offer._id });
+            const application = await Application.findOne({ candidateId: candidate._id, offerId: offer._id }).lean();
 
             // 2. Strict Filter: At least 2 matching skills required (unless title matches exactly)
             const effectiveMatchCount = (existingMatch && existingMatch.status === 'COMPLETED') 
@@ -406,9 +407,10 @@ const getMatchingOffersForCandidate = async (req, res) => {
                     totalSkills: totalSkills,
                     matchingAnalysis,
                     recommendation,
-                    matchedSkills: [],
                     missingSkills: [],
-                    status: initialStatus
+                    status: initialStatus,
+                    applicationStatus: application ? application.status : null,
+                    createdAt: offer.createdAt || offer.date || new Date()
                 };
             }
 
@@ -426,9 +428,10 @@ const getMatchingOffersForCandidate = async (req, res) => {
                 totalSkills: totalSkills,
                 matchingAnalysis,
                 recommendation,
-                matchedSkills: existingMatch ? (existingMatch.matchedSkills || []) : [],
                 missingSkills: existingMatch ? (existingMatch.missingSkills || []) : [],
-                status: matchStatus || (existingMatch ? (existingMatch.status || 'COMPLETED') : 'COMPLETED')
+                status: matchStatus || (existingMatch ? (existingMatch.status || 'COMPLETED') : 'COMPLETED'),
+                applicationStatus: application ? application.status : null,
+                createdAt: offer.createdAt || offer.date || new Date()
             };
         }));
 
@@ -1080,7 +1083,8 @@ const getAcceptedOffers = async (req, res) => {
                 ...offer,
                 applicationStatus: app.status,
                 interviewDate: app.interviewDate,
-                interviewTime: app.interviewTime
+                interviewTime: app.interviewTime,
+                meetingLink: app.meetingLink
             };
         }).filter(Boolean);
 
@@ -1091,11 +1095,27 @@ const getAcceptedOffers = async (req, res) => {
     }
 };
 
+// Get AI Coach advice and tasks
+const getCoachAdvice = async (req, res) => {
+    try {
+        const candidate = await User.findById(req.userId).lean();
+        if (!candidate) return res.status(404).json({ error: 'Candidate not found' });
+
+        const { generateCoachAdvice } = require('../services/ai-service');
+        const adviceData = await generateCoachAdvice(candidate);
+
+        res.json(adviceData);
+    } catch (err) {
+        console.error('getCoachAdvice error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+
 module.exports = {
     register, login, getProfile, updateProfile, getRecentCandidatesBySector,
     getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer,
     applyToOffer, receiveNotification, getNotifications, markNotificationRead,
     internalUpdateApplication, deleteNotification, clearAllNotifications,
     enrollFormation, getEnrolledFormations, completeFormation,
-    getEnrolledCandidatesByFormation, getAcceptedOffers
+    getEnrolledCandidatesByFormation, getAcceptedOffers, getCoachAdvice
 };
