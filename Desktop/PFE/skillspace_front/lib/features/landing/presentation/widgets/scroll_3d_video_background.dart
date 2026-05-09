@@ -12,58 +12,77 @@ class Scroll3DVideoBackground extends StatefulWidget {
   });
 
   @override
-  State<Scroll3DVideoBackground> createState() => _Scroll3DVideoBackgroundState();
+  State<Scroll3DVideoBackground> createState() =>
+      _Scroll3DVideoBackgroundState();
 }
 
 class _Scroll3DVideoBackgroundState extends State<Scroll3DVideoBackground> {
   late VideoPlayerController _controller;
   bool _isInitialized = false;
+  bool _isLoading = true;
+  String? _error;
+  bool _isSeeking = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.asset('assets/scrollvideo.mp4')
-      ..initialize().then((_) {
-        if (mounted) {
-          _controller.setVolume(0.0);
-          _controller.setLooping(true); // Enable internal looping just in case
-          setState(() {
-            _isInitialized = true;
-          });
-          _onScroll(); // Set initial position
-        }
-      });
-    widget.scrollController.addListener(_onScroll);
+    _initVideo();
   }
 
-  double _lastProgress = -1.0;
+  Future<void> _initVideo() async {
+    try {
+      _controller = VideoPlayerController.asset('assets/scrollvideo.mp4');
+      await _controller.initialize();
+      if (!mounted) return;
+
+      await _controller.setVolume(0.0);
+      await _controller.setLooping(false);
+
+      await _controller.play();
+      await _controller.pause();
+      await _controller.seekTo(Duration.zero);
+
+      setState(() {
+        _isInitialized = true;
+        _isLoading = false;
+      });
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _onScroll();
+        widget.scrollController.addListener(_onScroll);
+      });
+    } catch (e) {
+      debugPrint('Video initialization failed: $e');
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   void _onScroll() {
-    if (!mounted || !_isInitialized) return;
+    if (!mounted || !_isInitialized || _isSeeking) return;
+    if (!widget.scrollController.hasClients) return;
 
-    final offset = widget.scrollController.offset;
-    
-    // Define how many pixels of scroll correspond to one full video loop
-    // 2000px is a good balance for a smooth experience
-    const double pixelsPerLoop = 2000.0;
-    
-    // Use modulo to create a looping progress value (0.0 to 1.0)
-    // This handles both forward and reverse scroll naturally
-    double progress = (offset / pixelsPerLoop) % 1.0;
-    if (progress < 0) progress = 1.0 + progress; // Handle negative offset (bouncing)
+    final position = widget.scrollController.position;
+    final offset = position.pixels;
+    final maxScroll = position.maxScrollExtent;
 
-    // Only seek if progress has changed enough to be noticeable
-    if ((progress - _lastProgress).abs() < 0.0005) return;
-    _lastProgress = progress;
-    
-    // Calculate target duration
-    final totalDuration = _controller.value.duration;
-    final targetDuration = Duration(
-      milliseconds: (totalDuration.inMilliseconds * progress).toInt(),
-    );
-    
-    // Seek to the calculated position
-    _controller.seekTo(targetDuration);
+    if (maxScroll <= 0) return;
+
+    final double progress = (offset / maxScroll).clamp(0.0, 1.0);
+    final totalMs = _controller.value.duration.inMilliseconds;
+    final targetMs = (totalMs * progress).toInt();
+
+    _isSeeking = true;
+    _controller.seekTo(Duration(milliseconds: targetMs)).then((_) async {
+      if (!mounted) return;
+      await _controller.play();
+      await _controller.pause();
+      _isSeeking = false;
+    });
   }
 
   @override
@@ -77,25 +96,43 @@ class _Scroll3DVideoBackgroundState extends State<Scroll3DVideoBackground> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Background Video
         Positioned.fill(
           child: IgnorePointer(
-            child: _isInitialized
-                ? FittedBox(
-                    fit: BoxFit.cover,
-                    child: SizedBox(
-                      width: _controller.value.size.width,
-                      height: _controller.value.size.height,
-                      child: VideoPlayer(_controller),
+            child: Container(
+              color: const Color(0xFF001220),
+              child: _isInitialized
+                  ? ValueListenableBuilder(
+                      valueListenable: _controller,
+                      builder: (context, VideoPlayerValue value, child) {
+                        return FittedBox(
+                          fit: BoxFit.cover,
+                          child: SizedBox(
+                            width: value.size.width,
+                            height: value.size.height,
+                            child: VideoPlayer(_controller),
+                          ),
+                        );
+                      },
+                    )
+                  : Center(
+                      child: _isLoading
+                          ? const CircularProgressIndicator(
+                              color: Colors.white24)
+                          : _error != null
+                              ? Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Text(
+                                    'Video Error: $_error\nCheck assets/scrollvideo.mp4',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                        color: Colors.white54, fontSize: 12),
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
                     ),
-                  )
-                : Container(
-                    color: const Color(0xFF001220), // Dark fallback color
-                  ),
+            ),
           ),
         ),
-        
-        // Dark overlay for better text readability
         Positioned.fill(
           child: IgnorePointer(
             child: Container(
@@ -104,9 +141,9 @@ class _Scroll3DVideoBackgroundState extends State<Scroll3DVideoBackground> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withValues(alpha: 0.3),
-                    Colors.transparent,
                     Colors.black.withValues(alpha: 0.4),
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.6),
                   ],
                   stops: const [0.0, 0.5, 1.0],
                 ),
@@ -114,8 +151,6 @@ class _Scroll3DVideoBackgroundState extends State<Scroll3DVideoBackground> {
             ),
           ),
         ),
-        
-        // The actual content
         widget.child,
       ],
     );
