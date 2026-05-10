@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:glassmorphism/glassmorphism.dart';
 import 'package:skillspace/core/app_colors.dart';
@@ -514,7 +515,18 @@ class _SatisfactionBadgeState extends State<_SatisfactionBadge>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late Animation<int> _count;
+  Offset _runAwayOffset = Offset.zero;
 
+  void _runAway() {
+    setState(() {
+      final random = math.Random();
+      // Jump much further across the hero area
+      _runAwayOffset = Offset(
+        (random.nextDouble() - 0.5) * 350,
+        (random.nextDouble() - 0.5) * 250,
+      );
+    });
+  }
   @override
   void initState() {
     super.initState();
@@ -528,9 +540,8 @@ class _SatisfactionBadgeState extends State<_SatisfactionBadge>
       CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
     );
 
-    // يقرا الـ state بعد أول frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _startCount(87); // static satisfaction rate
+      _startCount(87);
     });
   }
 
@@ -558,52 +569,62 @@ class _SatisfactionBadgeState extends State<_SatisfactionBadge>
 
   @override
   Widget build(BuildContext context) {
-    return GlassmorphicContainer(
-      width: 120,
-      height: 80,
-      borderRadius: 12,
-      blur: 20,
-      alignment: Alignment.center,
-      border: 1,
-      linearGradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Colors.white.withValues(alpha: 0.2),
-          Colors.white.withValues(alpha: 0.1),
-        ],
-      ),
-      borderGradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Colors.white.withValues(alpha: 0.3),
-          Colors.white.withValues(alpha: 0.1),
-        ],
-      ),
-      child: AnimatedBuilder(
-        animation: _count,
-        builder: (_, __) => Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${_count.value}%',
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-              ),
+    return MouseRegion(
+      onEnter: (_) => _runAway(),
+      onExit: (_) => setState(() => _runAwayOffset = Offset.zero),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutBack,
+        transform: Matrix4.translationValues(
+            _runAwayOffset.dx, _runAwayOffset.dy, 0),
+        child: GlassmorphicContainer(
+          width: 120,
+          height: 80,
+          borderRadius: 12,
+          blur: 20,
+          alignment: Alignment.center,
+          border: 1,
+          linearGradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withValues(alpha: 0.2),
+              Colors.white.withValues(alpha: 0.1),
+            ],
+          ),
+          borderGradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withValues(alpha: 0.3),
+              Colors.white.withValues(alpha: 0.1),
+            ],
+          ),
+          child: AnimatedBuilder(
+            animation: _count,
+            builder: (_, __) => Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${_count.value}%',
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  AppLocalizations.of(context).statSatisfaction,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              AppLocalizations.of(context).statSatisfaction,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.white.withValues(alpha: 0.7),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

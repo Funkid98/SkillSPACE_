@@ -109,6 +109,9 @@ class _LandingPageState extends State<LandingPage> {
     return Theme(
       data: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: Colors.transparent,
+        canvasColor: Colors.transparent,
+        cardColor: Colors.transparent,
+        dialogBackgroundColor: Colors.transparent,
       ),
       child: Scaffold(
         // Transparent so the DOM-injected video behind Flutter shows through
