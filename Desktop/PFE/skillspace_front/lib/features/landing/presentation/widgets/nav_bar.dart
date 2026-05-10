@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:glassmorphism/glassmorphism.dart';
 import 'package:skillspace/core/app_colors.dart';
 import 'package:skillspace/core/theme/app_text_styles.dart';
 import 'package:skillspace/core/utils/responsive.dart';
@@ -20,7 +21,10 @@ enum NavSection { features, steps, audience }
 class NavBar extends StatelessWidget {
   final void Function(GlobalKey) scrollTo;
   final NavSection activeSection;
-  const NavBar({super.key, required this.scrollTo, this.activeSection = NavSection.features});
+  const NavBar(
+      {super.key,
+      required this.scrollTo,
+      this.activeSection = NavSection.features});
 
   void _scrollToSection(GlobalKey key) => scrollTo(key);
 
@@ -79,65 +83,86 @@ class NavBar extends StatelessWidget {
     final isMobile = Responsive.isMobile(context);
     final l10n = AppLocalizations.of(context);
 
-    return AnimatedReveal(
-      duration: const Duration(milliseconds: 500),
-      child: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.6),
-              border: Border(
-                bottom: BorderSide(
-                  color: Colors.black.withValues(alpha: 0.06),
+    return Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+            padding: const EdgeInsets.only(top: 12, left: 16, right: 16),
+            child: AnimatedReveal(
+              duration: const Duration(milliseconds: 500),
+              child: GlassmorphicContainer(
+                width: MediaQuery.of(context).size.width - 32,
+                height: isMobile ? 64 : 72,
+                borderRadius: 20,
+                blur: 15,
+                alignment: Alignment.center,
+                border: 1.5,
+                linearGradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.15),
+                    Colors.white.withValues(alpha: 0.05),
+                  ],
+                ),
+                borderGradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.1),
+                    Colors.white.withValues(alpha: 0.05),
+                  ],
+                ),
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 16 : 48,
+                    vertical: 14,
+                  ),
+                  child: Row(
+                    children: [
+                      const Text('SkillSpace',
+                          style: AppTextStyles.navBrandLight),
+                      const Spacer(),
+                      if (!isMobile) ...[
+                        _NavLink(l10n.features,
+                            isActive: activeSection == NavSection.features,
+                            onTap: () =>
+                                _scrollToSection(SectionKeys.features)),
+                        const SizedBox(width: 28),
+                        _NavLink(l10n.howItWorks,
+                            isActive: activeSection == NavSection.steps,
+                            onTap: () => _scrollToSection(SectionKeys.steps)),
+                        const SizedBox(width: 28),
+                        _NavLink(l10n.forWhom,
+                            isActive: activeSection == NavSection.audience,
+                            onTap: () =>
+                                _scrollToSection(SectionKeys.audience)),
+                        const SizedBox(width: 24),
+                        OutlinedButton(
+                            onPressed: () => _goToAuth(context, AuthTab.login),
+                            child: Text(l10n.login)),
+                        const SizedBox(width: 12),
+                        ElevatedButton(
+                            onPressed: () =>
+                                _goToAuth(context, AuthTab.register),
+                            child: Text(l10n.register)),
+                      ] else
+                        Row(
+                          children: [
+                            Builder(
+                              builder: (context) => IconButton(
+                                icon:
+                                    const Icon(Icons.menu, color: Colors.white),
+                                onPressed: () =>
+                                    Scaffold.of(context).openDrawer(),
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            padding: EdgeInsets.symmetric(
-              horizontal: isMobile ? 16 : 48,
-              vertical: 14,
-            ),
-            child: Row(
-          children: [
-            const Text('SkillSpace', style: AppTextStyles.navBrand),
-            const Spacer(),
-            if (!isMobile) ...[
-              _NavLink(l10n.features,
-                  isActive: activeSection == NavSection.features,
-                  onTap: () => _scrollToSection(SectionKeys.features)),
-              const SizedBox(width: 28),
-              _NavLink(l10n.howItWorks,
-                  isActive: activeSection == NavSection.steps,
-                  onTap: () => _scrollToSection(SectionKeys.steps)),
-              const SizedBox(width: 28),
-              _NavLink(l10n.forWhom,
-                  isActive: activeSection == NavSection.audience,
-                  onTap: () => _scrollToSection(SectionKeys.audience)),
-              const SizedBox(width: 24),
-              OutlinedButton(
-                  onPressed: () => _goToAuth(context, AuthTab.login),
-                  child: Text(l10n.login)),
-              const SizedBox(width: 12),
-              ElevatedButton(
-                  onPressed: () => _goToAuth(context, AuthTab.register),
-                  child: Text(l10n.register)),
-            ] else
-              Row(
-                children: [
-                  Builder(
-                    builder: (context) => IconButton(
-                      icon: const Icon(Icons.menu, color: AppColors.navy),
-                      onPressed: () => Scaffold.of(context).openDrawer(),
-                    ),
-                  ),
-                ],
-              ),
-          ],
-        ),
-      ),
-    ),
-    ),
-    );
+            )));
   }
 }
 
@@ -157,9 +182,6 @@ class _NavLinkState extends State<_NavLink> {
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.isActive
-        ? AppColors.orange
-        : (_hovered ? AppColors.orange : AppColors.textDark);
     return GestureDetector(
       onTap: widget.onTap,
       child: MouseRegion(
@@ -169,15 +191,13 @@ class _NavLinkState extends State<_NavLink> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 150),
-              style: TextStyle(
-                color: color,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Inter',
+            Text(
+              widget.label,
+              style: AppTextStyles.navItemLight.copyWith(
+                color: (widget.isActive || _hovered)
+                    ? AppColors.orange
+                    : Colors.white70,
               ),
-              child: Text(widget.label),
             ),
             const SizedBox(height: 2),
             AnimatedContainer(
@@ -205,104 +225,131 @@ class NavDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Drawer(
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topRight: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('SkillSpace', style: AppTextStyles.navBrand),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: const BoxDecoration(
-                        color: AppColors.bg,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close_rounded,
-                        color: AppColors.textDark,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-              _DrawerLink(
-                label: l10n.features,
-                onTap: () {
-                  Navigator.pop(context);
-                  scrollTo(SectionKeys.features);
-                },
-              ),
-              const Divider(color: AppColors.border, height: 1),
-              _DrawerLink(
-                label: l10n.howItWorks,
-                onTap: () {
-                  Navigator.pop(context);
-                  scrollTo(SectionKeys.steps);
-                },
-              ),
-              const Divider(color: AppColors.border, height: 1),
-              _DrawerLink(
-                label: l10n.forWhom,
-                onTap: () {
-                  Navigator.pop(context);
-                  scrollTo(SectionKeys.audience);
-                },
-              ),
-              const Divider(color: AppColors.border, height: 1),
-              const SizedBox(height: 32),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.navy,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: Text(l10n.login),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.orange,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: Text(l10n.register),
-                ),
-              ),
-            ],
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        width: MediaQuery.of(context).size.width * 0.85,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topRight: Radius.circular(32),
+            bottomRight: Radius.circular(32),
           ),
         ),
-      ),
-    );
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topRight: Radius.circular(32),
+            bottomRight: Radius.circular(32),
+          ),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.7),
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
+                border: Border(
+                  right: BorderSide(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('SkillSpace',
+                              style: AppTextStyles.navBrand),
+                          GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: const BoxDecoration(
+                                color: AppColors.bg,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close_rounded,
+                                color: AppColors.textDark,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      _DrawerLink(
+                        label: l10n.features,
+                        onTap: () {
+                          Navigator.pop(context);
+                          scrollTo(SectionKeys.features);
+                        },
+                      ),
+                      const Divider(color: AppColors.border, height: 1),
+                      _DrawerLink(
+                        label: l10n.howItWorks,
+                        onTap: () {
+                          Navigator.pop(context);
+                          scrollTo(SectionKeys.steps);
+                        },
+                      ),
+                      const Divider(color: AppColors.border, height: 1),
+                      _DrawerLink(
+                        label: l10n.forWhom,
+                        onTap: () {
+                          Navigator.pop(context);
+                          scrollTo(SectionKeys.audience);
+                        },
+                      ),
+                      const Divider(color: AppColors.border, height: 1),
+                      const SizedBox(height: 32),
+                      const Spacer(),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.navy,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
+                          ),
+                          child: Text(l10n.login),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.orange,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
+                          ),
+                          child: Text(l10n.register),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ));
   }
 }
 

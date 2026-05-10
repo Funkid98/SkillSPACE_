@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:glassmorphism/glassmorphism.dart';
 import 'package:skillspace/core/app_colors.dart';
 import 'package:skillspace/core/theme/app_text_styles.dart';
 import 'package:skillspace/core/utils/responsive.dart';
@@ -81,7 +82,9 @@ class _HeroText extends StatelessWidget {
           child: RichText(
             textAlign: align,
             text: TextSpan(
-              style: AppTextStyles.heroTitle,
+              style: AppTextStyles.heroTitleLight.copyWith(
+                fontSize: isMobile ? 36 : (Responsive.isTablet(context) ? 48 : 60),
+              ),
               children: [
                 TextSpan(text: l10n.heroTitle1),
                 TextSpan(
@@ -99,7 +102,7 @@ class _HeroText extends StatelessWidget {
           child: Text(
             l10n.heroSubtitle,
             textAlign: align,
-            style: AppTextStyles.heroSubtitle,
+            style: AppTextStyles.heroSubtitleLight,
           ),
         ),
         const SizedBox(height: 32),
@@ -285,7 +288,7 @@ class _AnimatedStatBadgeState extends State<_AnimatedStatBadge>
           Text(
             '${widget.prefix} ${widget.label}',
             style: const TextStyle(
-              color: AppColors.textDark,
+              color: Colors.white,
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
@@ -335,22 +338,27 @@ class _HeroImageState extends State<_HeroImage>
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            Container(
-              height: 380,
+            GlassmorphicContainer(
               width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFE8815A), Color(0xFF1B2D6B)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.navy.withValues(alpha: 0.2),
-                    blurRadius: 30,
-                    offset: const Offset(0, 15),
-                  ),
+              height: 380,
+              borderRadius: 24,
+              blur: 20,
+              alignment: Alignment.center,
+              border: 2,
+              linearGradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFFE8815A).withValues(alpha: 0.2),
+                  const Color(0xFF1B2D6B).withValues(alpha: 0.2),
+                ],
+              ),
+              borderGradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.3),
+                  Colors.white.withValues(alpha: 0.1),
                 ],
               ),
               child: ClipRRect(
@@ -550,22 +558,33 @@ class _SatisfactionBadgeState extends State<_SatisfactionBadge>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
+    return GlassmorphicContainer(
+      width: 120,
+      height: 80,
+      borderRadius: 12,
+      blur: 20,
+      alignment: Alignment.center,
+      border: 1,
+      linearGradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withValues(alpha: 0.2),
+          Colors.white.withValues(alpha: 0.1),
+        ],
+      ),
+      borderGradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withValues(alpha: 0.3),
+          Colors.white.withValues(alpha: 0.1),
         ],
       ),
       child: AnimatedBuilder(
         animation: _count,
         builder: (_, __) => Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -573,15 +592,15 @@ class _SatisfactionBadgeState extends State<_SatisfactionBadge>
               style: const TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w900,
-                color: AppColors.textDark,
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               AppLocalizations.of(context).statSatisfaction,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppColors.textGray,
+                color: Colors.white.withValues(alpha: 0.7),
               ),
             ),
           ],

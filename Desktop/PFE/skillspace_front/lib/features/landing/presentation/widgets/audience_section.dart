@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:glassmorphism/glassmorphism.dart';
 import '../../../../core/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/responsive.dart';
@@ -32,6 +33,8 @@ class AudienceSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = Responsive.isMobile(context);
+    final width = MediaQuery.of(context).size.width;
+    final isCompact = width < 1000;
     final l10n = AppLocalizations.of(context);
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
 
@@ -286,11 +289,11 @@ class AudienceSection extends StatelessWidget {
             child: Text(
               l10n.sectionAudienceTitle,
               textAlign: TextAlign.center,
-              style: AppTextStyles.sectionTitle,
+              style: AppTextStyles.sectionTitleLight,
             ),
           ),
           const SizedBox(height: 48),
-          isMobile
+          isCompact
               ? Column(
                   children: [
                     for (int i = 0; i < cards.length; i++) ...[
@@ -332,82 +335,129 @@ class _AudienceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hl = data.highlighted;
-    return Container(
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: hl ? AppColors.navy : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+    final isMobile = Responsive.isMobile(context);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return GlassmorphicContainer(
+          width: constraints.maxWidth,
+          height: isMobile ? 480 : 540,
+          borderRadius: 24,
+          blur: 20,
+          alignment: Alignment.center,
+          border: 2,
+          linearGradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: hl
+                ? [
+                    AppColors.navy.withValues(alpha: 0.9),
+                    AppColors.navy.withValues(alpha: 0.7),
+                  ]
+                : [
+                    Colors.white.withValues(alpha: 0.15),
+                    Colors.white.withValues(alpha: 0.05),
+                  ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: hl ? Colors.white.withValues(alpha: 0.15) : AppColors.iconBg,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(data.icon,
-                color: hl ? Colors.white : AppColors.orange, size: 22),
+          borderGradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: hl
+                ? [
+                    Colors.white.withValues(alpha: 0.3),
+                    Colors.white.withValues(alpha: 0.1),
+                  ]
+                : [
+                    Colors.white.withValues(alpha: 0.2),
+                    Colors.white.withValues(alpha: 0.1),
+                  ],
           ),
-          const SizedBox(height: 16),
-          Text(data.title,
-              style: AppTextStyles.cardTitle
-                  .copyWith(color: hl ? Colors.white : null, fontSize: 18)),
-          Text(data.subtitle,
-              style: TextStyle(
-                  color:
-                      hl ? Colors.white.withValues(alpha: 0.7) : AppColors.textGray,
-                  fontSize: 13)),
-          const SizedBox(height: 20),
-          ...data.features.map(
-            (f) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: hl ? Colors.white70 : AppColors.orange,
-                      shape: BoxShape.circle,
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: hl
+                        ? Colors.white.withValues(alpha: 0.15)
+                        : AppColors.iconBg,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(data.icon,
+                      color: hl ? Colors.white : AppColors.orange, size: 22),
+                ),
+                const SizedBox(height: 16),
+                Text(data.title,
+                    style: AppTextStyles.cardTitleLight
+                        .copyWith(color: Colors.white, fontSize: 18)),
+                Text(data.subtitle,
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 13)),
+                const SizedBox(height: 20),
+                ...data.features.map(
+                  (f) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: hl ? Colors.white70 : AppColors.orange,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(f,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  height: 1.4)),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(f,
-                        style: TextStyle(
-                            color: hl
-                                ? Colors.white.withValues(alpha: 0.9)
-                                : AppColors.textDark,
-                            fontSize: 13,
-                            height: 1.4)),
+                ),
+                const Spacer(),
+                SizedBox(
+                  width: double.infinity,
+                  child: HoverScale(
+                    child: hl
+                        ? ElevatedButton(
+                            onPressed: data.onTap,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.orange,
+                              foregroundColor: Colors.white,
+                              elevation: 8,
+                              shadowColor:
+                                  AppColors.orange.withValues(alpha: 0.5),
+                            ),
+                            child: Text(AppLocalizations.of(context).btnStart),
+                          )
+                        : OutlinedButton(
+                            onPressed: data.onTap,
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              side: const BorderSide(
+                                  color: Colors.white, width: 1.5),
+                              backgroundColor:
+                                  Colors.white.withValues(alpha: 0.05),
+                            ),
+                            child:
+                                Text(AppLocalizations.of(context).btnLearnMore),
+                          ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: hl
-                ? ElevatedButton(
-                    onPressed: data.onTap,
-                    child: Text(AppLocalizations.of(context).btnStart))
-                : OutlinedButton(
-                    onPressed: data.onTap,
-                    child: Text(AppLocalizations.of(context).btnLearnMore)),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

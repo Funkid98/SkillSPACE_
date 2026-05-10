@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:glassmorphism/glassmorphism.dart';
 import '../../../../core/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/responsive.dart';
@@ -20,8 +21,9 @@ class FeaturesSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = Responsive.isMobile(context);
+    final isTablet = Responsive.isTablet(context);
     final l10n = AppLocalizations.of(context);
-    final cols = isMobile ? 1 : 3;
+    final cols = isMobile ? 1 : (isTablet ? 2 : 3);
 
     final items = [
       _FeatureItem(Icons.description_outlined, l10n.feat1Title, l10n.feat1Desc),
@@ -53,7 +55,7 @@ class FeaturesSection extends StatelessWidget {
             child: Text(
               l10n.sectionFeaturesTitle,
               textAlign: TextAlign.center,
-              style: AppTextStyles.sectionTitle,
+              style: AppTextStyles.sectionTitleLight,
             ),
           ),
           const SizedBox(height: 16),
@@ -63,7 +65,7 @@ class FeaturesSection extends StatelessWidget {
             child: Text(
               l10n.sectionFeaturesSubtitle,
               textAlign: TextAlign.center,
-              style: AppTextStyles.sectionSubtitle,
+              style: AppTextStyles.sectionSubtitleLight,
             ),
           ),
           const SizedBox(height: 48),
@@ -163,51 +165,65 @@ class _FeatureCardState extends State<_FeatureCard>
         transform: _hovered
             ? (Matrix4.identity()..translate(0, -4))
             : Matrix4.identity(),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: _hovered
-                ? AppColors.orange.withValues(alpha: 0.3)
-                : Colors.transparent,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: _hovered
-                  ? AppColors.orange.withValues(alpha: 0.08)
-                  : Colors.black.withValues(alpha: 0.04),
-              blurRadius: _hovered ? 20 : 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: _hovered
-                    ? AppColors.orange.withValues(alpha: 0.12)
-                    : AppColors.iconBg,
-                borderRadius: BorderRadius.circular(10),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return GlassmorphicContainer(
+              width: constraints.maxWidth,
+              height: 350,
+              borderRadius: 24,
+              blur: 20,
+              alignment: Alignment.center,
+              border: 1.5,
+              linearGradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: _hovered ? 0.15 : 0.1),
+                  Colors.white.withValues(alpha: _hovered ? 0.08 : 0.05),
+                ],
               ),
-              child: ScaleTransition(
-                scale: _scale,
-                child: RotationTransition(
-                  turns: _rotation,
-                  child: Icon(widget.item.icon,
-                      color: AppColors.orange, size: 22),
+              borderGradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.3),
+                  Colors.white.withValues(alpha: 0.1),
+                ],
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: _hovered
+                            ? AppColors.orange.withValues(alpha: 0.12)
+                            : AppColors.iconBg,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: ScaleTransition(
+                        scale: _scale,
+                        child: RotationTransition(
+                          turns: _rotation,
+                          child: Icon(widget.item.icon,
+                              color: AppColors.orange, size: 22),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(widget.item.title,
+                        style: AppTextStyles.cardTitleLight),
+                    const SizedBox(height: 8),
+                    Text(widget.item.desc, style: AppTextStyles.cardDescLight),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(widget.item.title, style: AppTextStyles.cardTitle),
-            const SizedBox(height: 8),
-            Text(widget.item.desc, style: AppTextStyles.cardDesc),
-          ],
+            );
+          },
         ),
       ),
     );

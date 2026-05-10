@@ -43,25 +43,28 @@ class _LandingPageState extends State<LandingPage> {
   }
 
   void _onScroll() {
+    if (!mounted) return;
     final offset = _scrollController.offset;
-    final offsets = <double, NavSection>{
-      100: NavSection.features,
-      700: NavSection.steps,
-      1300: NavSection.audience,
-    };
+
     NavSection newSection = NavSection.features;
-    for (final entry in offsets.entries) {
-      if (offset >= entry.key - 100) {
-        newSection = entry.value;
-      }
+    if (offset >= 1200) {
+      newSection = NavSection.audience;
+    } else if (offset >= 600) {
+      newSection = NavSection.steps;
     }
+
     if (newSection != _activeSection) {
       setState(() => _activeSection = newSection);
+    } else {
+      final crossedThreshold =
+          (offset > 400) != (_scrollController.offset - 1 > 400);
+      if (crossedThreshold) setState(() {});
     }
   }
 
-  void _handleKey(KeyEvent event) {
-    if (event is KeyDownEvent) {
+  KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    try {
       if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
         _scrollController.animateTo(
           _scrollController.offset + 100,
@@ -75,7 +78,8 @@ class _LandingPageState extends State<LandingPage> {
           curve: Curves.easeOut,
         );
       }
-    }
+    } catch (_) {}
+    return KeyEventResult.ignored;
   }
 
   void _scrollTo(GlobalKey key) {
@@ -102,47 +106,67 @@ class _LandingPageState extends State<LandingPage> {
     final showScrollTop =
         _scrollController.hasClients && _scrollController.offset > 400;
 
-    return Scroll3DVideoBackground(
-      scrollController: _scrollController,
+    return Theme(
+      data: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: Colors.transparent,
+      ),
       child: Scaffold(
+        // Transparent so the DOM-injected video behind Flutter shows through
         backgroundColor: Colors.transparent,
         drawer: NavDrawer(scrollTo: _scrollTo),
-        body: KeyboardListener(
+        body: Focus(
           focusNode: _focusNode,
           autofocus: true,
           onKeyEvent: _handleKey,
           child: Stack(
             children: [
+              // ── Layer 1: Gradient overlay (video lives in DOM, not here) ───
+              // Scroll3DVideoBackground no longer uses HtmlElementView.
+              // It injects a fixed <div> directly into <body> and renders
+              // only the gradient overlay as a Flutter widget.
+              Positioned.fill(
+                child: Scroll3DVideoBackground(
+                  scrollController: _scrollController,
+                ),
+              ),
+
+              // ── Layer 2: Scrollable page content ───────────────────────────
               Positioned.fill(
                 child: SingleChildScrollView(
                   controller: _scrollController,
-                  physics: const BouncingScrollPhysics(),
+                  physics: const ClampingScrollPhysics(),
                   child: Column(
                     children: [
                       const SizedBox(height: 80),
                       HeroSection(
                         onDiscoverTap: () => _scrollTo(SectionKeys.features),
                       ),
-                      _SectionDivider(),
+                      const _SectionDivider(),
                       FeaturesSection(key: SectionKeys.features),
-                      _SectionDivider(),
+                      const _SectionDivider(),
                       StepsSection(key: SectionKeys.steps),
-                      _SectionDivider(),
+                      const _SectionDivider(),
                       AudienceSection(key: SectionKeys.audience),
-                      _SectionDivider(),
+                      const _SectionDivider(),
                       const CtaSection(),
                       const AppFooter(),
                     ],
                   ),
                 ),
               ),
+
+              // ── Layer 3: NavBar (always on top) ────────────────────────────
               Positioned(
                 top: 0,
                 left: 0,
                 right: 0,
-                child:
-                    NavBar(scrollTo: _scrollTo, activeSection: _activeSection),
+                child: NavBar(
+                  scrollTo: _scrollTo,
+                  activeSection: _activeSection,
+                ),
               ),
+
+              // ── Layer 4: Scroll-to-top FAB ─────────────────────────────────
               if (showScrollTop)
                 Positioned(
                   bottom: 32,
@@ -157,7 +181,11 @@ class _LandingPageState extends State<LandingPage> {
   }
 }
 
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
 class _SectionDivider extends StatelessWidget {
+  const _SectionDivider();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -212,6 +240,7 @@ class _ScrollToTopButtonState extends State<_ScrollToTopButton>
       child: Material(
         elevation: 4,
         borderRadius: BorderRadius.circular(16),
+        color: Colors.transparent,
         child: InkWell(
           onTap: widget.onTap,
           borderRadius: BorderRadius.circular(16),
@@ -229,8 +258,11 @@ class _ScrollToTopButtonState extends State<_ScrollToTopButton>
                 ),
               ],
             ),
-            child: const Icon(Icons.arrow_upward_rounded,
-                color: Colors.white, size: 22),
+            child: const Icon(
+              Icons.arrow_upward_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
           ),
         ),
       ),

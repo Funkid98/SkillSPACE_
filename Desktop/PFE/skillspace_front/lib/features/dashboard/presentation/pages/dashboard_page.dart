@@ -6,7 +6,6 @@ import '../../../../core/app_colors.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../shared/widgets/animated_reveal.dart';
 import '../../../../core/l10n/app_localizations.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 

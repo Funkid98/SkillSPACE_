@@ -1,5 +1,7 @@
 import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:glassmorphism/glassmorphism.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import '../../../../core/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -48,6 +50,9 @@ class StepsSection extends StatelessWidget {
             RevealDirection.fromRight,
           ];
 
+    final width = MediaQuery.of(context).size.width;
+    final isCompact = width < 1100;
+
     return Container(
       color: Colors.transparent,
       padding: EdgeInsets.symmetric(
@@ -61,11 +66,11 @@ class StepsSection extends StatelessWidget {
             child: Text(
               l10n.sectionStepsTitle,
               textAlign: TextAlign.center,
-              style: AppTextStyles.sectionTitle,
+              style: AppTextStyles.sectionTitleLight,
             ),
           ),
           const SizedBox(height: 48),
-          isMobile
+          isCompact
               ? Column(
                   children: [
                     for (int i = 0; i < steps.length; i++) ...[
@@ -266,62 +271,78 @@ class _StepCardState extends State<_StepCard> {
           return Transform(
             transform: transform,
             alignment: FractionalOffset.center,
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.02 + hoverVal * 0.02),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                    color:
-                        Colors.white.withValues(alpha: 0.05 + hoverVal * 0.1)),
-                boxShadow: _isHovered
-                    ? [
-                        BoxShadow(
-                          color: AppColors.orange.withValues(alpha: 0.1),
-                          blurRadius: 30,
-                          offset: Offset(-_x * 10, -_y * 10 + 10),
-                        )
-                      ]
-                    : [],
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.orange,
-                          AppColors.orange.withValues(alpha: 0.7)
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.orange
-                              .withValues(alpha: 0.3 + hoverVal * 0.2),
-                          blurRadius: 16,
-                          offset: const Offset(0, 8),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return GlassmorphicContainer(
+                  width: constraints.maxWidth,
+                  height: 420,
+                  borderRadius: 24,
+                  blur: 20,
+                  alignment: Alignment.center,
+                  border: 1.5,
+                  linearGradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.1),
+                      Colors.white.withValues(alpha: 0.05),
+                    ],
+                  ),
+                  borderGradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.3),
+                      Colors.white.withValues(alpha: 0.1),
+                    ],
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.orange,
+                                AppColors.orange.withValues(alpha: 0.7)
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.orange
+                                    .withValues(alpha: 0.3 + hoverVal * 0.2),
+                                blurRadius: 16,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child:
+                                _AnimatedStepNumber(number: widget.index + 1),
+                          ),
                         ),
+                        const SizedBox(height: 24),
+                        Text(widget.step.title,
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.cardTitleLight
+                                .copyWith(fontSize: 18)),
+                        const SizedBox(height: 12),
+                        Text(widget.step.desc,
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.cardDescLight
+                                .copyWith(fontSize: 14)),
                       ],
                     ),
-                    child: Center(
-                      child: _AnimatedStepNumber(number: widget.index + 1),
-                    ),
                   ),
-                  const SizedBox(height: 24),
-                  Text(widget.step.title,
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.cardTitle.copyWith(fontSize: 18)),
-                  const SizedBox(height: 12),
-                  Text(widget.step.desc,
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.cardDesc.copyWith(fontSize: 14)),
-                ],
-              ),
+                );
+              },
             ),
           );
         },
@@ -361,7 +382,6 @@ class _HighTech3DReveal extends StatefulWidget {
   final Duration delay;
 
   const _HighTech3DReveal({
-    super.key,
     required this.child,
     required this.index,
     this.delay = Duration.zero,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:glassmorphism/glassmorphism.dart';
 import '../../../../core/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/responsive.dart';
@@ -16,56 +17,87 @@ class AppFooter extends StatelessWidget {
     final isMobile = Responsive.isMobile(context);
     final l10n = AppLocalizations.of(context);
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final height = isMobile ? 250.0 : 160.0;
 
-    return Container(
-      color: Colors.white,
-      padding: EdgeInsets.symmetric(
-        horizontal: Responsive.hPad(context),
-        vertical: 28,
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: isAr
-                ? [
-                    _SocialIcons(),
-                    const Spacer(),
-                    const Text('SkillSpace', style: AppTextStyles.footerBrand),
-                  ]
-                : [
-                    const Text('SkillSpace', style: AppTextStyles.footerBrand),
-                    const Spacer(),
-                    _SocialIcons(),
-                  ],
+    return ClipRect(
+      // ✅ Prevents painter from drawing outside bounds
+      child: GlassmorphicContainer(
+        width: MediaQuery.of(context).size.width,
+        height: height,
+        borderRadius: 2,
+        blur: 20,
+        alignment: Alignment.center,
+        border: 1,
+        linearGradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: 0.1),
+            Colors.white.withValues(alpha: 0.05),
+          ],
+        ),
+        borderGradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: 0.2),
+            Colors.white.withValues(alpha: 0.1),
+          ],
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: Responsive.hPad(context),
+            vertical: 16,
           ),
-          if (!isMobile) const SizedBox(height: 20),
-          if (!isMobile)
-            const Divider(color: AppColors.border, height: 1),
-          if (!isMobile) const SizedBox(height: 16),
-          Row(
-            children: isAr
-                ? [
-                    _FooterLink(l10n.footerContact),
-                    const SizedBox(width: 20),
-                    _FooterLink(l10n.footerTos),
-                    const SizedBox(width: 20),
-                    _FooterLink(l10n.footerPrivacy),
-                    const Spacer(),
-                    if (!isMobile)
-                      Text(l10n.footerRights, style: AppTextStyles.footerLink),
-                  ]
-                : [
-                    if (!isMobile)
-                      Text(l10n.footerRights, style: AppTextStyles.footerLink),
-                    const Spacer(),
-                    _FooterLink(l10n.footerPrivacy),
-                    const SizedBox(width: 20),
-                    _FooterLink(l10n.footerTos),
-                    const SizedBox(width: 20),
-                    _FooterLink(l10n.footerContact),
-                  ],
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                children: isAr
+                    ? [
+                        _SocialIcons(),
+                        const Spacer(),
+                        const Text('SkillSpace',
+                            style: AppTextStyles.footerBrand),
+                      ]
+                    : [
+                        const Text('SkillSpace',
+                            style: AppTextStyles.footerBrandLight),
+                        const Spacer(),
+                        _SocialIcons(),
+                      ],
+              ),
+              if (!isMobile) const SizedBox(height: 15),
+              if (!isMobile) const Divider(color: Colors.white12, height: 1),
+              if (!isMobile) const SizedBox(height: 12),
+              Row(
+                children: isAr
+                    ? [
+                        _FooterLink(l10n.footerContact),
+                        const SizedBox(width: 20),
+                        _FooterLink(l10n.footerTos),
+                        const SizedBox(width: 20),
+                        _FooterLink(l10n.footerPrivacy),
+                        const Spacer(),
+                        if (!isMobile)
+                          Text(l10n.footerRights,
+                              style: AppTextStyles.footerLinkLight),
+                      ]
+                    : [
+                        if (!isMobile)
+                          Text(l10n.footerRights,
+                              style: AppTextStyles.footerLinkLight),
+                        const Spacer(),
+                        _FooterLink(l10n.footerPrivacy),
+                        const SizedBox(width: 20),
+                        _FooterLink(l10n.footerTos),
+                        const SizedBox(width: 20),
+                        _FooterLink(l10n.footerContact),
+                      ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -76,10 +108,12 @@ class _SocialIcons extends StatelessWidget {
     final accentColor = isEmail ? AppColors.orange : const Color(0xFF0077B5);
     final icon = isEmail ? Icons.alternate_email_rounded : Icons.link_rounded;
     final title = isEmail ? 'Get in Touch' : 'LinkedIn Profile';
-    final subtitle = isEmail 
-        ? 'We would love to hear from you' 
+    final subtitle = isEmail
+        ? 'We would love to hear from you'
         : 'Connect with our professional network';
-    final value = isEmail ? 'skillspace2026@gmail.com' : 'linkedin.com/company/skillspace';
+    final value = isEmail
+        ? 'skillspace2026@gmail.com'
+        : 'linkedin.com/company/skillspace';
     final primaryActionText = isEmail ? 'Copy Email' : 'Visit Profile';
 
     showGeneralDialog(
@@ -198,11 +232,13 @@ class _SocialIcons extends StatelessWidget {
                             // Data Box
                             Container(
                               width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 18, horizontal: 16),
                               decoration: BoxDecoration(
                                 color: Colors.black.withOpacity(0.3),
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                                border: Border.all(
+                                    color: Colors.white.withOpacity(0.08)),
                               ),
                               child: Text(
                                 value,
@@ -241,22 +277,28 @@ class _SocialIcons extends StatelessWidget {
                                         Clipboard.setData(const ClipboardData(
                                             text: 'skillspace2026@gmail.com'));
                                         Navigator.pop(context);
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
                                           SnackBar(
-                                            content: const Text('Email copied successfully!'),
+                                            content: const Text(
+                                                'Email copied successfully!'),
                                             behavior: SnackBarBehavior.floating,
                                             backgroundColor: accentColor,
                                             shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(12),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                             ),
                                           ),
                                         );
                                       } else {
-                                        final url = Uri.parse('https://www.linkedin.com/company/skillspace');
+                                        final url = Uri.parse(
+                                            'https://www.linkedin.com/company/skillspace');
                                         if (await canLaunchUrl(url)) {
                                           await launchUrl(url);
                                         }
-                                        if (context.mounted) Navigator.pop(context);
+                                        if (context.mounted) {
+                                          Navigator.pop(context);
+                                        }
                                       }
                                     },
                                   ),
@@ -330,7 +372,8 @@ class _CardButtonState extends State<_CardButton> {
           height: 48,
           decoration: BoxDecoration(
             color: widget.isPrimary
-                ? (widget.color ?? AppColors.orange).withOpacity(_hovered ? 0.9 : 1.0)
+                ? (widget.color ?? AppColors.orange)
+                    .withOpacity(_hovered ? 0.9 : 1.0)
                 : Colors.white.withOpacity(_hovered ? 0.15 : 0.05),
             borderRadius: BorderRadius.circular(12),
             border: widget.isPrimary
@@ -339,7 +382,8 @@ class _CardButtonState extends State<_CardButton> {
             boxShadow: widget.isPrimary && _hovered
                 ? [
                     BoxShadow(
-                      color: (widget.color ?? AppColors.orange).withOpacity(0.3),
+                      color:
+                          (widget.color ?? AppColors.orange).withOpacity(0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     )
@@ -378,7 +422,8 @@ class _SocialIcon extends StatefulWidget {
   State<_SocialIcon> createState() => _SocialIconState();
 }
 
-class _SocialIconState extends State<_SocialIcon> with SingleTickerProviderStateMixin {
+class _SocialIconState extends State<_SocialIcon>
+    with SingleTickerProviderStateMixin {
   bool _hovered = false;
   late final AnimationController _controller;
   late final Animation<double> _scale;
@@ -474,9 +519,9 @@ class _FooterLinkState extends State<_FooterLink> {
       child: AnimatedDefaultTextStyle(
         duration: const Duration(milliseconds: 150),
         style: TextStyle(
-          color: _hovered ? AppColors.orange : AppColors.textGray,
+          color: _hovered ? AppColors.orange : Colors.white70,
           fontSize: 13,
-          fontFamily: 'Roboto',
+          fontFamily: 'Inter',
         ),
         child: Text(widget.text),
       ),

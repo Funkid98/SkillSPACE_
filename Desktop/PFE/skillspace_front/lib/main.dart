@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'core/l10n/l10n_cubit.dart';
 import 'core/l10n/app_localizations.dart';
+import 'core/keyboard_fix.dart'; // ← ADD THIS IMPORT (put keyboard_fix.dart in lib/core/)
 import 'package:pfe/core/network/api_client.dart';
 import 'package:pfe/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
@@ -16,6 +17,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ✅ FIX: Must be called AFTER ensureInitialized and BEFORE runApp.
+  // Intercepts bad synthesized keyboard events on Flutter Web (Alt+Tab desync)
+  // before Flutter's engine assertion fires. Safe no-op on mobile/desktop.
+  KeyboardFix.apply();
+
   final prefs = await SharedPreferences.getInstance();
   final staySignedIn = prefs.getBool('stay_signed_in') ?? true;
 
@@ -32,11 +39,13 @@ void main() async {
       providers: [
         BlocProvider(create: (context) => L10nCubit()),
         BlocProvider(
-            create: (context) =>
-                AuthCubit(authRepository: authRepository)..checkAuthStatus()),
+          create: (context) =>
+              AuthCubit(authRepository: authRepository)..checkAuthStatus(),
+        ),
         BlocProvider(
-            create: (context) =>
-                ForgotPasswordCubit(authRepository: authRepository)),
+          create: (context) =>
+              ForgotPasswordCubit(authRepository: authRepository),
+        ),
       ],
       child: const SkillSpaceApp(),
     ),
@@ -44,9 +53,7 @@ void main() async {
 }
 
 class SkillSpaceApp extends StatelessWidget {
-  const SkillSpaceApp({
-    super.key,
-  });
+  const SkillSpaceApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -54,71 +61,17 @@ class SkillSpaceApp extends StatelessWidget {
       builder: (context, locale) {
         return BlocBuilder<AuthCubit, AuthState>(
           builder: (context, authState) {
-            Widget home;
-
-            if (authState.loggedInUser != null) {
-              if (authState.role == UserRole.recruteur) {
-                home = Builder(
-                  builder: (ctx) => recruiter.RecruiterShell(
-                    currentLocale: locale,
-                    onLocaleChanged: (newLocale) =>
-                        ctx.read<L10nCubit>().setLocale(newLocale),
-                    onLogout: () async {
-                      await ctx.read<AuthCubit>().logout();
-                      if (ctx.mounted) {
-                        Navigator.of(ctx, rootNavigator: true)
-                            .pushAndRemoveUntil(
-                          MaterialPageRoute(
-                              builder: (_) => const LandingPage()),
-                          (route) => false,
-                        );
-                      }
-                    },
-                  ),
-                );
-              } else if (authState.role == UserRole.formateur) {
-                home = Builder(
-                  builder: (ctx) => MainNavigationScreen(
-                    onLogout: () async {
-                      await ctx.read<AuthCubit>().logout();
-                      if (ctx.mounted) {
-                        Navigator.of(ctx, rootNavigator: true)
-                            .pushAndRemoveUntil(
-                          MaterialPageRoute(
-                              builder: (_) => const LandingPage()),
-                          (route) => false,
-                        );
-                      }
-                    },
-                  ),
-                );
-              } else {
-                home = Builder(
-                  builder: (ctx) => DashboardShell(
-                    initialUserData: authState.loggedInUser,
-                    onLogout: () async {
-                      await ctx.read<AuthCubit>().logout();
-                      if (ctx.mounted) {
-                        Navigator.of(ctx, rootNavigator: true)
-                            .pushAndRemoveUntil(
-                          MaterialPageRoute(
-                              builder: (_) => const LandingPage()),
-                          (route) => false,
-                        );
-                      }
-                    },
-                  ),
-                );
-              }
-            } else {
-              home = const LandingPage();
-            }
+            final Widget home = _resolveHome(context, authState, locale);
 
             return MaterialApp(
+              // Key forces a full rebuild when auth state changes (login/logout)
               key: ValueKey(authState.loggedInUser != null),
               title: 'SkillSpace',
               debugShowCheckedModeBanner: false,
-              theme: AppTheme.light,
+              theme: AppTheme.light.copyWith(
+                scaffoldBackgroundColor: Colors.transparent,
+                canvasColor: Colors.transparent,
+              ),
               locale: locale,
               supportedLocales: const [
                 Locale('en'),
@@ -136,6 +89,48 @@ class SkillSpaceApp extends StatelessWidget {
             );
           },
         );
+      },
+    );
+  }
+
+  // FIX: Extracted home resolution into a helper to reduce nesting and
+  // avoid rebuilding the entire MaterialApp widget tree inline.
+  Widget _resolveHome(
+      BuildContext context, AuthState authState, Locale locale) {
+    if (authState.loggedInUser == null) {
+      return const LandingPage();
+    }
+
+    return Builder(
+      builder: (ctx) {
+        Future<void> handleLogout() async {
+          await ctx.read<AuthCubit>().logout();
+          if (ctx.mounted) {
+            Navigator.of(ctx, rootNavigator: true).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const LandingPage()),
+              (route) => false,
+            );
+          }
+        }
+
+        switch (authState.role) {
+          case UserRole.recruteur:
+            return recruiter.RecruiterShell(
+              currentLocale: locale,
+              onLocaleChanged: (newLocale) =>
+                  ctx.read<L10nCubit>().setLocale(newLocale),
+              onLogout: handleLogout,
+            );
+
+          case UserRole.formateur:
+            return MainNavigationScreen(onLogout: handleLogout);
+
+          default:
+            return DashboardShell(
+              initialUserData: authState.loggedInUser,
+              onLogout: handleLogout,
+            );
+        }
       },
     );
   }
