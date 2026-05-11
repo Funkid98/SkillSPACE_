@@ -79,11 +79,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                           fontSize: 22,
                                           fontWeight: FontWeight.bold,
                                           color: isDark ? Colors.white : const Color(0xFF1E3A8A))),
-                                  IconButton(
-                                    icon: const Icon(Icons.logout,
-                                        color: Color(0xFFE9652B)),
-                                    onPressed: () =>
-                                        _showLogoutConfirmation(localCtx),
+                                  Row(
+                                    children: [
+                                      ReactiveThemeBtn.fromScratch(
+                                        onTap: () {},
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(8.0),
+                                          child: Icon(
+                                            isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                                            color: const Color(0xFFE9652B),
+                                          ),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.logout,
+                                            color: Color(0xFFE9652B)),
+                                        onPressed: () =>
+                                            _showLogoutConfirmation(localCtx),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               );
@@ -213,6 +227,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       _buildNavItem(
                           sideCtx, 2, 'Mes formations', Icons.school_outlined),
                       const Spacer(),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: _ThemeToggle(),
+                      ),
+                      const SizedBox(height: 16),
                       // Logout
                       const Divider(),
                       _buildNavItem(sideCtx, -1, 'Déconnexion', Icons.logout,
@@ -371,6 +390,108 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ThemeToggle extends StatelessWidget {
+  const _ThemeToggle();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ReactiveMode.isDarkMode(context);
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+            color: (isDark ? Colors.white : Colors.grey).withOpacity(0.1)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: ReactiveThemeBtn.fromScratch(
+              onTap: () {},
+              child: _ThemeBtn(
+                icon: Icons.light_mode_rounded,
+                label: 'Clair',
+                isActive: !isDark,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: ReactiveThemeBtn.fromScratch(
+              onTap: () {},
+              child: _ThemeBtn(
+                icon: Icons.dark_mode_rounded,
+                label: 'Sombre',
+                isActive: isDark,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThemeBtn extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isActive;
+
+  const _ThemeBtn({
+    required this.icon,
+    required this.label,
+    required this.isActive,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ReactiveMode.isDarkMode(context);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: isActive
+            ? (isDark ? const Color(0xFFE9652B) : Colors.white)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: isActive && !isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                )
+              ]
+            : null,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon,
+              size: 14,
+              color: isActive
+                  ? (isDark ? Colors.white : const Color(0xFFE9652B))
+                  : (isDark ? Colors.white60 : Colors.grey[600])),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
+              color: isActive
+                  ? (isDark ? Colors.white : const Color(0xFF1E3A8A))
+                  : (isDark ? Colors.white60 : Colors.grey[600]),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1469,13 +1469,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-          color: Colors.white, borderRadius: BorderRadius.circular(24)),
+          color: isDark ? const Color(0xFF1E293B) : Colors.white, borderRadius: BorderRadius.circular(24)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Formations les plus suivies',
               style: GoogleFonts.outfit(
-                  fontSize: 20, fontWeight: FontWeight.bold)),
+                  fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1E293B))),
           const SizedBox(height: 24),
           if (formations.isEmpty)
             Center(
@@ -1507,12 +1507,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Expanded(
                           child: Text(f['name'],
                               style:
-                                  const TextStyle(fontWeight: FontWeight.w500),
+                                  TextStyle(fontWeight: FontWeight.w500, color: isDark ? Colors.white : const Color(0xFF1E293B)),
                               overflow: TextOverflow.ellipsis),
                         ),
                         Text('${f['count']}',
                             style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
+                                TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1E293B))),
                       ],
                     ),
                     const SizedBox(height: 8),

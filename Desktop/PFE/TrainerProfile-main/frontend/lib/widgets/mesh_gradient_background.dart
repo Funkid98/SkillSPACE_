@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:reactive_theme/reactive_theme.dart';
 
 class MeshGradientBackground extends StatelessWidget {
   final Widget child;
@@ -8,19 +9,26 @@ class MeshGradientBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ReactiveMode.isDarkMode(context);
     return Stack(
       children: [
         // Base Gradient
         Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFF8FAFC),
-                Color(0xFFF1F5F9),
-                Color(0xFFE2E8F0),
-              ],
+              colors: isDark
+                  ? [
+                      const Color(0xFF0B1120),
+                      const Color(0xFF111827),
+                      const Color(0xFF0F172A),
+                    ]
+                  : [
+                      const Color(0xFFF8FAFC),
+                      const Color(0xFFF1F5F9),
+                      const Color(0xFFE2E8F0),
+                    ],
             ),
           ),
         ),
@@ -33,7 +41,9 @@ class MeshGradientBackground extends StatelessWidget {
             height: 400,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF60A5FA).withOpacity(0.12),
+              color: isDark 
+                  ? const Color(0xFF3B82F6).withOpacity(0.08)
+                  : const Color(0xFF60A5FA).withOpacity(0.12),
             ),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
@@ -50,7 +60,9 @@ class MeshGradientBackground extends StatelessWidget {
             height: 500,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFFFB923C).withOpacity(0.08),
+              color: isDark
+                  ? const Color(0xFFEA580C).withOpacity(0.05)
+                  : const Color(0xFFFB923C).withOpacity(0.08),
             ),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 120, sigmaY: 120),

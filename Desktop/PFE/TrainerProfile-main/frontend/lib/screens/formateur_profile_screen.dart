@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:reactive_theme/reactive_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -533,6 +534,8 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ReactiveMode.isDarkMode(context);
+
     return BlocBuilder<TrainerCubit, TrainerState>(
       builder: (context, state) {
         if (_isLoading && state.profileData == null) {
@@ -541,180 +544,179 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
         }
 
         return Scaffold(
-            backgroundColor: const Color(0xFFF8F9FA),
-            body: FadeInUp(
-              duration: const Duration(milliseconds: 600),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    FadeInDown(
-                      delay: const Duration(milliseconds: 100),
-                      child: Text('Mon profil formateur',
-                          style: GoogleFonts.outfit(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: darkColor)),
-                    ),
-                    const SizedBox(height: 8),
-                    FadeInDown(
-                      delay: const Duration(milliseconds: 200),
-                      child: Text(
-                          'Gérez vos informations et domaines d\'expertise',
-                          style: GoogleFonts.outfit(color: Colors.grey[600])),
-                    ),
-                    const SizedBox(height: 32),
-                    FadeInUp(
-                        delay: const Duration(milliseconds: 300),
-                        child: _buildCompletenessCard()),
-                    const SizedBox(height: 32),
-                    _buildSectionCard('Informations personnelles', [
-                      _buildResponsiveRow([
-                        _buildInputField('Prénom', _firstNameController),
-                        _buildInputField('Nom', _lastNameController),
-                      ]),
-                      _buildResponsiveRow([
-                        _buildInputField('Email', _emailController),
-                        _buildInputField('Téléphone', _phoneController),
-                      ]),
-                      _buildResponsiveRow([
-                        _buildInputField(
-                            'Titre professionnel', _jobTitleController),
-                        _buildInputField('Localisation', _locationController),
-                      ]),
+          backgroundColor: Colors.transparent,
+          body: FadeInUp(
+            duration: const Duration(milliseconds: 600),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FadeInDown(
+                    delay: const Duration(milliseconds: 100),
+                    child: Text('Mon profil formateur',
+                        style: GoogleFonts.outfit(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : darkColor)),
+                  ),
+                  const SizedBox(height: 8),
+                  FadeInDown(
+                    delay: const Duration(milliseconds: 200),
+                    child: Text(
+                        'Gérez vos informations et domaines d\'expertise',
+                        style: GoogleFonts.outfit(color: Colors.grey[600])),
+                  ),
+                  const SizedBox(height: 32),
+                  FadeInUp(
+                      delay: const Duration(milliseconds: 300),
+                      child: _buildCompletenessCard()),
+                  const SizedBox(height: 32),
+                  _buildSectionCard('Informations personnelles', [
+                    _buildResponsiveRow([
+                      _buildInputField('Prénom', _firstNameController),
+                      _buildInputField('Nom', _lastNameController),
+                    ]),
+                    _buildResponsiveRow([
+                      _buildInputField('Email', _emailController),
+                      _buildInputField('Téléphone', _phoneController),
+                    ]),
+                    _buildResponsiveRow([
                       _buildInputField(
-                        'Bio',
-                        _bioController,
-                        maxLines: 4,
-                        labelSuffix: GestureDetector(
-                          onTap: _isGeneratingBio ? null : _handleGenerateBio,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (_isGeneratingBio)
-                                const SizedBox(
-                                  width: 12,
-                                  height: 12,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Color(0xFFE9652B)),
-                                )
-                              else
-                                const Icon(Icons.auto_awesome,
-                                    size: 14, color: Color(0xFFE9652B)),
-                              const SizedBox(width: 4),
-                              Text(
-                                _isGeneratingBio
-                                    ? 'Génération...'
-                                    : 'Générer avec IA',
-                                style: const TextStyle(
-                                  color: Color(0xFFE9652B),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                          'Titre professionnel', _jobTitleController),
+                      _buildInputField('Localisation', _locationController),
+                    ]),
+                    _buildInputField(
+                      'Bio',
+                      _bioController,
+                      maxLines: 4,
+                      labelSuffix: GestureDetector(
+                        onTap: _isGeneratingBio ? null : _handleGenerateBio,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_isGeneratingBio)
+                              const SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Color(0xFFE9652B)),
+                              )
+                            else
+                              const Icon(Icons.auto_awesome,
+                                  size: 14, color: Color(0xFFE9652B)),
+                            const SizedBox(width: 4),
+                            Text(
+                              _isGeneratingBio
+                                  ? 'Génération...'
+                                  : 'Générer avec IA',
+                              style: const TextStyle(
+                                color: Color(0xFFE9652B),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                    ]),
-                    const SizedBox(height: 32),
-                    _buildSectionCard('Photo de profil', [
-                      _buildPhotoUpload(),
-                    ]),
-                    const SizedBox(height: 32),
-                    _buildSectionCard('Domaines d\'expertise', [
-                      const SizedBox(height: 8),
-                      BlocBuilder<ExpertiseCubit, ExpertiseState>(
-                        builder: (context, expertiseState) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Wrap(
-                                spacing: 12,
-                                runSpacing: 12,
-                                children: expertiseState.tags
-                                    .map((e) => _buildExpertiseTag(e))
-                                    .toList(),
-                              ),
-                              const SizedBox(height: 24),
-                              _buildAddExpertiseField(expertiseState),
-                            ],
-                          );
-                        },
-                      ),
-                    ]),
-                    const SizedBox(height: 32),
-                    _buildSectionCard('Certifications & Diplômes', [
-                      ...certificationsList
-                          .map((c) => _buildCertificationItem(c)),
-                      const SizedBox(height: 16),
-                      TextButton.icon(
-                        onPressed: _showAddCertificationDialog,
-                        icon: const Icon(Icons.add,
-                            size: 20, color: Color(0xFFE9652B)),
-                        label: Text('Ajouter une certification',
-                            style: TextStyle(
-                                color: primaryColor,
-                                fontWeight: FontWeight.bold)),
-                      )
-                    ]),
-                    const SizedBox(height: 32),
-                    _buildSectionCard('Liens professionnels', [
-                      _buildResponsiveRow([
-                        _buildInputField('LinkedIn', _linkedInController),
-                        _buildInputField(
-                            'Portfolio / Site web', _portfolioController,
-                            isRequired: false),
-                      ]),
-                    ]),
-                    const SizedBox(height: 40),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        OutlinedButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 32, vertical: 16),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                            side: const BorderSide(color: Color(0xFF1E293B)),
-                          ),
-                          child: const Text('Annuler',
-                              style: TextStyle(
-                                  color: Color(0xFF1E293B),
-                                  fontWeight: FontWeight.bold)),
-                        ),
-                        const SizedBox(width: 16),
-                        ElevatedButton(
-                          onPressed: _isLoading ? null : _saveProfile,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryColor,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor:
-                                primaryColor.withOpacity(0.6),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 32, vertical: 16),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text('Enregistrer',
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.bold)),
-                        ),
-                      ],
                     ),
-                    const SizedBox(height: 60),
+                  ]),
+                  const SizedBox(height: 32),
+                  _buildSectionCard('Photo de profil', [
+                    _buildPhotoUpload(),
+                  ]),
+                  const SizedBox(height: 32),
+                  _buildSectionCard('Domaines d\'expertise', [
+                    const SizedBox(height: 8),
+                    BlocBuilder<ExpertiseCubit, ExpertiseState>(
+                      builder: (context, expertiseState) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 12,
+                              children: expertiseState.tags
+                                  .map((e) => _buildExpertiseTag(e))
+                                  .toList(),
+                            ),
+                            const SizedBox(height: 24),
+                            _buildAddExpertiseField(expertiseState),
+                          ],
+                        );
+                      },
+                    ),
+                  ]),
+                  const SizedBox(height: 32),
+                  _buildSectionCard('Certifications & Diplômes', [
+                    ...certificationsList
+                        .map((c) => _buildCertificationItem(c)),
+                    const SizedBox(height: 16),
+                    TextButton.icon(
+                      onPressed: _showAddCertificationDialog,
+                      icon: const Icon(Icons.add,
+                          size: 20, color: Color(0xFFE9652B)),
+                      label: Text('Ajouter une certification',
+                          style: TextStyle(
+                              color: primaryColor,
+                              fontWeight: FontWeight.bold)),
+                    )
+                  ]),
+                  const SizedBox(height: 32),
+                  _buildSectionCard('Liens professionnels', [
+                    _buildResponsiveRow([
+                      _buildInputField('LinkedIn', _linkedInController),
+                      _buildInputField(
+                          'Portfolio / Site web', _portfolioController,
+                          isRequired: false),
+                    ]),
+                  ]),
+                  const SizedBox(height: 40),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 32, vertical: 16),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          side: const BorderSide(color: Color(0xFF1E293B)),
+                        ),
+                        child: const Text('Annuler',
+                            style: TextStyle(
+                                color: Color(0xFF1E293B),
+                                fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _saveProfile,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor:
+                              primaryColor.withOpacity(0.6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 32, vertical: 16),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Enregistrer',
+                                style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 60),
                 ],
               ),
             ),
@@ -726,10 +728,13 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
 
   Widget _buildCompletenessCard() {
     final currentScore = _calculateCompleteness();
+    final isDark = ReactiveMode.isDarkMode(context);
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-          color: Colors.white, borderRadius: BorderRadius.circular(24)),
+          color:
+              isDark ? const Color(0xFF1E293B).withOpacity(0.5) : Colors.white,
+          borderRadius: BorderRadius.circular(24)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -738,7 +743,9 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
             children: [
               Text('Profil complété à',
                   style: GoogleFonts.outfit(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : const Color(0xFF1E293B))),
               Text('$currentScore%',
                   style: GoogleFonts.outfit(
                       fontSize: 18,
@@ -764,17 +771,22 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
   }
 
   Widget _buildSectionCard(String title, List<Widget> children) {
+    final isDark = ReactiveMode.isDarkMode(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-          color: Colors.white, borderRadius: BorderRadius.circular(24)),
+          color:
+              isDark ? const Color(0xFF1E293B).withOpacity(0.5) : Colors.white,
+          borderRadius: BorderRadius.circular(24)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title,
               style: GoogleFonts.outfit(
-                  fontSize: 20, fontWeight: FontWeight.bold)),
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF1E293B))),
           const SizedBox(height: 24),
           ...children,
         ],
@@ -784,6 +796,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
 
   Widget _buildInputField(String label, TextEditingController controller,
       {int maxLines = 1, bool isRequired = true, Widget? labelSuffix}) {
+    final isDark = ReactiveMode.isDarkMode(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 24.0),
       child: Column(
@@ -793,7 +806,10 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
             children: [
               Text(label,
                   style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.w500, fontSize: 15)),
+                      fontWeight: FontWeight.w500,
+                      fontSize: 15,
+                      color:
+                          isDark ? Colors.white70 : const Color(0xFF1E293B))),
               if (isRequired)
                 Text(' *',
                     style: GoogleFonts.outfit(
@@ -909,6 +925,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
 
   Widget _buildAddExpertiseField(ExpertiseState expertiseState) {
     final cubit = context.read<ExpertiseCubit>();
+    final isDark = ReactiveMode.isDarkMode(context);
     return StatefulBuilder(
       builder: (context, localSetState) {
         return Column(
@@ -919,6 +936,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                 Expanded(
                   child: TextField(
                     controller: _expertiseController,
+                    style: TextStyle(color: isDark ? Colors.white : const Color(0xFF1E293B)),
                     onChanged: (value) => cubit.fetchSuggestions(value),
                     onSubmitted: (value) {
                       cubit.addTag(value);
@@ -927,9 +945,9 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                     decoration: InputDecoration(
                       hintText: 'Saisir Votre Expertise ...',
                       hintStyle:
-                          TextStyle(color: Colors.grey[400], fontSize: 14),
+                          TextStyle(color: isDark ? Colors.white30 : Colors.grey[400], fontSize: 14),
                       filled: true,
-                      fillColor: const Color(0xFFF9FAFB),
+                      fillColor: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF9FAFB),
                       prefixIcon: const Icon(Icons.auto_awesome,
                           color: Color(0xFFE9652B), size: 20),
                       suffixIcon: expertiseState.isLoading
@@ -945,10 +963,10 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                           : null,
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[200]!)),
+                          borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.grey[200]!)),
                       enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[200]!)),
+                          borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.grey[200]!)),
                       focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(
@@ -979,9 +997,10 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
               const SizedBox(height: 8),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey[200]!),
+                  border: Border.all(
+                      color: isDark ? Colors.white10 : Colors.grey[200]!),
                   boxShadow: [
                     BoxShadow(
                         color: Colors.black.withValues(alpha: 0.06),
@@ -1040,10 +1059,11 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
   Widget _buildCertificationItem(Certification c) {
     bool isPdf = c.fileType == 'pdf';
 
+    final isDark = ReactiveMode.isDarkMode(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -1052,7 +1072,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
             offset: const Offset(0, 6),
           ),
         ],
-        border: Border.all(color: Colors.grey[100]!),
+        border: Border.all(color: isDark ? Colors.white10 : Colors.grey[100]!),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
@@ -1376,6 +1396,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
   Widget _buildPopupField(
       String label, TextEditingController controller, String hint,
       {TextInputType keyboard = TextInputType.text}) {
+    final isDark = ReactiveMode.isDarkMode(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Column(
@@ -1385,22 +1406,23 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
               style: GoogleFonts.outfit(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Colors.grey[700])),
+                  color: isDark ? Colors.white70 : Colors.grey[700])),
           const SizedBox(height: 6),
           TextField(
             controller: controller,
             keyboardType: keyboard,
+            style: TextStyle(color: isDark ? Colors.white : const Color(0xFF1E293B)),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+              hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.grey[400], fontSize: 14),
               filled: true,
-              fillColor: const Color(0xFFF9FAFB),
+              fillColor: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF9FAFB),
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[200]!)),
+                  borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.grey[200]!)),
               enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[200]!)),
+                  borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.grey[200]!)),
               focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide:
