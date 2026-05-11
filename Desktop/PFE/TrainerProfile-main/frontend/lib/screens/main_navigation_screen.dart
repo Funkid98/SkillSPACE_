@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:reactive_theme/reactive_theme.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
@@ -45,7 +46,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 1000;
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ReactiveMode.isDarkMode(context);
     return BlocProvider(
       create: (context) => TrainerCubit(_dashboardService, _formateurService)
         ..fetchAllData(userId),
@@ -163,7 +164,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 ? profilePic
                 : (trainerState.profileData?.profilePicture ?? '');
 
-            final isDark = Theme.of(context).brightness == Brightness.dark;
+            final isDark = ReactiveMode.isDarkMode(context);
             return Container(
                 width: 260,
                 decoration: BoxDecoration(
@@ -229,7 +230,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Widget _buildNavItem(
       BuildContext context, int index, String title, IconData icon,
       {Color? color}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ReactiveMode.isDarkMode(context);
     // Both Dashboard (0) and Mes formations (2) are active when _selectedIndex is 0 or 2
     bool isDashboardActive = _selectedIndex == 0 || _selectedIndex == 2;
     bool isSelected = false;
@@ -287,7 +288,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   void _showLogoutConfirmation(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ReactiveMode.isDarkMode(context);
     showDialog(
       context: context,
       builder: (dialogCtx) => Dialog(

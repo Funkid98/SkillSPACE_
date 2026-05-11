@@ -48,6 +48,7 @@ dependencies:
   animate_do: ^3.3.4
   flutter_staggered_animations: ^1.0.0
   calendar_date_picker2: ^2.0.1
+  reactive_theme: ^2.1.0
 
 dev_dependencies:
   flutter_test:

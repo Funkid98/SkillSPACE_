@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:reactive_theme/reactive_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -37,7 +38,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ReactiveMode.isDarkMode(context);
     return BlocBuilder<TrainerCubit, TrainerState>(
       builder: (context, state) {
         if (state.status == TrainerStatus.loading) {
@@ -196,7 +197,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final f = dashboardData.formateur;
     return LayoutBuilder(builder: (context, constraints) {
       final isSmall = constraints.maxWidth < 600;
-      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final isDark = ReactiveMode.isDarkMode(context);
 
       return _buildGlassCard(
         child: isSmall
@@ -330,7 +331,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildHeaderStat(String value, String label,
       {bool isRating = false, bool isSmall = false}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ReactiveMode.isDarkMode(context);
     return Padding(
       padding: EdgeInsets.only(left: isSmall ? 0 : 40.0),
       child: Column(
@@ -448,7 +449,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildStatCard(
       String title, String value, IconData icon, Color bgColor, Color iconColor,
       {double? width}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ReactiveMode.isDarkMode(context);
     return Container(
       width: width,
       padding: const EdgeInsets.all(24),
@@ -567,7 +568,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildNewFormationCard() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ReactiveMode.isDarkMode(context);
     return InkWell(
       onTap: () => _showFormationDialog(null),
       borderRadius: BorderRadius.circular(24),
@@ -611,7 +612,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildEmptyFormationMessage() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ReactiveMode.isDarkMode(context);
     return Container(
       width: 380,
       height: 480,
@@ -676,7 +677,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) {
-        final isDark = Theme.of(dialogContext).brightness == Brightness.dark;
+        final isDark = ReactiveMode.isDarkMode(dialogContext);
         return StatefulBuilder(
           builder: (dialogContext, setDialogState) {
             return Dialog(
@@ -1091,7 +1092,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       {int maxLines = 1,
       TextInputType keyboardType = TextInputType.text,
       List<TextInputFormatter>? inputFormatters}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ReactiveMode.isDarkMode(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 24.0),
       child: Column(
@@ -1144,7 +1145,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildDateTimePickerField(String label,
       TextEditingController controller, IconData icon, VoidCallback onTap) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ReactiveMode.isDarkMode(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 24.0),
       child: Column(
@@ -1223,7 +1224,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildRecentParticipants(DashboardData dashboardData) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ReactiveMode.isDarkMode(context);
     final rawStudents = (dashboardData.stats['recentStudents'] as List?) ?? [];
 
     // Filter: Only show students enrolled in the trainer's active formations
@@ -1319,7 +1320,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildGrowthChart(DashboardData dashboardData) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ReactiveMode.isDarkMode(context);
     final growth = dashboardData.stats['growthData'] as List;
     return SizedBox(
       height: 400,
@@ -1459,7 +1460,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildTopSkills(DashboardData dashboardData) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ReactiveMode.isDarkMode(context);
     final formations = dashboardData.stats['topSkills'] as List;
     final maxCount = formations.isNotEmpty
         ? (formations.first['count'] as num).toDouble()
@@ -1575,7 +1576,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildGlassCard(
       {required Widget child, EdgeInsets? padding, double? height}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ReactiveMode.isDarkMode(context);
     return Container(
       height: height,
       decoration: BoxDecoration(
