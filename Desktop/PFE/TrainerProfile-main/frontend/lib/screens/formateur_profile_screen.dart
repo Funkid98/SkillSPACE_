@@ -826,18 +826,19 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
           TextField(
             controller: controller,
             maxLines: maxLines,
+            style: TextStyle(color: isDark ? Colors.white : const Color(0xFF1E293B)),
             decoration: InputDecoration(
               filled: true,
-              fillColor: const Color(0xFFF9FAFB),
+              fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF9FAFB),
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[200]!)),
+                  borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.grey[200]!)),
               enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[200]!)),
+                  borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.grey[200]!)),
               focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.blue, width: 2)),
+                  borderSide: const BorderSide(color: Color(0xFFE9652B), width: 2)),
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
@@ -947,7 +948,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                       hintStyle:
                           TextStyle(color: isDark ? Colors.white30 : Colors.grey[400], fontSize: 14),
                       filled: true,
-                      fillColor: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF9FAFB),
+                      fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF9FAFB),
                       prefixIcon: const Icon(Icons.auto_awesome,
                           color: Color(0xFFE9652B), size: 20),
                       suffixIcon: expertiseState.isLoading
@@ -1416,7 +1417,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
               hintText: hint,
               hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.grey[400], fontSize: 14),
               filled: true,
-              fillColor: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF9FAFB),
+              fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF9FAFB),
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.grey[200]!)),

@@ -10,6 +10,10 @@ const formationSchema = new mongoose.Schema({
   description: { type: String },
   tags: [{ type: String }],
   studentCount: { type: Number, default: 0 },
+  students: [{
+    name: { type: String, required: true },
+    joinedAt: { type: Date, default: Date.now }
+  }],
   rating: { type: Number, default: 0 },
   reviewCount: { type: Number, default: 0 },
   price: { type: Number, default: 0 },

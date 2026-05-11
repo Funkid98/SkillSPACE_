@@ -4,11 +4,19 @@ const jwt = require('jsonwebtoken');
 const { suggestExpertiseDomains, generateBio: generateBioAI, validatePortfolioUrlAI, suggestFormationContent } = require('../services/ai-service');
 const { sendVerificationEmail, sendLoginSuccessEmail } = require('../services/emailService');
 
-// Helper to generate JWT
 const generateToken = (id) => {
   return jwt.sign({ id, sub: id }, process.env.JWT_SECRET, {
     expiresIn: '7d',
   });
+};
+
+const formatTimeDiff = (date) => {
+  const diffInHours = Math.floor((new Date() - date) / (1000 * 60 * 60));
+  if (diffInHours < 1) return 'À l\'instant';
+  if (diffInHours < 24) return `Il y a ${diffInHours}h`;
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays === 1) return 'Hier';
+  return `Il y a ${diffInDays} jours`;
 };
 
 
@@ -243,24 +251,29 @@ const getDashboardData = async (req, res) => {
       .slice(0, 5)
       .map(f => ({ name: f.title, count: f.studentCount }));
 
-    // Dynamically calculate recent students with more realistic names
-    // Dynamically calculate recent students with more realistic names
-    const studentNames = ['Alice Dupont', 'Thomas Bernard', 'Sarah Martin', 'Kevin Leroy', 'Léa Petit', 'Nicolas Morel'];
-    let recentStudents = [];
-    let nameIdx = 0;
-    
+    // Extract real recent students from formations
+    let allStudents = [];
     formations.forEach(f => {
-      if (f.studentCount > 0 && recentStudents.length < 5) {
-        recentStudents.push({
-          id: recentStudents.length + 1,
-          name: studentNames[nameIdx++ % studentNames.length],
-          course: f.title,
-          time: Math.random() > 0.5 ? 'Aujourd\'hui' : 'Hier'
+      if (f.students && f.students.length > 0) {
+        f.students.forEach(s => {
+          allStudents.push({
+            id: s._id || Math.random().toString(),
+            name: s.name,
+            course: f.title,
+            joinedAt: new Date(s.joinedAt),
+            // Format time dynamically based on distance from now
+            time: formatTimeDiff(new Date(s.joinedAt))
+          });
         });
       }
     });
 
-    // Fallback to mock data if empty (to "active" the UI)
+    // Sort by joinedAt descending
+    allStudents.sort((a, b) => b.joinedAt - a.joinedAt);
+
+    let recentStudents = allStudents.slice(0, 5);
+
+    // Fallback to mock data ONLY if absolutely empty to keep UI populated during demo
     if (recentStudents.length === 0) {
       recentStudents = [
         { id: 1, name: 'Alice Dupont', course: 'SQL for Data Analytics', time: 'Hier' },
@@ -695,9 +708,15 @@ const getFormationById = async (req, res) => {
 const enrollFormation = async (req, res) => {
   try {
     const { id } = req.params;
+    const { userName } = req.body;
+    const studentName = userName || 'Étudiant Anonyme';
+
     const updated = await Formation.findByIdAndUpdate(
       id,
-      { $inc: { studentCount: 1 } },
+      { 
+        $inc: { studentCount: 1 },
+        $push: { students: { name: studentName } }
+      },
       { returnDocument: 'after' }
     );
 

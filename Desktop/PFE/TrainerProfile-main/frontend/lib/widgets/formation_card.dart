@@ -62,6 +62,7 @@ class _FormationCardState extends State<FormationCard> {
                 children: [
                   // Header with background and Level
                   Stack(
+                    clipBehavior: Clip.none,
                     children: [
                       Container(
                         height: 100,
@@ -98,7 +99,7 @@ class _FormationCardState extends State<FormationCard> {
                         ),
                       ),
                       Positioned(
-                        bottom: -20,
+                        bottom: -12,
                         left: 20,
                         child: Container(
                           padding: const EdgeInsets.all(12),
