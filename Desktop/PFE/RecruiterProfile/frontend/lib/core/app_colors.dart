@@ -20,4 +20,9 @@ class AppColors {
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
   static const Color glass = Color(0x1AFFFFFF);
+  // Dark Mode Colors
+  static const Color bgDark = Color(0xFF0F172A);
+  static const Color surfaceDark = Color(0xFF1E293B);
+  static const Color borderDark = Color(0xFF334155);
+  static const Color textLight = Color(0xFFF8FAFC);
 }

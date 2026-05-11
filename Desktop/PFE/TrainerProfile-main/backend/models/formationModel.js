@@ -21,6 +21,9 @@ const formationSchema = new mongoose.Schema({
   },
   category: { type: String, required: true },
   imageUrl: { type: String },
+  meetLink: { type: String, required: true },
+  date: { type: Date, required: true },
+  time: { type: String, required: true },
 }, {
   timestamps: true
 });

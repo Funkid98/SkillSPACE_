@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
+import 'package:reactive_theme/reactive_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../cubit/profile_cubit.dart';
 import '../../data/models/profile_model.dart';
@@ -164,19 +165,25 @@ class _QuizModalState extends State<QuizModal> {
   Widget build(BuildContext context) {
     Widget content;
 
+    final isDark = ReactiveMode.isDarkMode(context);
     if (_step == 0) {
       content = Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('Quel niveau pensez-vous avoir ?',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text('Quel niveau pensez-vous avoir ?',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: isDark ? Colors.white : AppColors.textDark)),
           const SizedBox(height: 16),
           ...['Beginner', 'Intermediate', 'Advanced']
               .map((level) => RadioListTile(
-                    title: Text(level),
+                    title: Text(level,
+                        style: TextStyle(
+                            color: isDark ? Colors.white : AppColors.textDark)),
                     value: level,
                     groupValue: _selectedLevel,
-                    activeColor: AppColors.navy,
+                    activeColor: AppColors.orange,
                     onChanged: (val) {
                       setState(() => _selectedLevel = val.toString());
                     },
@@ -186,7 +193,7 @@ class _QuizModalState extends State<QuizModal> {
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.navy,
+                  backgroundColor: AppColors.orange,
                   foregroundColor: Colors.white),
               onPressed: () => _generateQuiz(),
               child: const Text('Commencer le quiz'),
@@ -202,21 +209,24 @@ class _QuizModalState extends State<QuizModal> {
               widget.parentContext.read<ProfileCubit>().saveProfile();
               Navigator.of(context).pop();
             },
-            child: const Text('Passer plus tard (Sauvegardé comme débutant)',
-                style: TextStyle(color: AppColors.textGray, fontSize: 13)),
+            child: Text('Passer plus tard (Sauvegardé comme débutant)',
+                style: TextStyle(
+                    color: isDark ? Colors.white38 : AppColors.textGray,
+                    fontSize: 13)),
           ),
         ],
       );
     } else if (_step == 1) {
-      content = const Padding(
-        padding: EdgeInsets.all(32.0),
+      content = Padding(
+        padding: const EdgeInsets.all(32.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(color: AppColors.orange),
-            SizedBox(height: 16),
+            const CircularProgressIndicator(color: AppColors.orange),
+            const SizedBox(height: 16),
             Text('Génération du quiz AI...',
-                style: TextStyle(color: AppColors.textGray)),
+                style: TextStyle(
+                    color: isDark ? Colors.white60 : AppColors.textGray)),
           ],
         ),
       );
@@ -241,11 +251,15 @@ class _QuizModalState extends State<QuizModal> {
                       fontSize: 12)),
             ),
           Text('Question ${_currentQuestionIndex + 1}/${_questions.length}',
-              style: const TextStyle(color: AppColors.textGray, fontSize: 13)),
+              style: TextStyle(
+                  color: isDark ? Colors.white38 : AppColors.textGray,
+                  fontSize: 13)),
           const SizedBox(height: 8),
           Text(q['question'] ?? 'No question text',
-              style:
-                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: isDark ? Colors.white : AppColors.textDark)),
           const SizedBox(height: 16),
           ...(q['options'] as List<dynamic>).map((opt) => Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
@@ -255,26 +269,35 @@ class _QuizModalState extends State<QuizModal> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(
+                          color:
+                              isDark ? AppColors.borderDark : AppColors.border),
                       borderRadius: BorderRadius.circular(8),
+                      color: isDark
+                          ? Colors.white.withOpacity(0.05)
+                          : Colors.transparent,
                     ),
                     child: Text(opt.toString(),
-                        style: const TextStyle(fontSize: 14)),
+                        style: TextStyle(
+                            fontSize: 14,
+                            color:
+                                isDark ? Colors.white70 : AppColors.textDark)),
                   ),
                 ),
               )),
         ],
       );
     } else if (_step == 3) {
-      content = const Padding(
-        padding: EdgeInsets.all(32.0),
+      content = Padding(
+        padding: const EdgeInsets.all(32.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(color: AppColors.navy),
-            SizedBox(height: 16),
+            const CircularProgressIndicator(color: AppColors.navy),
+            const SizedBox(height: 16),
             Text('Évaluation de vos capacités par l\'IA...',
-                style: TextStyle(color: AppColors.textGray),
+                style: TextStyle(
+                    color: isDark ? Colors.white60 : AppColors.textGray),
                 textAlign: TextAlign.center),
           ],
         ),
@@ -286,25 +309,30 @@ class _QuizModalState extends State<QuizModal> {
           children: [
             const Icon(Icons.check_circle, color: Colors.green, size: 64),
             const SizedBox(height: 16),
-            const Text('Analyse Terminée',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text('Analyse Terminée',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: isDark ? Colors.white : AppColors.textDark)),
             const SizedBox(height: 16),
             Text('Niveau Déterminé: $_determinedLevel',
-                style: const TextStyle(
+                style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
-                    color: AppColors.navy)),
+                    color: isDark ? AppColors.orange : AppColors.navy)),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.navy.withOpacity(0.1),
+                color: isDark
+                    ? AppColors.orange.withOpacity(0.1)
+                    : AppColors.navy.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 'Score Brut: ${_answersAnalysis.where((a) => a['is_correct'] == true).fold(0, (sum, a) => sum + (_answersAnalysis.indexOf(a) < 4 ? 15 : 40))}/100',
-                style: const TextStyle(
-                    color: AppColors.navy,
+                style: TextStyle(
+                    color: isDark ? AppColors.orange : AppColors.navy,
                     fontWeight: FontWeight.bold,
                     fontSize: 13),
               ),
@@ -314,16 +342,21 @@ class _QuizModalState extends State<QuizModal> {
               padding: const EdgeInsets.all(12),
               width: double.infinity,
               decoration: BoxDecoration(
-                  color: AppColors.bgAlt,
+                  color:
+                      isDark ? Colors.white.withOpacity(0.05) : AppColors.bgAlt,
                   borderRadius: BorderRadius.circular(8)),
               child: Text(_evaluationFeedback,
-                  style:
-                      const TextStyle(fontSize: 14, color: AppColors.textDark),
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: isDark ? Colors.white70 : AppColors.textDark),
                   textAlign: TextAlign.center),
             ),
             const SizedBox(height: 24),
-            const Text('Détails des Réponses',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('Détails des Réponses',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: isDark ? Colors.white : AppColors.textDark)),
             const SizedBox(height: 12),
             ..._answersAnalysis.map((analysis) {
               final bool isCorrect = analysis['is_correct'] ?? false;
@@ -337,8 +370,8 @@ class _QuizModalState extends State<QuizModal> {
                           : Colors.red.withOpacity(0.3)),
                   borderRadius: BorderRadius.circular(8),
                   color: isCorrect
-                      ? Colors.green.withOpacity(0.05)
-                      : Colors.red.withOpacity(0.05),
+                      ? Colors.green.withOpacity(isDark ? 0.1 : 0.05)
+                      : Colors.red.withOpacity(isDark ? 0.1 : 0.05),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -348,8 +381,12 @@ class _QuizModalState extends State<QuizModal> {
                       children: [
                         Expanded(
                           child: Text(analysis['question'] ?? '',
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 14)),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: isDark
+                                      ? Colors.white
+                                      : AppColors.textDark)),
                         ),
                         const SizedBox(width: 8),
                         Container(
@@ -410,8 +447,12 @@ class _QuizModalState extends State<QuizModal> {
                     icon: const Icon(Icons.save_rounded, size: 18),
                     label: const Text('Sauvegarder'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.navy,
-                      side: const BorderSide(color: AppColors.navy, width: 1.5),
+                      foregroundColor: isDark ? Colors.white : AppColors.navy,
+                      side: BorderSide(
+                          color: isDark
+                              ? Colors.white.withOpacity(0.5)
+                              : AppColors.navy,
+                          width: 1.5),
                       minimumSize: const Size(0, 48),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -468,12 +509,17 @@ class _QuizModalState extends State<QuizModal> {
         children: [
           const Icon(Icons.stars, color: Colors.amber, size: 64),
           const SizedBox(height: 16),
-          const Text('Excellent !',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          Text('Excellent !',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: isDark ? Colors.white : AppColors.textDark)),
           const SizedBox(height: 16),
           Text(
               'Vous avez maîtrisé le test $currentLevelText. Voulez-vous passer le test $nextLevelText pour améliorer votre score ?',
-              style: const TextStyle(fontSize: 14, color: AppColors.textDark),
+              style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.white70 : AppColors.textDark),
               textAlign: TextAlign.center),
           const SizedBox(height: 24),
           SizedBox(
@@ -501,14 +547,16 @@ class _QuizModalState extends State<QuizModal> {
                   context, 'Niveau $currentLevelText Sauvegardé!');
             },
             child: Text('Garder mon niveau $currentLevelText',
-                style:
-                    const TextStyle(color: AppColors.textGray, fontSize: 13)),
+                style: TextStyle(
+                    color: isDark ? Colors.white38 : AppColors.textGray,
+                    fontSize: 13)),
           ),
         ],
       );
     }
 
     return Dialog(
+      backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         padding: const EdgeInsets.all(24),

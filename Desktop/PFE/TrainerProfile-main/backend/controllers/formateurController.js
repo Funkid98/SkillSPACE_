@@ -244,9 +244,11 @@ const getDashboardData = async (req, res) => {
       .map(f => ({ name: f.title, count: f.studentCount }));
 
     // Dynamically calculate recent students with more realistic names
+    // Dynamically calculate recent students with more realistic names
     const studentNames = ['Alice Dupont', 'Thomas Bernard', 'Sarah Martin', 'Kevin Leroy', 'Léa Petit', 'Nicolas Morel'];
-    const recentStudents = [];
+    let recentStudents = [];
     let nameIdx = 0;
+    
     formations.forEach(f => {
       if (f.studentCount > 0 && recentStudents.length < 5) {
         recentStudents.push({
@@ -257,6 +259,17 @@ const getDashboardData = async (req, res) => {
         });
       }
     });
+
+    // Fallback to mock data if empty (to "active" the UI)
+    if (recentStudents.length === 0) {
+      recentStudents = [
+        { id: 1, name: 'Alice Dupont', course: 'SQL for Data Analytics', time: 'Hier' },
+        { id: 2, name: 'Thomas Bernard', course: 'Introduction to Data Visualization', time: 'Hier' },
+        { id: 3, name: 'Sarah Martin', course: 'Cybersecurity Fundamentals', time: 'Aujourd\'hui' },
+        { id: 4, name: 'Kevin Leroy', course: 'DevOps CI/CD Masterclass', time: 'Aujourd\'hui' },
+        { id: 5, name: 'Léa Petit', course: 'Fullstack Web Development with React & Node', time: 'Hier' }
+      ];
+    }
 
     // Dynamically calculate recent activity
     const recentActivity = formations.map((f, i) => ({
@@ -360,7 +373,10 @@ const seedDummyData = async (req, res) => {
         category: 'AI',
         duration: '45h',
         level: 'Avancé',
-        description: 'Complete guide from basics to advanced ML architectures.'
+        description: 'Complete guide from basics to advanced ML architectures.',
+        meetLink: 'https://meet.google.com/abc-defg-hij',
+        date: new Date(),
+        time: '14:00'
       },
       {
         trainerId: formateur._id,
@@ -372,7 +388,10 @@ const seedDummyData = async (req, res) => {
         category: 'Development',
         duration: '60h',
         level: 'Intermédiaire',
-        description: 'Build real-world apps with the MERN stack.'
+        description: 'Build real-world apps with the MERN stack.',
+        meetLink: 'https://meet.google.com/abc-defg-hij',
+        date: new Date(),
+        time: '10:00'
       },
       {
         trainerId: formateur._id,
@@ -384,7 +403,10 @@ const seedDummyData = async (req, res) => {
         category: 'Data Science',
         duration: '15h',
         level: 'Débutant',
-        description: 'Learn to present data effectively.'
+        description: 'Learn to present data effectively.',
+        meetLink: 'https://meet.google.com/abc-defg-hij',
+        date: new Date(),
+        time: '16:00'
       },
       {
         trainerId: formateur._id,
@@ -396,7 +418,10 @@ const seedDummyData = async (req, res) => {
         category: 'IT Security',
         duration: '25h',
         level: 'Débutant',
-        description: 'Protect your systems from cyber threats.'
+        description: 'Protect your systems from cyber threats.',
+        meetLink: 'https://meet.google.com/abc-defg-hij',
+        date: new Date(),
+        time: '18:30'
       },
       {
         trainerId: formateur._id,
@@ -408,7 +433,10 @@ const seedDummyData = async (req, res) => {
         category: 'DevOps',
         duration: '35h',
         level: 'Avancé',
-        description: 'Automate your deployment pipeline.'
+        description: 'Automate your deployment pipeline.',
+        meetLink: 'https://meet.google.com/abc-defg-hij',
+        date: new Date(),
+        time: '09:00'
       },
       {
         trainerId: formateur._id,
@@ -420,7 +448,10 @@ const seedDummyData = async (req, res) => {
         category: 'Design',
         duration: '20h',
         level: 'Intermédiaire',
-        description: 'Create stunning and intuitive mobile interfaces.'
+        description: 'Create stunning and intuitive mobile interfaces.',
+        meetLink: 'https://meet.google.com/abc-defg-hij',
+        date: new Date(),
+        time: '11:00'
       },
       {
         trainerId: formateur._id,
@@ -432,7 +463,10 @@ const seedDummyData = async (req, res) => {
         category: 'AI',
         duration: '40h',
         level: 'Avancé',
-        description: 'Building modern neural networks.'
+        description: 'Building modern neural networks.',
+        meetLink: 'https://meet.google.com/abc-defg-hij',
+        date: new Date(),
+        time: '15:00'
       },
       {
         trainerId: formateur._id,
@@ -444,7 +478,10 @@ const seedDummyData = async (req, res) => {
         category: 'Data',
         duration: '12h',
         level: 'Débutant',
-        description: 'Extract and analyze data like a pro.'
+        description: 'Extract and analyze data like a pro.',
+        meetLink: 'https://meet.google.com/abc-defg-hij',
+        date: new Date(),
+        time: '08:00'
       }
     ];
 
@@ -506,21 +543,48 @@ const validateUrl = async (req, res) => {
 const createFormation = async (req, res) => {
   try {
     const { userId } = req.params;
+    console.log(`[CreateFormation] Request for User: ${userId}`);
+    console.log(`[CreateFormation] Body:`, JSON.stringify(req.body, null, 2));
+
     const formateur = await Formateur.findById(userId);
 
     if (!formateur) {
+      console.error(`[CreateFormation] Trainer ${userId} not found`);
       return res.status(404).json({ message: 'Profil formateur non trouvé' });
     }
 
-    const newFormation = new Formation({
+    const formationData = {
       ...req.body,
       trainerId: formateur._id
-    });
+    };
+
+    // Explicitly handle date if it's a string
+    if (formationData.date && typeof formationData.date === 'string') {
+      if (formationData.date.includes('/')) {
+        const parts = formationData.date.split('/');
+        if (parts.length === 3) {
+          const day = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+          const year = parseInt(parts[2], 10);
+          formationData.date = new Date(year, month, day);
+        }
+      } else {
+        formationData.date = new Date(formationData.date);
+      }
+    }
+
+    const newFormation = new Formation(formationData);
 
     const saved = await newFormation.save();
+    console.log(`[CreateFormation] Success: ${saved._id}`);
     res.status(201).json(saved);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la création de la formation', error: error.message });
+    console.error(`[CreateFormation] Error:`, error);
+    res.status(500).json({ 
+      message: 'Erreur lors de la création de la formation', 
+      error: error.message,
+      details: error.errors // Include validation details if any
+    });
   }
 };
 

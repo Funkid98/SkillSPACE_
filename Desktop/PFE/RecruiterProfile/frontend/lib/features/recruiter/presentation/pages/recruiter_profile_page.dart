@@ -4,6 +4,7 @@ import 'package:country_picker/country_picker.dart';
 import 'package:country_flags/country_flags.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart'; // for kIsWeb
+import 'package:reactive_theme/reactive_theme.dart';
 import '../cubits/recruiter_profile_cubit.dart';
 import '../../data/models/company_profile_model.dart';
 import '../../../../core/app_colors.dart';
@@ -113,8 +114,9 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
         _selectedCountryCode = null;
         if (_selectedCountry != null) {
           try {
-            final country = CountryService().getAll().firstWhere(
-                (c) => c.name == _selectedCountry || c.displayName == _selectedCountry);
+            final country = CountryService().getAll().firstWhere((c) =>
+                c.name == _selectedCountry ||
+                c.displayName == _selectedCountry);
             _selectedCountryCode = country.countryCode;
           } catch (_) {
             _selectedCountryCode = null;
@@ -149,7 +151,9 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
       try {
         String? finalLogoUrl;
         if (_logoBytes != null && _logoName != null) {
-          finalLogoUrl = await context.read<RecruiterProfileCubit>().uploadLogo(_logoBytes!, _logoName!);
+          finalLogoUrl = await context
+              .read<RecruiterProfileCubit>()
+              .uploadLogo(_logoBytes!, _logoName!);
         }
 
         final locationString = [
@@ -158,7 +162,8 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
         ].where((s) => s != null && s.isNotEmpty).join(', ');
 
         final cubit = context.read<RecruiterProfileCubit>();
-        final logoUrl = finalLogoUrl ?? (cubit.state as RecruiterProfileLoaded).profile.logoUrl;
+        final logoUrl = finalLogoUrl ??
+            (cubit.state as RecruiterProfileLoaded).profile.logoUrl;
 
         final profile = CompanyProfile(
           entreprise: _entrepriseController.text,
@@ -173,7 +178,8 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
         cubit.updateProfile(profile);
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('Erreur: $e'), backgroundColor: Colors.red));
         }
       } finally {
         setState(() => _isUploading = false);
@@ -191,7 +197,8 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
       },
       builder: (context, state) {
         if (state is RecruiterProfileLoading ||
-            state is RecruiterProfileInitial || _isUploading) {
+            state is RecruiterProfileInitial ||
+            _isUploading) {
           return const Center(
               child: CircularProgressIndicator(color: AppColors.orange));
         }
@@ -206,6 +213,8 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
 
   Widget _buildContent(CompanyProfile profile,
       {required RecruiterLocalizations l10n}) {
+    final isDark = ReactiveMode.isDarkMode(context);
+
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
           Responsive.hPad(context), 24, Responsive.hPad(context), 40),
@@ -220,10 +229,10 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
               direction: RevealDirection.fromTop,
               child: Text(
                 l10n.companyProfileTitle,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.textDark),
+                    color: isDark ? Colors.white : AppColors.textDark),
               ),
             ),
             const SizedBox(height: 6),
@@ -232,7 +241,9 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
               direction: RevealDirection.fromTop,
               child: Text(
                 l10n.companyProfileSubtitle,
-                style: const TextStyle(fontSize: 15, color: AppColors.textGray),
+                style: TextStyle(
+                    fontSize: 15,
+                    color: isDark ? Colors.white60 : AppColors.textGray),
               ),
             ),
             const SizedBox(height: 32),
@@ -296,18 +307,21 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text("Pays",
+                            Text("Pays",
                                 style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.textDark)),
+                                    color: isDark
+                                        ? Colors.white
+                                        : AppColors.textDark)),
                             const SizedBox(height: 8),
                             InkWell(
                               onTap: () {
                                 showCountryPicker(
                                   context: context,
                                   showPhoneCode: false,
-                                  customFlagBuilder: (country) => CountryFlag.fromCountryCode(
+                                  customFlagBuilder: (country) =>
+                                      CountryFlag.fromCountryCode(
                                     country.countryCode,
                                     height: 18,
                                     width: 24,
@@ -325,7 +339,8 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                                   onSelect: (Country country) {
                                     setState(() {
                                       _selectedCountry = country.name;
-                                      _selectedCountryCode = country.countryCode;
+                                      _selectedCountryCode =
+                                          country.countryCode;
                                     });
                                   },
                                 );
@@ -333,8 +348,14 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                               child: Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: AppColors.bg,
+                                  color: isDark
+                                      ? Colors.white.withOpacity(0.05)
+                                      : AppColors.bg,
                                   borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                      color: isDark
+                                          ? AppColors.borderDark
+                                          : Colors.transparent),
                                 ),
                                 child: Row(
                                   mainAxisAlignment:
@@ -344,7 +365,10 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                                       child: Row(
                                         children: [
                                           if (_selectedCountryCode != null) ...[
-                                            CountryFlag.fromCountryCode(_selectedCountryCode!, height: 16, width: 24),
+                                            CountryFlag.fromCountryCode(
+                                                _selectedCountryCode!,
+                                                height: 16,
+                                                width: 24),
                                             const SizedBox(width: 12),
                                           ],
                                           Expanded(
@@ -352,10 +376,18 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                                                 _selectedCountry ??
                                                     "Choisir un pays...",
                                                 style: TextStyle(
-                                                    color: _selectedCountry != null
-                                                        ? AppColors.textDark
-                                                        : AppColors.textGray),
-                                                overflow: TextOverflow.ellipsis),
+                                                    color:
+                                                        _selectedCountry != null
+                                                            ? (isDark
+                                                                ? Colors.white
+                                                                : AppColors
+                                                                    .textDark)
+                                                            : (isDark
+                                                                ? Colors.white38
+                                                                : AppColors
+                                                                    .textGray)),
+                                                overflow:
+                                                    TextOverflow.ellipsis),
                                           ),
                                         ],
                                       ),
@@ -427,13 +459,16 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
 
   Widget _buildSectionCard(
       {required String title, required IconData icon, required Widget child}) {
+    final isDark = ReactiveMode.isDarkMode(context);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
+        border:
+            Border.all(color: isDark ? AppColors.borderDark : AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -443,10 +478,10 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
               Icon(icon, size: 20, color: AppColors.orange),
               const SizedBox(width: 12),
               Text(title,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textDark)),
+                      color: isDark ? Colors.white : AppColors.textDark)),
             ],
           ),
           const SizedBox(height: 24),
@@ -460,24 +495,28 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
       {required String label,
       required TextEditingController controller,
       required IconData icon}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textDark)),
+                color: isDark ? Colors.white : AppColors.textDark)),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           decoration: InputDecoration(
             filled: true,
-            fillColor: AppColors.bg,
-            prefixIcon: Icon(icon, size: 18, color: AppColors.textGray),
+            fillColor: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
+            prefixIcon: Icon(icon,
+                size: 18, color: isDark ? Colors.white38 : AppColors.textGray),
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none),
+                borderSide: isDark
+                    ? BorderSide(color: AppColors.borderDark)
+                    : BorderSide.none),
             contentPadding: const EdgeInsets.all(16),
           ),
         ),
@@ -490,14 +529,15 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
       required String? value,
       required List<String> items,
       required Function(String?) onChanged}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textDark)),
+                color: isDark ? Colors.white : AppColors.textDark)),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: items.contains(value) ? value : null,
@@ -507,10 +547,12 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
           onChanged: onChanged,
           decoration: InputDecoration(
             filled: true,
-            fillColor: AppColors.bg,
+            fillColor: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none),
+                borderSide: isDark
+                    ? BorderSide(color: AppColors.borderDark)
+                    : BorderSide.none),
             contentPadding: const EdgeInsets.all(16),
           ),
         ),
@@ -519,28 +561,46 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
   }
 
   Widget _buildLogoUpload(RecruiterLocalizations l10n, String currentUrl) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: _pickLogo,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: AppColors.bg,
+          color: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.orange.withValues(alpha: 0.3)),
+          border: Border.all(
+              color: isDark
+                  ? AppColors.borderDark
+                  : AppColors.orange.withValues(alpha: 0.3)),
         ),
         child: Column(
           children: [
             if (_logoBytes != null)
               Image.memory(_logoBytes!, height: 100)
             else if (currentUrl.isNotEmpty)
-              Image.network(currentUrl, height: 100, errorBuilder: (ctx, _, __) => const Icon(Icons.business, size: 64, color: AppColors.textGray))
+              Image.network(currentUrl,
+                  height: 100,
+                  errorBuilder: (ctx, _, __) => const Icon(Icons.business,
+                      size: 64, color: AppColors.textGray))
             else
-              const Icon(Icons.cloud_upload_outlined, size: 32, color: AppColors.textGray),
+              const Icon(Icons.cloud_upload_outlined,
+                  size: 32, color: AppColors.textGray),
             const SizedBox(height: 16),
-            Text(_isUploading ? "Téléchargement..." : (_logoName ?? l10n.uploadLogoHint), textAlign: TextAlign.center, style: const TextStyle(fontSize: 14, color: AppColors.textDark)),
+            Text(
+                _isUploading
+                    ? "Téléchargement..."
+                    : (_logoName ?? l10n.uploadLogoHint),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 14,
+                    color: isDark ? Colors.white : AppColors.textDark)),
             const SizedBox(height: 4),
-            const Text('PNG, JPG ou SVG, 2 Mo max', style: TextStyle(fontSize: 12, color: AppColors.textGray)),
+            Text('PNG, JPG ou SVG, 2 Mo max',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? Colors.white38 : AppColors.textGray)),
           ],
         ),
       ),

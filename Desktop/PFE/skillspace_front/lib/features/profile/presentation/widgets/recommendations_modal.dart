@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:reactive_theme/reactive_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/app_colors.dart';
@@ -100,16 +101,18 @@ class _RecommendationsModalState extends State<RecommendationsModal> {
   @override
   Widget build(BuildContext context) {
     Widget content;
+    final isDark = ReactiveMode.isDarkMode(context);
     if (_isLoading) {
-      content = const Padding(
-        padding: EdgeInsets.all(32.0),
+      content = Padding(
+        padding: const EdgeInsets.all(32.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(color: AppColors.navy),
-            SizedBox(height: 16),
+            const CircularProgressIndicator(color: AppColors.orange),
+            const SizedBox(height: 16),
             Text('Recherche de formations adaptées...',
-                style: TextStyle(color: AppColors.textGray)),
+                style: TextStyle(
+                    color: isDark ? Colors.white60 : AppColors.textGray)),
           ],
         ),
       );
@@ -139,15 +142,17 @@ class _RecommendationsModalState extends State<RecommendationsModal> {
           children: [
             Row(
               children: [
-                const Icon(Icons.school, color: AppColors.navy, size: 28),
+                Icon(Icons.school,
+                    color: isDark ? AppColors.orange : AppColors.navy,
+                    size: 28),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Formations recommandées pour ${widget.skill}',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textDark),
+                        color: isDark ? Colors.white : AppColors.textDark),
                   ),
                 ),
                 IconButton(
@@ -159,31 +164,41 @@ class _RecommendationsModalState extends State<RecommendationsModal> {
             const SizedBox(height: 8),
             Text(
               'Basé sur votre score de ${widget.score}% (Niveau $_levelDetermined)',
-              style: const TextStyle(fontSize: 14, color: AppColors.textGray),
+              style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.white60 : AppColors.textGray),
             ),
             const SizedBox(height: 24),
             if (_internalFormations.isNotEmpty) ...[
-              const Text(
+              Text(
                 'Dans notre plateforme',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppColors.textDark),
               ),
               const SizedBox(height: 12),
               ..._internalFormations.map((f) => _buildInternalCard(f)),
               const SizedBox(height: 24),
             ],
             if (_externalFormations.isNotEmpty) ...[
-              const Text(
+              Text(
                 'Ressources externes',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppColors.textDark),
               ),
               const SizedBox(height: 12),
               ..._externalFormations.map((f) => _buildExternalCard(f)),
             ],
             if (_internalFormations.isEmpty && _externalFormations.isEmpty)
-              const Center(
+              Center(
                 child: Padding(
-                  padding: EdgeInsets.all(20.0),
-                  child: Text('Aucune formation trouvée pour ce niveau.'),
+                  padding: const EdgeInsets.all(20.0),
+                  child: Text('Aucune formation trouvée pour ce niveau.',
+                      style: TextStyle(
+                          color: isDark ? Colors.white38 : AppColors.textGray)),
                 ),
               )
           ],
@@ -192,6 +207,7 @@ class _RecommendationsModalState extends State<RecommendationsModal> {
     }
 
     return Dialog(
+      backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
@@ -207,12 +223,14 @@ class _RecommendationsModalState extends State<RecommendationsModal> {
         : 'Formatteur';
     final formationId = f['_id'] ?? f['id'];
 
+    final isDark = ReactiveMode.isDarkMode(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.bg,
-        border: Border.all(color: AppColors.border),
+        color: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
+        border:
+            Border.all(color: isDark ? AppColors.borderDark : AppColors.border),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -235,18 +253,22 @@ class _RecommendationsModalState extends State<RecommendationsModal> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(title,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15)),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: isDark ? Colors.white : AppColors.textDark)),
                     const SizedBox(height: 4),
                     Text('Par $trainer',
-                        style: const TextStyle(
-                            fontSize: 13, color: AppColors.textGray)),
+                        style: TextStyle(
+                            fontSize: 13,
+                            color:
+                                isDark ? Colors.white60 : AppColors.textGray)),
                   ],
                 ),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.navy,
+                  backgroundColor: AppColors.orange,
                   foregroundColor: Colors.white,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -273,22 +295,28 @@ class _RecommendationsModalState extends State<RecommendationsModal> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.navy.withOpacity(0.05),
+                color: isDark
+                    ? AppColors.orange.withOpacity(0.1)
+                    : AppColors.navy.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.navy.withOpacity(0.1)),
+                border: Border.all(
+                    color: isDark
+                        ? AppColors.orange.withOpacity(0.2)
+                        : AppColors.navy.withOpacity(0.1)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.auto_awesome,
-                      color: AppColors.navy, size: 16),
+                  Icon(Icons.auto_awesome,
+                      color: isDark ? AppColors.orange : AppColors.navy,
+                      size: 16),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       f['ai_reason'],
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textDark,
+                          color: isDark ? Colors.white70 : AppColors.textDark,
                           fontStyle: FontStyle.italic),
                     ),
                   ),
@@ -305,12 +333,14 @@ class _RecommendationsModalState extends State<RecommendationsModal> {
     final title = f['title'] ?? 'Formation Externe';
     final platform = f['platform'] ?? 'Web';
     final url = f['url'] ?? '';
+    final isDark = ReactiveMode.isDarkMode(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.bgAlt,
-        border: Border.all(color: AppColors.border),
+        color: isDark ? Colors.white.withOpacity(0.05) : AppColors.bgAlt,
+        border:
+            Border.all(color: isDark ? AppColors.borderDark : AppColors.border),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -330,18 +360,26 @@ class _RecommendationsModalState extends State<RecommendationsModal> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 15)),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: isDark ? Colors.white : AppColors.textDark)),
                 const SizedBox(height: 4),
                 Text(platform,
-                    style: const TextStyle(
-                        fontSize: 13, color: AppColors.textGray)),
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: isDark ? Colors.white60 : AppColors.textGray)),
               ],
             ),
           ),
           if (url.isNotEmpty)
             OutlinedButton(
               style: OutlinedButton.styleFrom(
+                foregroundColor: isDark ? Colors.white : AppColors.navy,
+                side: BorderSide(
+                    color: isDark
+                        ? Colors.white.withOpacity(0.5)
+                        : AppColors.navy),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),

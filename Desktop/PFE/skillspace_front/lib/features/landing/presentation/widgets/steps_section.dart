@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:glassmorphism/glassmorphism.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -277,14 +276,14 @@ class _StepCardState extends State<_StepCard> {
                   width: constraints.maxWidth,
                   height: 420,
                   borderRadius: 24,
-                  blur: 20,
+                  blur: 25,
                   alignment: Alignment.center,
                   border: 1.5,
                   linearGradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Colors.white.withValues(alpha: 0.1),
+                      Colors.white.withValues(alpha: 0.12),
                       Colors.white.withValues(alpha: 0.05),
                     ],
                   ),

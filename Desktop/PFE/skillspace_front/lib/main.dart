@@ -14,6 +14,7 @@ import 'package:skillspace/features/dashboard_shell/dashboard_shell.dart';
 import 'package:recruiter_profile/recruiter_profile.dart' as recruiter;
 import 'package:trainer_profile/screens/main_navigation_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:reactive_theme/reactive_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +34,7 @@ void main() async {
 
   final apiClient = ApiClient();
   final authRepository = AuthRepositoryImpl(apiClient: apiClient);
+  final savedThemeMode = await ReactiveMode.getSavedThemeMode();
 
   runApp(
     MultiBlocProvider(
@@ -47,45 +49,57 @@ void main() async {
               ForgotPasswordCubit(authRepository: authRepository),
         ),
       ],
-      child: const SkillSpaceApp(),
+      child: SkillSpaceApp(savedThemeMode: savedThemeMode),
     ),
   );
 }
 
 class SkillSpaceApp extends StatelessWidget {
-  const SkillSpaceApp({super.key});
+  final ThemeMode? savedThemeMode;
+  const SkillSpaceApp({super.key, this.savedThemeMode});
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<L10nCubit, Locale>(
       builder: (context, locale) {
-        return BlocBuilder<AuthCubit, AuthState>(
-          builder: (context, authState) {
-            final Widget home = _resolveHome(context, authState, locale);
+        return ReactiveThemer(
+          savedThemeMode: savedThemeMode,
+          builder: (reactiveMode) {
+            return BlocBuilder<AuthCubit, AuthState>(
+              builder: (context, authState) {
+                final Widget home = _resolveHome(context, authState, locale);
 
-            return MaterialApp(
-              // Key forces a full rebuild when auth state changes (login/logout)
-              key: ValueKey(authState.loggedInUser != null),
-              title: 'SkillSpace',
-              debugShowCheckedModeBanner: false,
-              theme: AppTheme.light.copyWith(
-                scaffoldBackgroundColor: Colors.transparent,
-                canvasColor: Colors.transparent,
-              ),
-              locale: locale,
-              supportedLocales: const [
-                Locale('en'),
-                Locale('fr'),
-                Locale('ar'),
-              ],
-              localizationsDelegates: const [
-                AppLocalizationsDelegate(),
-                recruiter.RecruiterLocalizationsDelegate(),
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              home: home,
+                return MaterialApp(
+                  // Key forces a full rebuild when auth state changes (login/logout)
+                  key: ValueKey(
+                      '${authState.loggedInUser != null}_$reactiveMode'),
+                  title: 'SkillSpace',
+                  debugShowCheckedModeBanner: false,
+                  theme: AppTheme.light.copyWith(
+                    scaffoldBackgroundColor: Colors.transparent,
+                    canvasColor: Colors.transparent,
+                  ),
+                  darkTheme: AppTheme.dark.copyWith(
+                    scaffoldBackgroundColor: Colors.transparent,
+                    canvasColor: Colors.transparent,
+                  ),
+                  themeMode: reactiveMode,
+                  locale: locale,
+                  supportedLocales: const [
+                    Locale('en'),
+                    Locale('fr'),
+                    Locale('ar'),
+                  ],
+                  localizationsDelegates: const [
+                    AppLocalizationsDelegate(),
+                    recruiter.RecruiterLocalizationsDelegate(),
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
+                  home: home,
+                );
+              },
             );
           },
         );

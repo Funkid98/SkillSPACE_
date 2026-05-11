@@ -458,6 +458,12 @@
       "languageVersion": "2.12"
     },
     {
+      "name": "reactive_theme",
+      "rootUri": "file:///C:/Users/yotub/AppData/Local/Pub/Cache/hosted/pub.dev/reactive_theme-2.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
       "name": "rive",
       "rootUri": "file:///C:/Users/yotub/AppData/Local/Pub/Cache/hosted/pub.dev/rive-0.14.1",
       "packageUri": "lib/",
@@ -662,7 +668,7 @@
       "languageVersion": "3.6"
     }
   ],
-  "generated": "2026-05-01T14:06:31.477723Z",
+  "generated": "2026-05-11T13:59:11.594357Z",
   "generator": "pub",
   "generatorVersion": "3.6.1",
   "flutterRoot": "file:///C:/DEV/flutter",

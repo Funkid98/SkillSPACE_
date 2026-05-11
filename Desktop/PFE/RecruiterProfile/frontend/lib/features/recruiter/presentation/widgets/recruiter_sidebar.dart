@@ -8,6 +8,7 @@ import '../cubits/recruiter_profile_cubit.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import '../../../../shared/widgets/notification_bell.dart';
+import 'package:reactive_theme/reactive_theme.dart';
 
 enum RecruiterTab { dashboard, profile, offers, candidates }
 
@@ -61,16 +62,22 @@ class RecruiterSidebar extends StatelessWidget {
     final l10n = RecruiterLocalizations.of(context);
     final isRtl = Directionality.of(context) == TextDirection.rtl;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: 240,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.surfaceDark : Colors.white,
         border: Border(
           right: isRtl
               ? BorderSide.none
-              : const BorderSide(color: AppColors.border, width: 1),
+              : BorderSide(
+                  color: isDark ? AppColors.borderDark : AppColors.border,
+                  width: 1),
           left: isRtl
-              ? const BorderSide(color: AppColors.border, width: 1)
+              ? BorderSide(
+                  color: isDark ? AppColors.borderDark : AppColors.border,
+                  width: 1)
               : BorderSide.none,
         ),
       ),
@@ -108,15 +115,20 @@ class RecruiterSidebar extends StatelessWidget {
                           profile.entreprise.isNotEmpty
                               ? profile.entreprise
                               : 'SkillSpace',
-                          style: AppTextStyles.navBrand.copyWith(fontSize: 18),
+                          style: AppTextStyles.navBrand.copyWith(
+                            fontSize: 18,
+                            color: isDark ? Colors.white : AppColors.navy,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   );
                 } else {
-                  nameWidget =
-                      const Text('SkillSpace', style: AppTextStyles.navBrand);
+                  nameWidget = Text('SkillSpace',
+                      style: AppTextStyles.navBrand.copyWith(
+                        color: isDark ? Colors.white : AppColors.navy,
+                      ));
                 }
                 return Row(
                   children: [
@@ -143,6 +155,11 @@ class RecruiterSidebar extends StatelessWidget {
             },
           ),
           const Spacer(),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: ThemeToggle(),
+          ),
+          const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: LanguageSelector(
@@ -155,11 +172,14 @@ class RecruiterSidebar extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             child: TextButton.icon(
               onPressed: () => _showLogoutConfirmation(context, onLogout),
-              icon: const Icon(Icons.logout_rounded,
-                  size: 18, color: AppColors.textGray),
+              icon: Icon(Icons.logout_rounded,
+                  size: 18,
+                  color: isDark ? Colors.white60 : AppColors.textGray),
               label: Text(
                 l10n.logout,
-                style: const TextStyle(color: AppColors.textGray, fontSize: 14),
+                style: TextStyle(
+                    color: isDark ? Colors.white60 : AppColors.textGray,
+                    fontSize: 14),
               ),
               style: TextButton.styleFrom(
                 alignment: isRtl ? Alignment.centerRight : Alignment.centerLeft,
@@ -175,6 +195,7 @@ class RecruiterSidebar extends StatelessWidget {
 
   void _showLogoutConfirmation(BuildContext context, [VoidCallback? onLogout]) {
     final l10n = RecruiterLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     AwesomeDialog(
       context: context,
       width: 380,
@@ -195,10 +216,10 @@ class RecruiterSidebar extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             l10n.logout,
-            style: const TextStyle(
+            style: TextStyle(
                 fontWeight: FontWeight.w900,
                 fontSize: 16,
-                color: Colors.black87),
+                color: isDark ? Colors.white : Colors.black87),
           ),
           const SizedBox(height: 8),
           const Text(
@@ -289,6 +310,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: MouseRegion(
@@ -299,7 +321,11 @@ class _NavItem extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isActive ? AppColors.iconBg : Colors.transparent,
+              color: isActive
+                  ? (isDark
+                      ? AppColors.orange.withOpacity(0.1)
+                      : AppColors.iconBg)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -307,7 +333,9 @@ class _NavItem extends StatelessWidget {
                 Icon(
                   tab.icon,
                   size: 20,
-                  color: isActive ? AppColors.orange : AppColors.textGray,
+                  color: isActive
+                      ? AppColors.orange
+                      : (isDark ? Colors.white60 : AppColors.textGray),
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -315,7 +343,9 @@ class _NavItem extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                    color: isActive ? AppColors.textDark : AppColors.textGray,
+                    color: isActive
+                        ? (isDark ? AppColors.orange : AppColors.textDark)
+                        : (isDark ? Colors.white60 : AppColors.textGray),
                   ),
                 ),
               ],
@@ -338,12 +368,15 @@ class LanguageSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.bg,
+        color: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+        border: Border.all(
+            color: (isDark ? AppColors.borderDark : AppColors.border)
+                .withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
@@ -389,6 +422,7 @@ class LangBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -396,9 +430,11 @@ class LangBtn extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.transparent,
+          color: isActive
+              ? (isDark ? Colors.white.withOpacity(0.1) : Colors.white)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
-          boxShadow: isActive
+          boxShadow: isActive && !isDark
               ? [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
@@ -413,8 +449,134 @@ class LangBtn extends StatelessWidget {
           style: TextStyle(
             fontSize: 11,
             fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
-            color: isActive ? AppColors.navy : AppColors.textGray,
+            color: isActive
+                ? (isDark ? AppColors.orange : AppColors.navy)
+                : (isDark ? Colors.white60 : AppColors.textGray),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class ThemeToggle extends StatelessWidget {
+  const ThemeToggle({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ReactiveMode.isDarkMode(context);
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+            color: (isDark ? Colors.white : AppColors.border).withOpacity(0.1)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: isDark 
+              ? ReactiveThemeBtn.fromScratch(
+                  onTap: () {},
+                  child: const ThemeBtn(
+                    icon: Icons.light_mode_rounded,
+                    label: 'Clair',
+                    isActive: false,
+                    onTap: null,
+                  ),
+                )
+              : const ThemeBtn(
+                  icon: Icons.light_mode_rounded,
+                  label: 'Clair',
+                  isActive: true,
+                  onTap: null,
+                ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: !isDark 
+              ? ReactiveThemeBtn.fromScratch(
+                  onTap: () {},
+                  child: const ThemeBtn(
+                    icon: Icons.dark_mode_rounded,
+                    label: 'Sombre',
+                    isActive: false,
+                    onTap: null,
+                  ),
+                )
+              : const ThemeBtn(
+                  icon: Icons.dark_mode_rounded,
+                  label: 'Sombre',
+                  isActive: true,
+                  onTap: null,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ThemeBtn extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isActive;
+  final VoidCallback? onTap;
+
+  const ThemeBtn({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ReactiveMode.isDarkMode(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isActive
+              ? (isDark ? AppColors.orange : Colors.white)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: isActive && !isDark
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  )
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon,
+                size: 14,
+                color: isActive
+                    ? (isDark ? Colors.white : AppColors.orange)
+                    : (isDark ? Colors.white60 : AppColors.textGray)),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
+                color: isActive
+                    ? (isDark ? Colors.white : AppColors.navy)
+                    : (isDark ? Colors.white60 : AppColors.textGray),
+              ),
+            ),
+          ],
         ),
       ),
     );

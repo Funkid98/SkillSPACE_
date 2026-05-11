@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:reactive_theme/reactive_theme.dart';
 import '../../../../core/app_colors.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../cubit/formations_cubit.dart';
@@ -10,6 +11,7 @@ class CandidateFormationsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hPad = Responsive.hPad(context);
+    final isDark = ReactiveMode.isDarkMode(context);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -20,19 +22,21 @@ class CandidateFormationsPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Mes Formations',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.textDark,
+                    color: isDark ? Colors.white : AppColors.textDark,
                     letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Gérez vos formations et suivez votre apprentissage.',
-                  style: TextStyle(fontSize: 15, color: AppColors.textGray),
+                  style: TextStyle(
+                      fontSize: 15,
+                      color: isDark ? Colors.white60 : AppColors.textGray),
                 ),
                 const SizedBox(height: 32),
                 if (state is FormationsLoading)
@@ -82,12 +86,17 @@ class CandidateFormationsPage extends StatelessWidget {
                           margin: const EdgeInsets.only(bottom: 24),
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                              color: Colors.white,
+                              color:
+                                  isDark ? AppColors.surfaceDark : Colors.white,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppColors.border),
+                              border: Border.all(
+                                  color: isDark
+                                      ? AppColors.borderDark
+                                      : AppColors.border),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.02),
+                                  color: Colors.black
+                                      .withValues(alpha: isDark ? 0.1 : 0.02),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 )
@@ -101,8 +110,10 @@ class CandidateFormationsPage extends StatelessWidget {
                                   Container(
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
-                                      color:
-                                          AppColors.navy.withValues(alpha: 0.1),
+                                      color: isDark
+                                          ? Colors.white.withOpacity(0.05)
+                                          : AppColors.navy
+                                              .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Icon(
@@ -111,7 +122,9 @@ class CandidateFormationsPage extends StatelessWidget {
                                             : Icons.menu_book,
                                         color: isCompleted
                                             ? Colors.green
-                                            : AppColors.navy,
+                                            : (isDark
+                                                ? Colors.white70
+                                                : AppColors.navy),
                                         size: 32),
                                   ),
                                   const SizedBox(width: 20),
@@ -121,14 +134,19 @@ class CandidateFormationsPage extends StatelessWidget {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(title,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                                 fontWeight: FontWeight.bold,
-                                                fontSize: 18)),
+                                                fontSize: 18,
+                                                color: isDark
+                                                    ? Colors.white
+                                                    : AppColors.textDark)),
                                         const SizedBox(height: 8),
                                         Text('Par $trainer',
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                                 fontSize: 14,
-                                                color: AppColors.textGray)),
+                                                color: isDark
+                                                    ? Colors.white60
+                                                    : AppColors.textGray)),
                                       ],
                                     ),
                                   ),
@@ -136,7 +154,9 @@ class CandidateFormationsPage extends StatelessWidget {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 16, vertical: 8),
                                     decoration: BoxDecoration(
-                                      color: (isCompleted ? Colors.green : Colors.blue)
+                                      color: (isCompleted
+                                              ? Colors.green
+                                              : Colors.blue)
                                           .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
@@ -156,12 +176,18 @@ class CandidateFormationsPage extends StatelessWidget {
                                 Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: AppColors.orange
-                                        .withValues(alpha: 0.05),
+                                    color: isDark
+                                        ? AppColors.orange
+                                            .withValues(alpha: 0.1)
+                                        : AppColors.orange
+                                            .withValues(alpha: 0.05),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                        color: AppColors.orange
-                                            .withValues(alpha: 0.1)),
+                                        color: isDark
+                                            ? AppColors.orange
+                                                .withValues(alpha: 0.3)
+                                            : AppColors.orange
+                                                .withValues(alpha: 0.1)),
                                   ),
                                   child: Row(
                                     crossAxisAlignment:
@@ -179,15 +205,17 @@ class CandidateFormationsPage extends StatelessWidget {
                                               'Pourquoi cette formation ?',
                                               style: TextStyle(
                                                   fontWeight: FontWeight.bold,
-                                                  color: AppColors.textDark,
+                                                  color: AppColors.orange,
                                                   fontSize: 14),
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
                                               aiReason,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                   fontSize: 13,
-                                                  color: AppColors.textDark,
+                                                  color: isDark
+                                                      ? Colors.white70
+                                                      : AppColors.textDark,
                                                   height: 1.5),
                                             ),
                                           ],

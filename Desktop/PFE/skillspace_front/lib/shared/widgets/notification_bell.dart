@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pfe/core/network/api_client.dart';
+import 'package:reactive_theme/reactive_theme.dart';
 import '../../../../core/app_colors.dart';
 import 'scheduling_dialog.dart';
 
@@ -111,67 +112,79 @@ class _NotificationBellState extends State<NotificationBell> {
   void _showMeetLinkDialog(String link) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.video_call_rounded, color: AppColors.navy),
-            SizedBox(width: 12),
-            Text('Lien de l\'entretien',
-                style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Utilisez ce lien pour rejoindre l\'appel à l\'heure prévue :',
-                style: TextStyle(fontSize: 13, color: AppColors.textGray)),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.bg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: SelectableText(
-                link,
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 13,
-                  color: AppColors.navy,
+      builder: (ctx) {
+        final isDark = ReactiveMode.isDarkMode(ctx);
+        return AlertDialog(
+          backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Icon(Icons.video_call_rounded,
+                  color: isDark ? AppColors.orange : AppColors.navy),
+              const SizedBox(width: 12),
+              Text('Lien de l\'entretien',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : AppColors.textDark)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Utilisez ce lien pour rejoindre l\'appel à l\'heure prévue :',
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? Colors.white60 : AppColors.textGray)),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: isDark ? AppColors.borderDark : AppColors.border),
                 ),
+                child: SelectableText(
+                  link,
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 13,
+                    color: isDark ? AppColors.orange : AppColors.navy,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Fermer'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: link));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Lien copié dans le presse-papiers'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+                Navigator.pop(ctx);
+              },
+              icon: const Icon(Icons.copy_rounded, size: 18),
+              label: const Text('Copier le lien'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.navy,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Fermer'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: link));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Lien copié dans le presse-papiers'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-              Navigator.pop(ctx);
-            },
-            icon: const Icon(Icons.copy_rounded, size: 18),
-            label: const Text('Copier le lien'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.navy,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -192,54 +205,68 @@ class _NotificationBellState extends State<NotificationBell> {
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
+      builder: (ctx) {
+        final isDark = ReactiveMode.isDarkMode(ctx);
+        return AlertDialog(
+          backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close_rounded,
+                    color: AppColors.error, size: 20),
               ),
-              child: const Icon(Icons.close_rounded,
-                  color: AppColors.error, size: 20),
+              const SizedBox(width: 12),
+              Text('Refuser la candidature',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: isDark ? Colors.white : AppColors.textDark)),
+            ],
+          ),
+          content: TextField(
+            controller: reasonController,
+            maxLines: 3,
+            style: TextStyle(color: isDark ? Colors.white : AppColors.textDark),
+            decoration: InputDecoration(
+              labelText: 'Motif du refus',
+              labelStyle: TextStyle(
+                  color: isDark ? Colors.white70 : AppColors.textGray),
+              hintText: 'Expliquez brièvement pourquoi...',
+              hintStyle: TextStyle(
+                  color: isDark ? Colors.white30 : AppColors.textGray),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            const SizedBox(width: 12),
-            const Text('Refuser la candidature',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Annuler',
+                    style: TextStyle(color: AppColors.textGray))),
+            ElevatedButton(
+              onPressed: () {
+                _handleDecision(id, 'REJECT', reason: reasonController.text);
+                Navigator.pop(ctx);
+                Navigator.pop(context); // Close notifications menu
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Refuser'),
+            ),
           ],
-        ),
-        content: TextField(
-          controller: reasonController,
-          maxLines: 3,
-          decoration: InputDecoration(
-            labelText: 'Motif du refus',
-            hintText: 'Expliquez brièvement pourquoi...',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Annuler',
-                  style: TextStyle(color: AppColors.textGray))),
-          ElevatedButton(
-            onPressed: () {
-              _handleDecision(id, 'REJECT', reason: reasonController.text);
-              Navigator.pop(ctx);
-              Navigator.pop(context); // Close notifications menu
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Refuser'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -248,26 +275,29 @@ class _NotificationBellState extends State<NotificationBell> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (ctx) {
+      builder: (sheetCtx) {
         return StatefulBuilder(
           builder: (ctx, setSheetState) {
+            final isDark = ReactiveMode.isDarkMode(ctx) || Theme.of(ctx).brightness == Brightness.dark;
             return Container(
               height: MediaQuery.of(ctx).size.height * 0.6,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceDark : Colors.white,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
               ),
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Handle indicator
                   Center(
                     child: Container(
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
+                        color: isDark
+                            ? Colors.white.withOpacity(0.1)
+                            : Colors.grey.shade200,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -278,12 +308,12 @@ class _NotificationBellState extends State<NotificationBell> {
                     children: [
                       Row(
                         children: [
-                          const Text(
+                          Text(
                             'Notifications',
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w900,
-                              color: AppColors.textDark,
+                              color: isDark ? Colors.white : AppColors.textDark,
                             ),
                           ),
                           if (_unreadCount > 0) ...[
@@ -312,21 +342,38 @@ class _NotificationBellState extends State<NotificationBell> {
                           onPressed: () async {
                             final confirm = await showDialog<bool>(
                               context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: const Text('Tout effacer ?'),
-                                content: const Text(
-                                    'Voulez-vous vraiment supprimer toutes vos notifications ?'),
-                                actions: [
-                                  TextButton(
-                                      onPressed: () => Navigator.pop(ctx, false),
-                                      child: const Text('Annuler')),
-                                  TextButton(
-                                      onPressed: () => Navigator.pop(ctx, true),
-                                      child: const Text('Tout effacer',
-                                          style:
-                                              TextStyle(color: AppColors.error))),
-                                ],
-                              ),
+                              builder: (ctx) {
+                                final isDarkDialog =
+                                    ReactiveMode.isDarkMode(ctx);
+                                return AlertDialog(
+                                  backgroundColor: isDarkDialog
+                                      ? AppColors.surfaceDark
+                                      : Colors.white,
+                                  title: Text('Tout effacer ?',
+                                      style: TextStyle(
+                                          color: isDarkDialog
+                                              ? Colors.white
+                                              : AppColors.textDark)),
+                                  content: Text(
+                                      'Voulez-vous vraiment supprimer toutes vos notifications ?',
+                                      style: TextStyle(
+                                          color: isDarkDialog
+                                              ? Colors.white70
+                                              : AppColors.textGray)),
+                                  actions: [
+                                    TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(ctx, false),
+                                        child: const Text('Annuler')),
+                                    TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(ctx, true),
+                                        child: const Text('Tout effacer',
+                                            style: TextStyle(
+                                                color: AppColors.error))),
+                                  ],
+                                );
+                              },
                             );
                             if (confirm == true) {
                               await _clearAllNotifications();
@@ -345,18 +392,20 @@ class _NotificationBellState extends State<NotificationBell> {
                   ),
                   const SizedBox(height: 16),
                   if (_notifications.isEmpty)
-                    const Expanded(
+                    Expanded(
                       child: Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.notifications_none_rounded,
-                                size: 48, color: AppColors.textGray),
-                            SizedBox(height: 12),
+                                size: 48,
+                                color: isDark ? Colors.white30 : AppColors.textGray),
+                            const SizedBox(height: 12),
                             Text(
                               'Aucune notification',
                               style: TextStyle(
-                                  color: AppColors.textGray, fontSize: 15),
+                                  color: isDark ? Colors.white60 : AppColors.textGray,
+                                  fontSize: 15),
                             ),
                           ],
                         ),
@@ -385,30 +434,28 @@ class _NotificationBellState extends State<NotificationBell> {
                               margin: const EdgeInsets.only(bottom: 12),
                               decoration: BoxDecoration(
                                 color: isRead
-                                    ? Colors.white.withValues(alpha: 0.5)
-                                    : Colors.white,
+                                    ? (isDark
+                                        ? Colors.white.withOpacity(0.05)
+                                        : Colors.white.withValues(alpha: 0.5))
+                                    : (isDark
+                                        ? AppColors.surfaceDark
+                                        : Colors.white),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                   color: isRead
-                                      ? AppColors.border
+                                      ? (isDark
+                                          ? AppColors.borderDark
+                                          : AppColors.border)
                                       : AppColors.orange.withValues(alpha: 0.3),
                                   width: isRead ? 1 : 2,
                                 ),
-                                boxShadow: [
-                                  if (!isRead)
-                                    BoxShadow(
-                                      color:
-                                          AppColors.orange.withValues(alpha: 0.1),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                ],
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Container(
                                         padding: const EdgeInsets.all(10),
@@ -426,18 +473,22 @@ class _NotificationBellState extends State<NotificationBell> {
                                           type == 'APPLICATION'
                                               ? Icons.description_rounded
                                               : type == 'INTERVIEW_SCHEDULED'
-                                                  ? Icons.event_available_rounded
-                                                  : type == 'APPLICATION_REJECTED' || type == 'REJECTION'
-                                                       ? Icons.cancel_outlined
-                                                       : Icons.notifications,
+                                                  ? Icons
+                                                      .event_available_rounded
+                                                  : type ==
+                                                              'APPLICATION_REJECTED' ||
+                                                          type == 'REJECTION'
+                                                      ? Icons.cancel_outlined
+                                                      : Icons.notifications,
                                           color: type == 'APPLICATION'
                                               ? AppColors.navy
                                               : type == 'INTERVIEW_SCHEDULED'
                                                   ? AppColors.success
                                                   : type ==
-                                                           'APPLICATION_REJECTED' || type == 'REJECTION'
-                                                       ? AppColors.error
-                                                       : AppColors.textGray,
+                                                              'APPLICATION_REJECTED' ||
+                                                          type == 'REJECTION'
+                                                      ? AppColors.error
+                                                      : AppColors.textGray,
                                           size: 18,
                                         ),
                                       ),
@@ -449,17 +500,21 @@ class _NotificationBellState extends State<NotificationBell> {
                                           children: [
                                             Text(
                                               n['senderName'] ?? 'Système',
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                   fontWeight: FontWeight.w900,
                                                   fontSize: 14,
-                                                  color: AppColors.textDark),
+                                                  color: isDark
+                                                      ? Colors.white
+                                                      : AppColors.textDark),
                                             ),
                                             if (n['senderEmail'] != null)
                                               Text(
                                                 n['senderEmail'],
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                     fontSize: 11,
-                                                    color: AppColors.textGray),
+                                                    color: isDark
+                                                        ? Colors.white30
+                                                        : AppColors.textGray),
                                               ),
                                           ],
                                         ),
@@ -479,7 +534,8 @@ class _NotificationBellState extends State<NotificationBell> {
                                           setSheetState(() {});
                                         },
                                         icon: const Icon(Icons.close_rounded,
-                                            size: 16, color: AppColors.textGray),
+                                            size: 16,
+                                            color: AppColors.textGray),
                                         padding: EdgeInsets.zero,
                                         constraints: const BoxConstraints(),
                                         visualDensity: VisualDensity.compact,
@@ -492,8 +548,12 @@ class _NotificationBellState extends State<NotificationBell> {
                                     style: TextStyle(
                                       fontSize: 13,
                                       color: isRead
-                                          ? AppColors.textGray
-                                          : AppColors.textDark,
+                                          ? (isDark
+                                              ? Colors.white30
+                                              : AppColors.textGray)
+                                          : (isDark
+                                              ? Colors.white
+                                              : AppColors.textDark),
                                       fontWeight: isRead
                                           ? FontWeight.normal
                                           : FontWeight.w500,
@@ -503,7 +563,9 @@ class _NotificationBellState extends State<NotificationBell> {
                                   if (type == 'INTERVIEW_SCHEDULED' &&
                                       !widget.isRecruiter &&
                                       n['meetingLink'] != null &&
-                                      n['meetingLink'].toString().isNotEmpty) ...[
+                                      n['meetingLink']
+                                          .toString()
+                                          .isNotEmpty) ...[
                                     const SizedBox(height: 12),
                                     SizedBox(
                                       width: double.infinity,
@@ -511,15 +573,19 @@ class _NotificationBellState extends State<NotificationBell> {
                                         onPressed: () {
                                           _showMeetLinkDialog(n['meetingLink']);
                                         },
-                                        icon: const Icon(Icons.link_rounded, size: 18),
-                                        label: const Text('Voir le lien de l\'entretien'),
+                                        icon: const Icon(Icons.link_rounded,
+                                            size: 18),
+                                        label: const Text(
+                                            'Voir le lien de l\'entretien'),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: AppColors.navy,
                                           foregroundColor: Colors.white,
                                           elevation: 0,
                                           shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(12)),
-                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                              borderRadius:
+                                                  BorderRadius.circular(12)),
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 12),
                                         ),
                                       ),
                                     ),
@@ -549,10 +615,12 @@ class _NotificationBellState extends State<NotificationBell> {
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: ElevatedButton(
-                                            onPressed: () =>
-                                                _showAcceptDialog(n['_id'], n['senderName'] ?? 'Candidat'),
+                                            onPressed: () => _showAcceptDialog(
+                                                n['_id'],
+                                                n['senderName'] ?? 'Candidat'),
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: AppColors.success,
+                                              backgroundColor:
+                                                  AppColors.success,
                                               foregroundColor: Colors.white,
                                               elevation: 0,
                                               shape: RoundedRectangleBorder(
@@ -584,16 +652,18 @@ class _NotificationBellState extends State<NotificationBell> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ReactiveMode.isDarkMode(context);
     return Stack(
       alignment: Alignment.center,
       clipBehavior: Clip.none,
       children: [
         IconButton(
           onPressed: _showNotificationMenu,
-          icon: const Icon(Icons.notifications_none_rounded,
-              color: AppColors.textDark),
+          icon: Icon(Icons.notifications_none_rounded,
+              color: isDark ? Colors.white : AppColors.textDark),
           style: IconButton.styleFrom(
-            backgroundColor: AppColors.bg,
+            backgroundColor:
+                isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             padding: const EdgeInsets.all(8),
@@ -608,7 +678,9 @@ class _NotificationBellState extends State<NotificationBell> {
               decoration: BoxDecoration(
                 color: AppColors.orange,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.5),
+                border: Border.all(
+                    color: isDark ? AppColors.surfaceDark : Colors.white,
+                    width: 1.5),
               ),
               constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
               child: Text(

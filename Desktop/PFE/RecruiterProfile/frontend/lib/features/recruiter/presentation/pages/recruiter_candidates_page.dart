@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pfe/core/network/api_client.dart';
+import 'package:reactive_theme/reactive_theme.dart';
 import '../cubits/recruiter_extra_cubits.dart';
 import '../../data/models/recruiter_job_offer_model.dart';
 import '../../../../core/app_colors.dart';
@@ -15,6 +16,7 @@ class RecruiterCandidatesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = RecruiterLocalizations.of(context);
+    final isDark = ReactiveMode.isDarkMode(context);
 
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
@@ -29,16 +31,17 @@ class RecruiterCandidatesPage extends StatelessWidget {
               children: [
                 Text(
                   l10n.candidatesPageTitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.textDark),
+                      color: isDark ? Colors.white : AppColors.textDark),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   l10n.candidatesPageSubtitle,
-                  style:
-                      const TextStyle(fontSize: 15, color: AppColors.textGray),
+                  style: TextStyle(
+                      fontSize: 15,
+                      color: isDark ? Colors.white60 : AppColors.textGray),
                 ),
               ],
             ),
@@ -52,14 +55,14 @@ class RecruiterCandidatesPage extends StatelessWidget {
                         children: [
                           _buildSearchField(context, l10n),
                           const SizedBox(height: 16),
-                          _buildSavedButton(l10n),
+                          _buildSavedButton(context, l10n),
                         ],
                       )
                     : Row(
                         children: [
                           Expanded(child: _buildSearchField(context, l10n)),
                           const SizedBox(width: 20),
-                          _buildSavedButton(l10n),
+                          _buildSavedButton(context, l10n),
                         ],
                       ),
           ),
@@ -105,10 +108,10 @@ class RecruiterCandidatesPage extends StatelessWidget {
                               const SizedBox(width: 12),
                               Text(
                                 group.offer.title,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.navy,
+                                  color: isDark ? Colors.white : AppColors.navy,
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -116,15 +119,19 @@ class RecruiterCandidatesPage extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: AppColors.bg,
+                                  color: isDark
+                                      ? Colors.white.withOpacity(0.05)
+                                      : AppColors.bg,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
                                   '${group.candidates.length}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.textGray,
+                                    color: isDark
+                                        ? Colors.white60
+                                        : AppColors.textGray,
                                   ),
                                 ),
                               ),
@@ -132,13 +139,16 @@ class RecruiterCandidatesPage extends StatelessWidget {
                           ),
                         ),
                         if (group.candidates.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.only(left: 32, bottom: 24),
+                          Padding(
+                            padding:
+                                const EdgeInsets.only(left: 32, bottom: 24),
                             child: Text(
                               'Aucun match pour cette offre',
                               style: TextStyle(
                                   fontSize: 14,
-                                  color: AppColors.textGray,
+                                  color: isDark
+                                      ? Colors.white38
+                                      : AppColors.textGray,
                                   fontStyle: FontStyle.italic),
                             ),
                           )
@@ -165,26 +175,34 @@ class RecruiterCandidatesPage extends StatelessWidget {
   }
 
   Widget _buildSearchField(BuildContext context, RecruiterLocalizations l10n) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return TextField(
       key: const ValueKey('candidate_search_field'),
       onChanged: (value) =>
           context.read<RecruiterCandidatesCubit>().filterCandidates(value),
       decoration: InputDecoration(
         hintText: l10n.searchCandidateHint,
-        hintStyle: TextStyle(color: AppColors.textGray.withValues(alpha: 0.5)),
-        prefixIcon: const Icon(Icons.search_rounded,
-            size: 22, color: AppColors.textGray),
+        hintStyle: TextStyle(
+            color: isDark
+                ? Colors.white24
+                : AppColors.textGray.withValues(alpha: 0.5)),
+        prefixIcon: Icon(Icons.search_rounded,
+            size: 22, color: isDark ? Colors.white38 : AppColors.textGray),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: isDark ? AppColors.surfaceDark : Colors.white,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.border, width: 1),
+          borderSide: BorderSide(
+              color: isDark ? AppColors.borderDark : AppColors.border,
+              width: 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.border, width: 1),
+          borderSide: BorderSide(
+              color: isDark ? AppColors.borderDark : AppColors.border,
+              width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -194,14 +212,16 @@ class RecruiterCandidatesPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSavedButton(RecruiterLocalizations l10n) {
+  Widget _buildSavedButton(BuildContext context, RecruiterLocalizations l10n) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: 62,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.border, width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -210,10 +230,10 @@ class RecruiterCandidatesPage extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             '${l10n.savedLabel} (2)',
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textDark),
+                color: isDark ? Colors.white : AppColors.textDark),
           ),
         ],
       ),
@@ -239,13 +259,15 @@ class _CandidateMatchCard extends StatelessWidget {
     final isCompact =
         Responsive.isMobile(context) || Responsive.isTablet(context);
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       padding: EdgeInsets.all(isCompact ? 20 : 28),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.border, width: 1),
       ),
       child: isCompact
           ? Column(
@@ -253,7 +275,7 @@ class _CandidateMatchCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    _buildAvatar(),
+                    _buildAvatar(context),
                     const SizedBox(width: 16),
                     Expanded(child: _buildMainInfo(context)),
                   ],
@@ -265,7 +287,7 @@ class _CandidateMatchCard extends StatelessWidget {
           : Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildAvatar(),
+                _buildAvatar(context),
                 const SizedBox(width: 24),
                 Expanded(child: _buildMainInfo(context)),
                 const SizedBox(width: 24),
@@ -275,19 +297,20 @@ class _CandidateMatchCard extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatar() {
+  Widget _buildAvatar(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: 56,
       height: 56,
-      decoration: const BoxDecoration(
-        color: AppColors.bg,
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
       child: Text(
         candidate.initials,
-        style: const TextStyle(
-          color: AppColors.navy,
+        style: TextStyle(
+          color: isDark ? Colors.white : AppColors.navy,
           fontWeight: FontWeight.bold,
           fontSize: 16,
         ),
@@ -296,6 +319,7 @@ class _CandidateMatchCard extends StatelessWidget {
   }
 
   Widget _buildMainInfo(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -304,10 +328,10 @@ class _CandidateMatchCard extends StatelessWidget {
             Flexible(
               child: Text(
                 candidate.name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textDark,
+                  color: isDark ? Colors.white : AppColors.textDark,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -334,9 +358,9 @@ class _CandidateMatchCard extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           '${candidate.role} · ${candidate.location} · ${candidate.experience}',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
-            color: AppColors.textGray,
+            color: isDark ? Colors.white60 : AppColors.textGray,
             fontWeight: FontWeight.w500,
           ),
           maxLines: 1,
@@ -358,21 +382,22 @@ class _CandidateMatchCard extends StatelessWidget {
         ? Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildScore(l10n),
-              _buildActionButton(l10n),
+              _buildScore(context, l10n),
+              _buildActionButton(context, l10n),
             ],
           )
         : Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _buildScore(l10n),
+              _buildScore(context, l10n),
               const SizedBox(height: 24),
-              _buildActionButton(l10n),
+              _buildActionButton(context, l10n),
             ],
           );
   }
 
-  Widget _buildScore(RecruiterLocalizations l10n) {
+  Widget _buildScore(BuildContext context, RecruiterLocalizations l10n) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (candidate.matchScore == 0 || candidate.status == 'ANALYSING') {
       return const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,16 +469,17 @@ class _CandidateMatchCard extends StatelessWidget {
         ),
         Text(
           l10n.matchLabel,
-          style: const TextStyle(
+          style: TextStyle(
               fontSize: 12,
-              color: AppColors.textGray,
+              color: isDark ? Colors.white60 : AppColors.textGray,
               fontWeight: FontWeight.bold),
         ),
       ],
     );
   }
 
-  Widget _buildActionButton(RecruiterLocalizations l10n) {
+  Widget _buildActionButton(BuildContext context, RecruiterLocalizations l10n) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Builder(
       builder: (context) => OutlinedButton.icon(
         onPressed: () {
@@ -471,8 +497,9 @@ class _CandidateMatchCard extends StatelessWidget {
         icon: const Icon(Icons.mail_outline_rounded, size: 16),
         label: Text(l10n.contactCandidate),
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.navy,
-          side: const BorderSide(color: AppColors.navy, width: 1.2),
+          foregroundColor: isDark ? Colors.white : AppColors.navy,
+          side: BorderSide(
+              color: isDark ? Colors.white38 : AppColors.navy, width: 1.2),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -647,16 +674,19 @@ class _SkillChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.bg,
+        color: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         label,
-        style: const TextStyle(
-            color: AppColors.navy, fontSize: 12, fontWeight: FontWeight.bold),
+        style: TextStyle(
+            color: isDark ? Colors.white70 : AppColors.navy,
+            fontSize: 12,
+            fontWeight: FontWeight.bold),
       ),
     );
   }

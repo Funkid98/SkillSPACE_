@@ -47,6 +47,7 @@ dependencies:
   awesome_dialog: ^3.3.0
   animate_do: ^3.3.4
   flutter_staggered_animations: ^1.0.0
+  calendar_date_picker2: ^2.0.1
 
 dev_dependencies:
   flutter_test:

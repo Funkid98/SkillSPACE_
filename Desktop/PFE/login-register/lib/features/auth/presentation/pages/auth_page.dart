@@ -19,6 +19,7 @@ class AuthPage extends StatefulWidget {
 }
 
 class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
+  bool _isDarkMode = true; // Default to dark mode
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _firstCtrl = TextEditingController();
@@ -134,14 +135,43 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
         ),
       ],
       child: _VibrantBackground(
+        isDark: _isDarkMode,
         child: Scaffold(
           backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            automaticallyImplyLeading: false,
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: IconButton(
+                  onPressed: () => setState(() => _isDarkMode = !_isDarkMode),
+                  icon: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, anim) => RotationTransition(
+                      turns: anim,
+                      child: FadeTransition(opacity: anim, child: child),
+                    ),
+                    child: Icon(
+                      _isDarkMode
+                          ? Icons.light_mode_rounded
+                          : Icons.dark_mode_rounded,
+                      key: ValueKey(_isDarkMode),
+                      color:
+                          _isDarkMode ? Colors.amber[300] : Colors.indigo[900],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
           body: SafeArea(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Column(
                 children: [
-                  const _HeroPanel(),
+                  _HeroPanel(isDark: _isDarkMode),
                   const _TrailLine(),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(22, 20, 22, 32),
@@ -155,6 +185,7 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
                                 !authState.awaitingVerification) ...[
                               _TabSwitcher(
                                 selected: authState.tab,
+                                isDark: _isDarkMode,
                                 onSwitch: _onTabSwitch,
                               ),
                               const SizedBox(height: 32),
@@ -164,11 +195,14 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
                               child: SlideTransition(
                                 position: _slideAnim,
                                 child: _GlassCard(
+                                  isDark: _isDarkMode,
                                   child: _showForgot
                                       ? _ForgotPasswordFlow(
+                                          isDark: _isDarkMode,
                                           onBack: _hideForgotFlow)
                                       : authState.awaitingVerification
                                           ? _SignupVerificationFlow(
+                                              isDark: _isDarkMode,
                                               onBack: () => context
                                                   .read<AuthCubit>()
                                                   .cancelVerification(),
@@ -179,6 +213,7 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
                                                   emailCtrl: _emailCtrl,
                                                   passCtrl: _passCtrl,
                                                   state: authState,
+                                                  isDark: _isDarkMode,
                                                   onForgot: _showForgotFlow,
                                                 )
                                               : _RegisterForm(
@@ -190,6 +225,7 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
                                                   emailCtrl: _emailCtrl,
                                                   passCtrl: _passCtrl,
                                                   state: authState,
+                                                  isDark: _isDarkMode,
                                                 ),
                                 ),
                               ),
@@ -263,18 +299,31 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
 
 // ─── Hero Panel ───────────────────────────────────────────────────────────────
 class _HeroPanel extends StatelessWidget {
-  const _HeroPanel();
+  final bool isDark;
+  final bool isPlayful;
+  const _HeroPanel({required this.isDark, this.isPlayful = false});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF1E2B6B).withOpacity(0.8),
+        color: isDark
+            ? const Color(0xFF1E2B6B).withOpacity(0.8)
+            : Colors.white.withOpacity(0.9),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(40),
           bottomRight: Radius.circular(40),
         ),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
       ),
       padding: const EdgeInsets.fromLTRB(24, 40, 24, 32),
       child: Column(
@@ -301,18 +350,18 @@ class _HeroPanel extends StatelessWidget {
                     color: Colors.white, size: 20),
               ),
               const SizedBox(width: 14),
-              const Text('SkillSpace',
+              Text('SkillSpace',
                   style: TextStyle(
-                      color: Colors.white,
+                      color: isDark ? Colors.white : const Color(0xFF1E2B6B),
                       fontWeight: FontWeight.w900,
                       fontSize: 22,
                       letterSpacing: -0.5)),
             ],
           ),
           const SizedBox(height: 28),
-          const Text('Vos compétences sont\nvotre meilleur atout',
+          Text('Vos compétences sont\nvotre meilleur atout',
               style: TextStyle(
-                  color: Colors.white,
+                  color: isDark ? Colors.white : const Color(0xFF1E2B6B),
                   fontWeight: FontWeight.w900,
                   fontSize: 28,
                   height: 1.2,
@@ -321,18 +370,31 @@ class _HeroPanel extends StatelessWidget {
           Text(
             'La plateforme IA qui connecte les talents\naux meilleures opportunités.',
             style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
+                color:
+                    isDark ? Colors.white.withOpacity(0.7) : Colors.grey[600],
                 fontSize: 14,
                 height: 1.6),
           ),
           const SizedBox(height: 32),
-          const Row(
+          Row(
             children: [
-              _StatChip(value: '15k+', label: 'Talents'),
-              SizedBox(width: 12),
-              _StatChip(value: '150+', label: 'Entreprises'),
-              SizedBox(width: 12),
-              _StatChip(value: '98%', label: 'Satisfaction'),
+              _StatChip(
+                  value: '15k+',
+                  label: 'Talents',
+                  isDark: isDark,
+                  isPlayful: isPlayful),
+              const SizedBox(width: 12),
+              _StatChip(
+                  value: '150+',
+                  label: 'Entreprises',
+                  isDark: isDark,
+                  isPlayful: isPlayful),
+              const SizedBox(width: 12),
+              _StatChip(
+                  value: '98%',
+                  label: 'Satisfaction',
+                  isDark: isDark,
+                  isPlayful: isPlayful),
             ],
           ),
         ],
@@ -345,8 +407,12 @@ class _StatChip extends StatefulWidget {
   final String value;
   final String label;
   final bool isPlayful;
+  final bool isDark;
   const _StatChip(
-      {required this.value, required this.label, this.isPlayful = false});
+      {required this.value,
+      required this.label,
+      required this.isDark,
+      required this.isPlayful});
 
   @override
   State<_StatChip> createState() => _StatChipState();
@@ -359,7 +425,6 @@ class _StatChipState extends State<_StatChip> {
     if (!widget.isPlayful) return;
     setState(() {
       final random = math.Random();
-      // Jumps around the form area
       _offset = Offset(
         (random.nextDouble() - 0.5) * 180,
         (random.nextDouble() - 0.5) * 180,
@@ -379,22 +444,32 @@ class _StatChipState extends State<_StatChip> {
           transform: Matrix4.translationValues(_offset.dx, _offset.dy, 0),
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: widget.isDark
+                ? Colors.white.withOpacity(0.1)
+                : const Color(0xFF1E2B6B).withOpacity(0.05),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.12)),
+            border: Border.all(
+                color: widget.isDark
+                    ? Colors.white.withOpacity(0.12)
+                    : const Color(0xFF1E2B6B).withOpacity(0.1)),
           ),
           child: Column(
             children: [
               Text(widget.value,
-                  style: const TextStyle(
-                      color: Colors.white,
+                  style: TextStyle(
+                      color: widget.isDark
+                          ? Colors.white
+                          : const Color(0xFF1E2B6B),
                       fontWeight: FontWeight.w800,
                       fontSize: 14)),
               const SizedBox(height: 2),
               Text(widget.label,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                      color: Colors.white.withOpacity(0.6), fontSize: 9.5)),
+                      color: widget.isDark
+                          ? Colors.white.withOpacity(0.6)
+                          : Colors.grey[500],
+                      fontSize: 9.5)),
             ],
           ),
         ),
@@ -407,13 +482,17 @@ class _StatChipState extends State<_StatChip> {
 class _TabSwitcher extends StatelessWidget {
   final AuthTab selected;
   final void Function(AuthTab) onSwitch;
-  const _TabSwitcher({required this.selected, required this.onSwitch});
+  final bool isDark;
+  const _TabSwitcher(
+      {required this.selected, required this.onSwitch, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: isDark
+              ? Colors.white.withOpacity(0.05)
+              : const Color(0xFF1E2B6B).withOpacity(0.05),
           borderRadius: BorderRadius.circular(20)),
       padding: const EdgeInsets.all(6),
       child: Row(
@@ -421,11 +500,13 @@ class _TabSwitcher extends StatelessWidget {
           _TabItem(
               label: 'Connexion',
               active: selected == AuthTab.login,
+              isDark: isDark,
               onTap: () => onSwitch(AuthTab.login)),
           const SizedBox(width: 8),
           _TabItem(
               label: 'Inscription',
               active: selected == AuthTab.register,
+              isDark: isDark,
               onTap: () => onSwitch(AuthTab.register)),
         ],
       ),
@@ -459,8 +540,12 @@ class _TabItem extends StatelessWidget {
   final String label;
   final bool active;
   final VoidCallback onTap;
+  final bool isDark;
   const _TabItem(
-      {required this.label, required this.active, required this.onTap});
+      {required this.label,
+      required this.active,
+      required this.onTap,
+      required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -487,7 +572,11 @@ class _TabItem extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                   fontWeight: active ? FontWeight.w800 : FontWeight.w500,
-                  color: active ? Colors.white : Colors.white.withOpacity(0.5),
+                  color: active
+                      ? Colors.white
+                      : (isDark
+                          ? Colors.white.withOpacity(0.5)
+                          : const Color(0xFF1E2B6B).withOpacity(0.5)),
                   fontSize: 15)),
         ),
       ),
@@ -498,7 +587,8 @@ class _TabItem extends StatelessWidget {
 // ─── Shared Label ─────────────────────────────────────────────────────────────
 class _Label extends StatelessWidget {
   final String text;
-  const _Label(this.text);
+  final bool isDark;
+  const _Label(this.text, {this.isDark = true});
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -507,7 +597,9 @@ class _Label extends StatelessWidget {
             style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
-                color: Colors.white.withOpacity(0.9))),
+                color: isDark
+                    ? Colors.white.withOpacity(0.9)
+                    : const Color(0xFF1E2B6B))),
       );
 }
 
@@ -515,32 +607,37 @@ class _Label extends StatelessWidget {
 class _RoleSelector extends StatelessWidget {
   final UserRole selected;
   final String sectionLabel;
-  const _RoleSelector({required this.selected, this.sectionLabel = 'Rôle'});
+  final bool isDark;
+  const _RoleSelector(
+      {required this.selected, this.sectionLabel = 'Rôle', this.isDark = true});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Label(sectionLabel),
+        _Label(sectionLabel, isDark: isDark),
         Row(
           children: [
             _RoleCard(
                 role: UserRole.candidat,
                 icon: Icons.school_outlined,
                 label: 'Candidat',
+                isDark: isDark,
                 selected: selected),
             const SizedBox(width: 8),
             _RoleCard(
                 role: UserRole.recruteur,
                 icon: Icons.business_outlined,
                 label: 'Recruteur',
+                isDark: isDark,
                 selected: selected),
             const SizedBox(width: 8),
             _RoleCard(
                 role: UserRole.formateur,
                 icon: Icons.analytics_outlined,
                 label: 'Formateur',
+                isDark: isDark,
                 selected: selected),
           ],
         ),
@@ -554,10 +651,12 @@ class _RoleCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final UserRole selected;
+  final bool isDark;
   const _RoleCard(
       {required this.role,
       required this.icon,
       required this.label,
+      required this.isDark,
       required this.selected});
 
   @override
@@ -573,12 +672,16 @@ class _RoleCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected
                 ? const Color(0xFFE8622A).withOpacity(0.15)
-                : Colors.white.withOpacity(0.03),
+                : (isDark
+                    ? Colors.white.withOpacity(0.03)
+                    : const Color(0xFF1E2B6B).withOpacity(0.03)),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
                 color: isSelected
                     ? const Color(0xFFE8622A)
-                    : Colors.white.withOpacity(0.1),
+                    : (isDark
+                        ? Colors.white.withOpacity(0.1)
+                        : const Color(0xFF1E2B6B).withOpacity(0.1)),
                 width: isSelected ? 2 : 1),
             boxShadow: [
               if (isSelected)
@@ -597,7 +700,9 @@ class _RoleCard extends StatelessWidget {
                 size: 28,
                 color: isSelected
                     ? const Color(0xFFE8622A)
-                    : Colors.white.withOpacity(0.5),
+                    : (isDark
+                        ? Colors.white.withOpacity(0.5)
+                        : const Color(0xFF1E2B6B).withOpacity(0.4)),
               ),
               const SizedBox(height: 8),
               Text(label,
@@ -606,7 +711,9 @@ class _RoleCard extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       color: isSelected
                           ? const Color(0xFFE8622A)
-                          : Colors.white.withOpacity(0.6))),
+                          : (isDark
+                              ? Colors.white.withOpacity(0.6)
+                              : const Color(0xFF1E2B6B).withOpacity(0.6)))),
             ],
           ),
         ),
@@ -621,12 +728,14 @@ class _LoginForm extends StatelessWidget {
   final TextEditingController emailCtrl;
   final TextEditingController passCtrl;
   final AuthState state;
+  final bool isDark;
   final VoidCallback onForgot;
   const _LoginForm(
       {required this.formKey,
       required this.emailCtrl,
       required this.passCtrl,
       required this.state,
+      required this.isDark,
       required this.onForgot});
 
   @override
@@ -637,34 +746,39 @@ class _LoginForm extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _StaggeredReveal(
+          _StaggeredReveal(
               index: 0,
               child: Text('Bon retour ! ',
                   style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w900,
-                      color: Colors.white,
+                      color: isDark ? Colors.white : const Color(0xFF1E2B6B),
                       letterSpacing: -1.0))),
           const SizedBox(height: 8),
-          const _StaggeredReveal(
+          _StaggeredReveal(
               index: 1,
               child: Text('Connectez-vous pour continuer',
-                  style: TextStyle(fontSize: 15, color: Colors.white70))),
+                  style: TextStyle(
+                      fontSize: 15,
+                      color: isDark ? Colors.white70 : Colors.grey[600]))),
           const SizedBox(height: 26),
           if (state.error != null) ...[
             _StaggeredReveal(index: 2, child: _ErrorBanner(state.error!)),
             const SizedBox(height: 10),
           ],
-          const _StaggeredReveal(index: 3, child: _Label('Email')),
+          _StaggeredReveal(index: 3, child: _Label('Email', isDark: isDark)),
           _StaggeredReveal(
               index: 4,
               child: TextFormField(
                 controller: emailCtrl,
                 keyboardType: TextInputType.emailAddress,
-                style: const TextStyle(color: Colors.white, fontSize: 15),
+                style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF1E2B6B),
+                    fontSize: 15),
                 decoration: _inputDecoration(
                   hint: 'vous@exemple.com',
                   icon: Icons.mail_outline_rounded,
+                  isDark: isDark,
                 ),
                 validator: ValidationBuilder()
                     .required('Email requis')
@@ -672,23 +786,29 @@ class _LoginForm extends StatelessWidget {
                     .build(),
               )),
           const SizedBox(height: 16),
-          const _StaggeredReveal(index: 5, child: _Label('Mot de passe')),
+          _StaggeredReveal(
+              index: 5, child: _Label('Mot de passe', isDark: isDark)),
           _StaggeredReveal(
               index: 6,
               child: TextFormField(
                 controller: passCtrl,
                 obscureText: !state.passwordVisible,
-                style: const TextStyle(color: Colors.white, fontSize: 15),
+                style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF1E2B6B),
+                    fontSize: 15),
                 decoration: _inputDecoration(
                   hint: '••••••••',
                   icon: Icons.lock_outline_rounded,
+                  isDark: isDark,
                 ).copyWith(
                   suffixIcon: IconButton(
                     icon: Icon(
                       state.passwordVisible
                           ? Icons.visibility_outlined
                           : Icons.visibility_off_outlined,
-                      color: Colors.white70,
+                      color: isDark
+                          ? Colors.white70
+                          : const Color(0xFF1E2B6B).withOpacity(0.5),
                       size: 18,
                     ),
                     onPressed: () => context.read<AuthCubit>().togglePassword(),
@@ -709,7 +829,10 @@ class _LoginForm extends StatelessWidget {
                       value: state.staySignedIn,
                       activeColor: const Color(0xFFE8622A),
                       checkColor: Colors.white,
-                      side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                      side: BorderSide(
+                          color:
+                              (isDark ? Colors.white : const Color(0xFF1E2B6B))
+                                  .withOpacity(0.3)),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(4)),
                       onChanged: (_) =>
@@ -719,11 +842,11 @@ class _LoginForm extends StatelessWidget {
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: () => context.read<AuthCubit>().toggleStaySignedIn(),
-                    child: const Text(
+                    child: Text(
                       'Rester connecté(e)',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white70,
+                        color: isDark ? Colors.white70 : Colors.grey[600],
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -732,7 +855,8 @@ class _LoginForm extends StatelessWidget {
               )),
           const SizedBox(height: 20),
           _StaggeredReveal(
-              index: 8, child: _RoleSelector(selected: state.role)),
+              index: 8,
+              child: _RoleSelector(selected: state.role, isDark: isDark)),
           const SizedBox(height: 28),
           _StaggeredReveal(
               index: 9,
@@ -748,12 +872,13 @@ class _LoginForm extends StatelessWidget {
                 },
               )),
           const SizedBox(height: 24),
-          const _StaggeredReveal(index: 10, child: _OrDivider()),
+          _StaggeredReveal(index: 10, child: _OrDivider(isDark: isDark)),
           const SizedBox(height: 24),
           _StaggeredReveal(
               index: 11,
               child: _SocialLoginButtons(
                 isLoading: state.isLoading,
+                isDark: isDark,
                 onGoogleTap: () => context.read<AuthCubit>().signInWithGoogle(),
                 onGithubTap: () => context.read<AuthCubit>().signInWithGithub(),
               )),
@@ -785,6 +910,7 @@ class _RegisterForm extends StatelessWidget {
   final TextEditingController passCtrl;
   final GlobalKey<FormState> formKey;
   final AuthState state;
+  final bool isDark;
   const _RegisterForm(
       {required this.formKey,
       required this.firstCtrl,
@@ -792,7 +918,8 @@ class _RegisterForm extends StatelessWidget {
       required this.entrepriseCtrl,
       required this.emailCtrl,
       required this.passCtrl,
-      required this.state});
+      required this.state,
+      required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -802,19 +929,21 @@ class _RegisterForm extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _StaggeredReveal(
+          _StaggeredReveal(
               index: 0,
               child: Text('Créer un compte ',
                   style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w900,
-                      color: Colors.white,
+                      color: isDark ? Colors.white : const Color(0xFF1E2B6B),
                       letterSpacing: -1.0))),
           const SizedBox(height: 8),
-          const _StaggeredReveal(
+          _StaggeredReveal(
               index: 1,
               child: Text('Commencez votre parcours SkillSpace',
-                  style: TextStyle(fontSize: 15, color: Colors.white70))),
+                  style: TextStyle(
+                      fontSize: 15,
+                      color: isDark ? Colors.white70 : Colors.grey[600]))),
           const SizedBox(height: 26),
           if (state.error != null) ...[
             _StaggeredReveal(index: 2, child: _ErrorBanner(state.error!)),
@@ -829,13 +958,17 @@ class _RegisterForm extends StatelessWidget {
                       child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const _Label('Prénom'),
+                            _Label('Prénom', isDark: isDark),
                             TextFormField(
                               controller: firstCtrl,
                               textCapitalization: TextCapitalization.words,
-                              decoration: _inputDecoration(hint: 'Jean'),
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 15),
+                              decoration: _inputDecoration(
+                                  hint: 'Jean', isDark: isDark),
+                              style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF1E2B6B),
+                                  fontSize: 15),
                               inputFormatters: [
                                 FilteringTextInputFormatter.allow(
                                     RegExp(r'[a-zA-ZÀ-ÿ\s-]')),
@@ -852,13 +985,17 @@ class _RegisterForm extends StatelessWidget {
                       child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const _Label('Nom'),
+                            _Label('Nom', isDark: isDark),
                             TextFormField(
                               controller: lastCtrl,
                               textCapitalization: TextCapitalization.words,
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 15),
-                              decoration: _inputDecoration(hint: 'Dupont'),
+                              style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF1E2B6B),
+                                  fontSize: 15),
+                              decoration: _inputDecoration(
+                                  hint: 'Dupont', isDark: isDark),
                               inputFormatters: [
                                 FilteringTextInputFormatter.allow(
                                     RegExp(r'[a-zA-ZÀ-ÿ\s-]')),
@@ -874,17 +1011,21 @@ class _RegisterForm extends StatelessWidget {
                 )),
           if (state.role == UserRole.recruteur) ...[
             const SizedBox(height: 16),
-            const _StaggeredReveal(
-                index: 3, child: _Label('Nom de l\'entreprise')),
+            _StaggeredReveal(
+                index: 3,
+                child: _Label('Nom de l\'entreprise', isDark: isDark)),
             _StaggeredReveal(
                 index: 4,
                 child: TextFormField(
                   controller: entrepriseCtrl,
                   textCapitalization: TextCapitalization.words,
-                  style: const TextStyle(color: Colors.white, fontSize: 15),
+                  style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF1E2B6B),
+                      fontSize: 15),
                   decoration: _inputDecoration(
                     hint: 'SkillSpace Inc.',
                     icon: Icons.business_rounded,
+                    isDark: isDark,
                   ),
                   validator: state.role == UserRole.recruteur
                       ? ValidationBuilder()
@@ -894,16 +1035,19 @@ class _RegisterForm extends StatelessWidget {
                 )),
           ],
           const SizedBox(height: 16),
-          const _StaggeredReveal(index: 5, child: _Label('Email')),
+          _StaggeredReveal(index: 5, child: _Label('Email', isDark: isDark)),
           _StaggeredReveal(
               index: 6,
               child: TextFormField(
                 controller: emailCtrl,
                 keyboardType: TextInputType.emailAddress,
-                style: const TextStyle(color: Colors.white, fontSize: 15),
+                style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF1E2B6B),
+                    fontSize: 15),
                 decoration: _inputDecoration(
                   hint: 'vous@exemple.com',
                   icon: Icons.mail_outline_rounded,
+                  isDark: isDark,
                 ),
                 validator: ValidationBuilder()
                     .required('Email requis')
@@ -911,23 +1055,29 @@ class _RegisterForm extends StatelessWidget {
                     .build(),
               )),
           const SizedBox(height: 16),
-          const _StaggeredReveal(index: 7, child: _Label('Mot de passe')),
+          _StaggeredReveal(
+              index: 7, child: _Label('Mot de passe', isDark: isDark)),
           _StaggeredReveal(
               index: 8,
               child: TextFormField(
                 controller: passCtrl,
                 obscureText: !state.passwordVisible,
-                style: const TextStyle(color: Colors.white, fontSize: 15),
+                style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF1E2B6B),
+                    fontSize: 15),
                 decoration: _inputDecoration(
                   hint: '••••••••',
                   icon: Icons.lock_outline_rounded,
+                  isDark: isDark,
                 ).copyWith(
                   suffixIcon: IconButton(
                     icon: Icon(
                       state.passwordVisible
                           ? Icons.visibility_outlined
                           : Icons.visibility_off_outlined,
-                      color: Colors.white70,
+                      color: isDark
+                          ? Colors.white70
+                          : const Color(0xFF1E2B6B).withOpacity(0.5),
                       size: 18,
                     ),
                     onPressed: () => context.read<AuthCubit>().togglePassword(),
@@ -942,7 +1092,9 @@ class _RegisterForm extends StatelessWidget {
           _StaggeredReveal(
               index: 9,
               child: _RoleSelector(
-                  selected: state.role, sectionLabel: 'Je suis un(e)')),
+                  selected: state.role,
+                  sectionLabel: 'Je suis un(e)',
+                  isDark: isDark)),
           const SizedBox(height: 28),
           _StaggeredReveal(
               index: 10,
@@ -969,22 +1121,23 @@ class _RegisterForm extends StatelessWidget {
                   textAlign: TextAlign.center,
                   text: TextSpan(
                     style: TextStyle(
-                        fontSize: 12, color: Colors.white.withOpacity(0.4)),
-                    children: [
-                      const TextSpan(
-                          text: 'En vous inscrivant, vous acceptez nos '),
-                      const TextSpan(
+                        fontSize: 12,
+                        color: (isDark ? Colors.white : const Color(0xFF1E2B6B))
+                            .withOpacity(0.4)),
+                    children: const [
+                      TextSpan(text: 'En vous inscrivant, vous acceptez nos '),
+                      TextSpan(
                           text: 'CGU',
                           style: TextStyle(
                               color: Color(0xFFF7931E),
                               fontWeight: FontWeight.w700)),
-                      const TextSpan(text: ' et '),
-                      const TextSpan(
+                      TextSpan(text: ' et '),
+                      TextSpan(
                           text: 'politique de confidentialité',
                           style: TextStyle(
                               color: Color(0xFFF7931E),
                               fontWeight: FontWeight.w700)),
-                      const TextSpan(text: '.'),
+                      TextSpan(text: '.'),
                     ],
                   ),
                 ),
@@ -998,7 +1151,8 @@ class _RegisterForm extends StatelessWidget {
 // ─── Signup Verification Flow ────────────────────────────────────────────────
 class _SignupVerificationFlow extends StatefulWidget {
   final VoidCallback onBack;
-  const _SignupVerificationFlow({required this.onBack});
+  final bool isDark;
+  const _SignupVerificationFlow({required this.onBack, required this.isDark});
 
   @override
   State<_SignupVerificationFlow> createState() =>
@@ -1025,6 +1179,7 @@ class _SignupVerificationFlowState extends State<_SignupVerificationFlow> {
               emoji: '🛡️',
               currentStep: 2,
               onBack: widget.onBack,
+              isDark: widget.isDark,
               title: 'Vérifiez votre email',
               subtitle: 'Un code a été envoyé à ${state.verificationEmail}.',
             ),
@@ -1032,15 +1187,18 @@ class _SignupVerificationFlowState extends State<_SignupVerificationFlow> {
               _ErrorBanner(state.error!),
               const SizedBox(height: 10),
             ],
-            const _Label('Code de vérification'),
+            _Label('Code de vérification', isDark: widget.isDark),
             TextField(
               controller: _otpCtrl,
               keyboardType: TextInputType.number,
+              style: TextStyle(
+                  color:
+                      widget.isDark ? Colors.white : const Color(0xFF1E2B6B)),
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(
-                hintText: '1234',
-                prefixIcon: Icon(Icons.verified_user_outlined,
-                    size: 18, color: AppTheme.textGrey),
+              decoration: _inputDecoration(
+                hint: '1234',
+                icon: Icons.verified_user_outlined,
+                isDark: widget.isDark,
               ),
               onChanged: (_) => context.read<AuthCubit>().clearError(),
             ),
@@ -1067,7 +1225,8 @@ class _SignupVerificationFlowState extends State<_SignupVerificationFlow> {
 
 class _ForgotPasswordFlow extends StatelessWidget {
   final VoidCallback onBack;
-  const _ForgotPasswordFlow({required this.onBack});
+  final bool isDark;
+  const _ForgotPasswordFlow({required this.onBack, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -1085,14 +1244,16 @@ class _ForgotPasswordFlow extends StatelessWidget {
             ),
           ),
           child: switch (state.step) {
-            ForgotStep.email =>
-              _ForgotStepEmail(key: const ValueKey('fp_email'), onBack: onBack),
-            ForgotStep.otp =>
-              _ForgotStepOtp(key: const ValueKey('fp_otp'), onBack: onBack),
+            ForgotStep.email => _ForgotStepEmail(
+                key: const ValueKey('fp_email'),
+                onBack: onBack,
+                isDark: isDark),
+            ForgotStep.otp => _ForgotStepOtp(
+                key: const ValueKey('fp_otp'), onBack: onBack, isDark: isDark),
             ForgotStep.newPassword => _ForgotStepNewPass(
-                key: const ValueKey('fp_pass'), onBack: onBack),
-            ForgotStep.success =>
-              _ForgotSuccess(key: const ValueKey('fp_ok'), onDone: onBack),
+                key: const ValueKey('fp_pass'), onBack: onBack, isDark: isDark),
+            ForgotStep.success => _ForgotSuccess(
+                key: const ValueKey('fp_ok'), onDone: onBack, isDark: isDark),
           },
         );
       },
@@ -1102,7 +1263,9 @@ class _ForgotPasswordFlow extends StatelessWidget {
 
 class _ForgotStepEmail extends StatefulWidget {
   final VoidCallback onBack;
-  const _ForgotStepEmail({super.key, required this.onBack});
+  final bool isDark;
+  const _ForgotStepEmail(
+      {super.key, required this.onBack, required this.isDark});
 
   @override
   State<_ForgotStepEmail> createState() => _ForgotStepEmailState();
@@ -1132,6 +1295,7 @@ class _ForgotStepEmailState extends State<_ForgotStepEmail> {
                 emoji: '📬',
                 currentStep: 1,
                 onBack: widget.onBack,
+                isDark: widget.isDark,
                 title: 'Mot de passe oublié',
                 subtitle: 'Entrez votre e-mail pour recevoir un code.',
               ),
@@ -1139,11 +1303,17 @@ class _ForgotStepEmailState extends State<_ForgotStepEmail> {
                 _ErrorBanner(state.error!),
                 const SizedBox(height: 10),
               ],
-              const _Label('Email'),
+              _Label('Email', isDark: widget.isDark),
               TextFormField(
                 controller: _emailCtrl,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(hintText: 'vous@exemple.com'),
+                style: TextStyle(
+                    color:
+                        widget.isDark ? Colors.white : const Color(0xFF1E2B6B)),
+                decoration: _inputDecoration(
+                  hint: 'vous@exemple.com',
+                  isDark: widget.isDark,
+                ),
                 validator: ValidationBuilder()
                     .required('Email requis')
                     .email('Email invalide')
@@ -1171,7 +1341,8 @@ class _ForgotStepEmailState extends State<_ForgotStepEmail> {
 
 class _ForgotStepOtp extends StatefulWidget {
   final VoidCallback onBack;
-  const _ForgotStepOtp({super.key, required this.onBack});
+  final bool isDark;
+  const _ForgotStepOtp({super.key, required this.onBack, required this.isDark});
 
   @override
   State<_ForgotStepOtp> createState() => _ForgotStepOtpState();
@@ -1197,6 +1368,7 @@ class _ForgotStepOtpState extends State<_ForgotStepOtp> {
               emoji: '🔢',
               currentStep: 2,
               onBack: () => context.read<ForgotPasswordCubit>().reset(),
+              isDark: widget.isDark,
               title: 'Code de vérification',
               subtitle: 'Entrez le code envoyé à ${state.email}.',
             ),
@@ -1204,12 +1376,18 @@ class _ForgotStepOtpState extends State<_ForgotStepOtp> {
               _ErrorBanner(state.error!),
               const SizedBox(height: 10),
             ],
-            const _Label('Code OTP'),
+            _Label('Code OTP', isDark: widget.isDark),
             TextField(
               controller: _otpCtrl,
               keyboardType: TextInputType.number,
+              style: TextStyle(
+                  color:
+                      widget.isDark ? Colors.white : const Color(0xFF1E2B6B)),
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(hintText: '123456'),
+              decoration: _inputDecoration(
+                hint: '123456',
+                isDark: widget.isDark,
+              ),
             ),
             const SizedBox(height: 28),
             _SubmitButton(
@@ -1227,7 +1405,9 @@ class _ForgotStepOtpState extends State<_ForgotStepOtp> {
 
 class _ForgotStepNewPass extends StatefulWidget {
   final VoidCallback onBack;
-  const _ForgotStepNewPass({super.key, required this.onBack});
+  final bool isDark;
+  const _ForgotStepNewPass(
+      {super.key, required this.onBack, required this.isDark});
 
   @override
   State<_ForgotStepNewPass> createState() => _ForgotStepNewPassState();
@@ -1255,6 +1435,7 @@ class _ForgotStepNewPassState extends State<_ForgotStepNewPass> {
               emoji: '🔒',
               currentStep: 3,
               onBack: () => context.read<ForgotPasswordCubit>().reset(),
+              isDark: widget.isDark,
               title: 'Nouveau mot de passe',
               subtitle: 'Choisissez un mot de passe sécurisé.',
             ),
@@ -1262,18 +1443,25 @@ class _ForgotStepNewPassState extends State<_ForgotStepNewPass> {
               _ErrorBanner(state.error!),
               const SizedBox(height: 10),
             ],
-            const _Label('Mot de passe'),
+            _Label('Mot de passe', isDark: widget.isDark),
             TextField(
               controller: _passCtrl,
               obscureText: !state.passwordVisible,
-              decoration: InputDecoration(
-                hintText: '••••••••',
+              style: TextStyle(
+                  color:
+                      widget.isDark ? Colors.white : const Color(0xFF1E2B6B)),
+              decoration: _inputDecoration(
+                hint: '••••••••',
+                isDark: widget.isDark,
+              ).copyWith(
                 suffixIcon: IconButton(
                   icon: Icon(
                     state.passwordVisible
                         ? Icons.visibility_outlined
                         : Icons.visibility_off_outlined,
-                    color: AppTheme.textGrey,
+                    color: widget.isDark
+                        ? Colors.white70
+                        : const Color(0xFF1E2B6B).withOpacity(0.5),
                     size: 18,
                   ),
                   onPressed: () =>
@@ -1282,18 +1470,25 @@ class _ForgotStepNewPassState extends State<_ForgotStepNewPass> {
               ),
             ),
             const SizedBox(height: 16),
-            const _Label('Confirmer'),
+            _Label('Confirmer', isDark: widget.isDark),
             TextField(
               controller: _confirmCtrl,
               obscureText: !state.confirmPasswordVisible,
-              decoration: InputDecoration(
-                hintText: '••••••••',
+              style: TextStyle(
+                  color:
+                      widget.isDark ? Colors.white : const Color(0xFF1E2B6B)),
+              decoration: _inputDecoration(
+                hint: '••••••••',
+                isDark: widget.isDark,
+              ).copyWith(
                 suffixIcon: IconButton(
                   icon: Icon(
                     state.confirmPasswordVisible
                         ? Icons.visibility_outlined
                         : Icons.visibility_off_outlined,
-                    color: AppTheme.textGrey,
+                    color: widget.isDark
+                        ? Colors.white70
+                        : const Color(0xFF1E2B6B).withOpacity(0.5),
                     size: 18,
                   ),
                   onPressed: () => context
@@ -1319,7 +1514,8 @@ class _ForgotStepNewPassState extends State<_ForgotStepNewPass> {
 
 class _ForgotSuccess extends StatelessWidget {
   final VoidCallback onDone;
-  const _ForgotSuccess({super.key, required this.onDone});
+  final bool isDark;
+  const _ForgotSuccess({super.key, required this.onDone, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -1338,19 +1534,21 @@ class _ForgotSuccess extends StatelessWidget {
           child: const Center(child: Text('✅', style: TextStyle(fontSize: 38))),
         ),
         const SizedBox(height: 24),
-        const Text('Mot de passe\nréinitialisé !',
+        Text('Mot de passe\nréinitialisé !',
             textAlign: TextAlign.center,
             style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
-                color: AppTheme.textDark,
+                color: isDark ? Colors.white : const Color(0xFF1E2B6B),
                 height: 1.3)),
         const SizedBox(height: 10),
-        const Text(
+        Text(
           'Votre mot de passe a été mis à jour.\nVous pouvez vous connecter.',
           textAlign: TextAlign.center,
-          style:
-              TextStyle(fontSize: 13.5, color: AppTheme.textGrey, height: 1.5),
+          style: TextStyle(
+              fontSize: 13.5,
+              color: isDark ? Colors.white70 : Colors.grey[600],
+              height: 1.5),
         ),
         const SizedBox(height: 36),
         _SubmitButton(label: 'Se connecter', isLoading: false, onTap: onDone),
@@ -1365,12 +1563,14 @@ class _StepHeader extends StatelessWidget {
   final String subtitle;
   final VoidCallback onBack;
   final int currentStep;
+  final bool isDark;
   const _StepHeader(
       {required this.emoji,
       required this.title,
       required this.subtitle,
       required this.onBack,
-      required this.currentStep});
+      required this.currentStep,
+      required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -1384,15 +1584,19 @@ class _StepHeader extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppTheme.border),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2))
-                  ],
+                  border: Border.all(
+                      color: (isDark ? Colors.white : const Color(0xFF1E2B6B))
+                          .withOpacity(0.1)),
+                  boxShadow: isDark
+                      ? []
+                      : [
+                          BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2))
+                        ],
                 ),
                 child: const Icon(Icons.arrow_back_rounded,
                     size: 18, color: AppTheme.textDark),
@@ -1560,24 +1764,32 @@ class _SubmitButtonState extends State<_SubmitButton>
 
 // ─── Social Login Helpers ───────────────────────────────────────────────────
 class _OrDivider extends StatelessWidget {
-  const _OrDivider();
+  final bool isDark;
+  const _OrDivider({this.isDark = true});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Expanded(
-            child: Divider(color: Colors.white.withOpacity(0.1), thickness: 1)),
+            child: Divider(
+                color: (isDark ? Colors.white : const Color(0xFF1E2B6B))
+                    .withOpacity(0.1),
+                thickness: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text('OU',
               style: TextStyle(
-                  color: Colors.white.withOpacity(0.3),
+                  color: (isDark ? Colors.white : const Color(0xFF1E2B6B))
+                      .withOpacity(0.3),
                   fontSize: 12,
                   fontWeight: FontWeight.w800)),
         ),
         Expanded(
-            child: Divider(color: Colors.white.withOpacity(0.1), thickness: 1)),
+            child: Divider(
+                color: (isDark ? Colors.white : const Color(0xFF1E2B6B))
+                    .withOpacity(0.1),
+                thickness: 1)),
       ],
     );
   }
@@ -1585,11 +1797,13 @@ class _OrDivider extends StatelessWidget {
 
 class _SocialLoginButtons extends StatelessWidget {
   final bool isLoading;
+  final bool isDark;
   final VoidCallback onGoogleTap;
   final VoidCallback onGithubTap;
 
   const _SocialLoginButtons({
     required this.isLoading,
+    required this.isDark,
     required this.onGoogleTap,
     required this.onGithubTap,
   });
@@ -1603,6 +1817,7 @@ class _SocialLoginButtons extends StatelessWidget {
             label: 'Google',
             onTap: isLoading ? null : onGoogleTap,
             isGoogle: true,
+            isDark: isDark,
           ),
         ),
         const SizedBox(width: 16),
@@ -1611,6 +1826,7 @@ class _SocialLoginButtons extends StatelessWidget {
             label: 'GitHub',
             onTap: isLoading ? null : onGithubTap,
             isGoogle: false,
+            isDark: isDark,
           ),
         ),
       ],
@@ -1622,11 +1838,13 @@ class _SocialButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
   final bool isGoogle;
+  final bool isDark;
 
   const _SocialButton({
     required this.label,
     required this.onTap,
     required this.isGoogle,
+    required this.isDark,
   });
 
   @override
@@ -1634,9 +1852,13 @@ class _SocialButton extends StatelessWidget {
     return Container(
       height: 52,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: isDark
+            ? Colors.white.withOpacity(0.05)
+            : const Color(0xFF1E2B6B).withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(
+            color: (isDark ? Colors.white : const Color(0xFF1E2B6B))
+                .withOpacity(0.1)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -1654,8 +1876,8 @@ class _SocialButton extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 label,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF1E2B6B),
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1722,22 +1944,37 @@ class _StaggeredRevealState extends State<_StaggeredReveal>
   }
 }
 
-InputDecoration _inputDecoration({required String hint, IconData? icon}) {
+InputDecoration _inputDecoration(
+    {required String hint, IconData? icon, bool isDark = true}) {
   return InputDecoration(
     hintText: hint,
-    hintStyle: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 14),
-    prefixIcon:
-        icon != null ? Icon(icon, size: 18, color: Colors.white70) : null,
+    hintStyle: TextStyle(
+        color:
+            (isDark ? Colors.white : const Color(0xFF1E2B6B)).withOpacity(0.3),
+        fontSize: 14),
+    prefixIcon: icon != null
+        ? Icon(icon,
+            size: 18,
+            color: isDark
+                ? Colors.white70
+                : const Color(0xFF1E2B6B).withOpacity(0.7))
+        : null,
     filled: true,
-    fillColor: Colors.white.withOpacity(0.05),
+    fillColor: isDark
+        ? Colors.white.withOpacity(0.05)
+        : const Color(0xFF1E2B6B).withOpacity(0.03),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(16),
-      borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+      borderSide: BorderSide(
+          color: (isDark ? Colors.white : const Color(0xFF1E2B6B))
+              .withOpacity(0.1)),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(16),
-      borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+      borderSide: BorderSide(
+          color: (isDark ? Colors.white : const Color(0xFF1E2B6B))
+              .withOpacity(0.1)),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(16),
@@ -1754,19 +1991,22 @@ InputDecoration _inputDecoration({required String hint, IconData? icon}) {
 
 class _VibrantBackground extends StatelessWidget {
   final Widget child;
-  const _VibrantBackground({required this.child});
+  final bool isDark;
+  const _VibrantBackground({required this.child, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF001220),
-        image: DecorationImage(
-          image: NetworkImage(
-              'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2070&auto=format&fit=crop'),
-          fit: BoxFit.cover,
-          opacity: 0.1,
-        ),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF001220) : const Color(0xFFF8FAFC),
+        image: isDark
+            ? const DecorationImage(
+                image: NetworkImage(
+                    'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2070&auto=format&fit=crop'),
+                fit: BoxFit.cover,
+                opacity: 0.1,
+              )
+            : null,
       ),
       child: Stack(
         children: [
@@ -1774,13 +2014,19 @@ class _VibrantBackground extends StatelessWidget {
             top: -100,
             right: -100,
             child: _GlowSphere(
-                color: const Color(0xFFE8622A).withOpacity(0.15), size: 400),
+                color:
+                    (isDark ? const Color(0xFFE8622A) : const Color(0xFFFF8A50))
+                        .withOpacity(isDark ? 0.15 : 0.08),
+                size: 400),
           ),
           Positioned(
             bottom: -50,
             left: -50,
             child: _GlowSphere(
-                color: const Color(0xFF1E3A8A).withOpacity(0.2), size: 300),
+                color:
+                    (isDark ? const Color(0xFF1E3A8A) : const Color(0xFF3B82F6))
+                        .withOpacity(isDark ? 0.2 : 0.1),
+                size: 300),
           ),
           child,
         ],
@@ -1815,7 +2061,8 @@ class _GlowSphere extends StatelessWidget {
 
 class _GlassCard extends StatelessWidget {
   final Widget child;
-  const _GlassCard({required this.child});
+  final bool isDark;
+  const _GlassCard({required this.child, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -1826,13 +2073,18 @@ class _GlassCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.06),
+            color: isDark
+                ? Colors.white.withOpacity(0.06)
+                : Colors.white.withOpacity(0.8),
             borderRadius: BorderRadius.circular(32),
-            border:
-                Border.all(color: Colors.white.withOpacity(0.12), width: 1.5),
+            border: Border.all(
+                color: isDark ? Colors.white.withOpacity(0.12) : Colors.white,
+                width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: isDark
+                    ? Colors.black.withOpacity(0.2)
+                    : Colors.black.withOpacity(0.08),
                 blurRadius: 40,
                 offset: const Offset(0, 15),
               ),

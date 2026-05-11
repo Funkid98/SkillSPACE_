@@ -171,15 +171,15 @@ class _FeatureCardState extends State<_FeatureCard>
               width: constraints.maxWidth,
               height: 350,
               borderRadius: 24,
-              blur: 20,
+              blur: 25,
               alignment: Alignment.center,
               border: 1.5,
               linearGradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withValues(alpha: _hovered ? 0.15 : 0.1),
-                  Colors.white.withValues(alpha: _hovered ? 0.08 : 0.05),
+                  Colors.white.withValues(alpha: 0.12),
+                  Colors.white.withValues(alpha: 0.05),
                 ],
               ),
               borderGradient: LinearGradient(

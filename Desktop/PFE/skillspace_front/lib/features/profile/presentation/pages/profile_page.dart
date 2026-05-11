@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:reactive_theme/reactive_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/utils/string_extension.dart';
 import '../../../../core/utils/app_toast.dart';
@@ -86,10 +87,10 @@ class _ProfileContent extends StatelessWidget {
             direction: RevealDirection.fromTop,
             child: Text(
               l10n.profile,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w900,
-                color: AppColors.textDark,
+                color: Theme.of(context).textTheme.titleLarge?.color,
                 letterSpacing: -0.5,
               ),
             ),
@@ -262,13 +263,17 @@ class _CompletionCard extends StatelessWidget {
             Responsive.isMobile(context) || Responsive.isTablet(context);
         final percent = data?.completionPercent ?? 0;
 
+        final isDark = ReactiveMode.isDarkMode(context);
+
         return Container(
           width: double.infinity,
           padding: EdgeInsets.all(isCompact ? 20 : 28),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? AppColors.surfaceDark : Colors.white,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.border, width: 1),
+            border: Border.all(
+                color: isDark ? AppColors.borderDark : AppColors.border,
+                width: 1),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,10 +284,10 @@ class _CompletionCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       l10n.profileCompleted,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textDark,
+                        color: isDark ? Colors.white : AppColors.textDark,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -304,9 +309,11 @@ class _CompletionCard extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: percent / 100,
                   minHeight: 10,
-                  backgroundColor: AppColors.border,
-                  valueColor:
-                      const AlwaysStoppedAnimation<Color>(AppColors.navy),
+                  backgroundColor: isDark
+                      ? Colors.white.withOpacity(0.05)
+                      : AppColors.border,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                      isDark ? AppColors.orange : AppColors.navy),
                 ),
               ),
               const SizedBox(height: 12),
@@ -320,11 +327,11 @@ class _CompletionCard extends StatelessWidget {
                   ),
                 )
               else if (data != null) ...[
-                const Text(
+                Text(
                   'Éléments manquants :',
                   style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.textDark,
+                    color: isDark ? Colors.white : AppColors.textDark,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -454,6 +461,7 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isMobile = Responsive.isMobile(context);
+    final isDark = ReactiveMode.isDarkMode(context);
 
     return BlocListener<ProfileCubit, ProfileState>(
         listener: (context, state) {
@@ -493,19 +501,21 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
                   ? 20
                   : 28),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? AppColors.surfaceDark : Colors.white,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.border, width: 1),
+            border: Border.all(
+                color: isDark ? AppColors.borderDark : AppColors.border,
+                width: 1),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 l10n.personalInfo,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textDark,
+                  color: isDark ? Colors.white : AppColors.textDark,
                 ),
               ),
               const SizedBox(height: 24),
@@ -680,10 +690,12 @@ class _Field extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppColors.textDark,
+              color: ReactiveMode.isDarkMode(context)
+                  ? Colors.white70
+                  : AppColors.textDark,
             ),
           ),
         ),
@@ -695,12 +707,24 @@ class _Field extends StatelessWidget {
           readOnly: readOnly,
           style: TextStyle(
             fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: readOnly ? AppColors.textGray : AppColors.textDark,
+            fontWeight: readOnly ? FontWeight.normal : FontWeight.w600,
+            color: readOnly
+                ? (ReactiveMode.isDarkMode(context)
+                    ? Colors.white38
+                    : AppColors.textGray)
+                : (ReactiveMode.isDarkMode(context)
+                    ? Colors.white
+                    : AppColors.textDark),
           ),
           decoration: InputDecoration(
             filled: true,
-            fillColor: readOnly ? AppColors.bgAlt : AppColors.bg,
+            fillColor: readOnly
+                ? (ReactiveMode.isDarkMode(context)
+                    ? Colors.white.withOpacity(0.05)
+                    : AppColors.bgAlt)
+                : (ReactiveMode.isDarkMode(context)
+                    ? Colors.white.withOpacity(0.05)
+                    : AppColors.bg),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             suffixIcon: readOnly
@@ -718,7 +742,11 @@ class _Field extends StatelessWidget {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                  color: readOnly ? Colors.transparent : AppColors.navy,
+                  color: readOnly
+                      ? Colors.transparent
+                      : (ReactiveMode.isDarkMode(context)
+                          ? AppColors.orange
+                          : AppColors.navy),
                   width: 1.5),
             ),
           ),
@@ -743,6 +771,7 @@ class _PhoneField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ReactiveMode.isDarkMode(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -750,19 +779,21 @@ class _PhoneField extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppColors.textDark,
+              color: isDark ? Colors.white70 : AppColors.textDark,
             ),
           ),
         ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: AppColors.bg,
+            color: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border, width: 1),
+            border: Border.all(
+                color: isDark ? AppColors.borderDark : AppColors.border,
+                width: 1),
           ),
           child: InternationalPhoneNumberInput(
             onInputChanged: onChanged,
@@ -777,14 +808,14 @@ class _PhoneField extends StatelessWidget {
             ignoreBlank: false,
             autoValidateMode: AutovalidateMode.onUserInteraction,
             selectorTextStyle: GoogleFonts.inter(
-              color: AppColors.textDark,
+              color: isDark ? Colors.white : AppColors.textDark,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
             textStyle: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: AppColors.textDark,
+              color: isDark ? Colors.white : AppColors.textDark,
             ),
             inputDecoration: const InputDecoration(
               border: InputBorder.none,
@@ -829,25 +860,28 @@ class _CvCard extends StatelessWidget {
         }
       },
       builder: (context, cvState) {
+        final isDark = ReactiveMode.isDarkMode(context);
         final isCompact =
             Responsive.isMobile(context) || Responsive.isTablet(context);
         return Container(
           width: double.infinity,
           padding: EdgeInsets.all(isCompact ? 20 : 28),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? AppColors.surfaceDark : Colors.white,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.border, width: 1),
+            border: Border.all(
+                color: isDark ? AppColors.borderDark : AppColors.border,
+                width: 1),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 l10n.myCv,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textDark,
+                  color: isDark ? Colors.white : AppColors.textDark,
                 ),
               ),
               const SizedBox(height: 20),
@@ -905,6 +939,7 @@ class _CvUploadArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ReactiveMode.isDarkMode(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -913,32 +948,34 @@ class _CvUploadArea extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 40),
         decoration: BoxDecoration(
           border: Border.all(
-            color: AppColors.border,
+            color: isDark ? AppColors.borderDark : AppColors.border,
             style: BorderStyle.solid,
             width: 2,
           ),
           borderRadius: BorderRadius.circular(16),
-          color: AppColors.bg.withValues(alpha: 0.5),
+          color: isDark
+              ? Colors.white.withOpacity(0.05)
+              : AppColors.bg.withValues(alpha: 0.5),
         ),
         child: Column(
           children: [
-            const Icon(Icons.cloud_upload_rounded,
-                size: 40, color: AppColors.textGray),
+            Icon(Icons.cloud_upload_rounded,
+                size: 40, color: isDark ? Colors.white60 : AppColors.textGray),
             const SizedBox(height: 12),
             Text(
               l10n.uploadHint,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textDark,
+                color: isDark ? Colors.white : AppColors.textDark,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               l10n.uploadFormatHint,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppColors.textGray,
+                color: isDark ? Colors.white60 : AppColors.textGray,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -956,12 +993,14 @@ class _CvUploadedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ReactiveMode.isDarkMode(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       decoration: BoxDecoration(
-        color: AppColors.bg,
+        color: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border:
+            Border.all(color: isDark ? AppColors.borderDark : AppColors.border),
       ),
       child: Row(
         children: [
@@ -975,13 +1014,13 @@ class _CvUploadedView extends StatelessWidget {
                 color: AppColors.orange, size: 20),
           ),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             child: Text(
               'CV chargé',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textDark,
+                color: isDark ? Colors.white : AppColors.textDark,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -1015,6 +1054,7 @@ class _CvSuccessView extends StatelessWidget {
   const _CvSuccessView({required this.data, required this.l10n});
   @override
   Widget build(BuildContext context) {
+    final isDark = ReactiveMode.isDarkMode(context);
     final skillsList = data['skills'] as List? ?? [];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1022,9 +1062,12 @@ class _CvSuccessView extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.green.withValues(alpha: 0.05),
+            color: isDark
+                ? Colors.green.withValues(alpha: 0.1)
+                : Colors.green.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+            border: Border.all(
+                color: Colors.green.withValues(alpha: isDark ? 0.3 : 0.3)),
           ),
           child: Row(
             children: [
@@ -1034,10 +1077,10 @@ class _CvSuccessView extends StatelessWidget {
               Expanded(
                 child: Text(
                   'CV analysé — ${(data['prenom'] ?? '').toString().capitalize()} ${(data['nom'] ?? '').toString().capitalize()}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
+                    color: isDark ? Colors.white : AppColors.textDark,
                   ),
                 ),
               ),
@@ -1060,14 +1103,18 @@ class _CvSuccessView extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.bg,
+                  color: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(
+                      color: isDark ? AppColors.borderDark : AppColors.border),
                 ),
                 child: Text(
                   name.capitalize(),
-                  style: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white70 : AppColors.textDark,
+                  ),
                 ),
               );
             }).toList(),
@@ -1105,15 +1152,18 @@ class _SkillsCardState extends State<_SkillsCard> {
         // Sort skills by percentage descending
         final skills = List<ProfileSkill>.from(rawSkills)
           ..sort((a, b) => b.percent.compareTo(a.percent));
+        final isDark = ReactiveMode.isDarkMode(context);
         final isCompact =
             Responsive.isMobile(context) || Responsive.isTablet(context);
         return Container(
           width: double.infinity,
           padding: EdgeInsets.all(isCompact ? 20 : 28),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? AppColors.surfaceDark : Colors.white,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.border, width: 1),
+            border: Border.all(
+                color: isDark ? AppColors.borderDark : AppColors.border,
+                width: 1),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1124,10 +1174,10 @@ class _SkillsCardState extends State<_SkillsCard> {
                   Expanded(
                     child: Text(
                       l10n.skills,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textDark,
+                        color: isDark ? Colors.white : AppColors.textDark,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1175,8 +1225,10 @@ class _SkillsCardState extends State<_SkillsCard> {
                                 _showAll
                                     ? 'Voir moins'
                                     : 'Voir les ${skills.length - 5} autres',
-                                style: const TextStyle(
-                                  color: AppColors.textGray,
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white60
+                                      : AppColors.textGray,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -1187,7 +1239,9 @@ class _SkillsCardState extends State<_SkillsCard> {
                                     ? Icons.keyboard_arrow_up
                                     : Icons.keyboard_arrow_down,
                                 size: 18,
-                                color: AppColors.textGray,
+                                color: isDark
+                                    ? Colors.white60
+                                    : AppColors.textGray,
                               ),
                             ],
                           ),
@@ -1223,6 +1277,7 @@ class _SkillRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final level = skill.level;
+    final isDark = ReactiveMode.isDarkMode(context);
 
     Widget buildLevelChip(String label, SkillLevel chipLevel) {
       final isSelected = level == chipLevel;
@@ -1230,17 +1285,23 @@ class _SkillRow extends StatelessWidget {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.navy : AppColors.bgAlt,
+          color: isSelected
+              ? (isDark ? AppColors.orange : AppColors.navy)
+              : (isDark ? Colors.white.withOpacity(0.05) : AppColors.bgAlt),
           borderRadius: BorderRadius.circular(12),
-          border:
-              Border.all(color: isSelected ? AppColors.navy : AppColors.border),
+          border: Border.all(
+              color: isSelected
+                  ? (isDark ? AppColors.orange : AppColors.navy)
+                  : (isDark ? AppColors.borderDark : AppColors.border)),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: isSelected ? Colors.white : AppColors.textGray,
+            color: isSelected
+                ? Colors.white
+                : (isDark ? Colors.white38 : AppColors.textGray),
           ),
         ),
       );
@@ -1257,10 +1318,10 @@ class _SkillRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   skill.name.capitalize(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
+                    color: isDark ? Colors.white : AppColors.textDark,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

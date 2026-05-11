@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:reactive_theme/reactive_theme.dart';
 import '../../core/app_colors.dart';
 
 class SchedulingDialog extends StatefulWidget {
@@ -23,6 +24,7 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
   final linkController = TextEditingController();
 
   Future<void> _selectDate() async {
+    final isDark = ReactiveMode.isDarkMode(context);
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now().add(const Duration(days: 1)),
@@ -31,11 +33,18 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.navy,
-              onPrimary: Colors.white,
-              onSurface: AppColors.textDark,
-            ),
+            colorScheme: isDark
+                ? const ColorScheme.dark(
+                    primary: AppColors.orange,
+                    onPrimary: Colors.white,
+                    surface: AppColors.surfaceDark,
+                    onSurface: Colors.white,
+                  )
+                : const ColorScheme.light(
+                    primary: AppColors.navy,
+                    onPrimary: Colors.white,
+                    onSurface: AppColors.textDark,
+                  ),
           ),
           child: child!,
         );
@@ -49,17 +58,25 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
   }
 
   Future<void> _selectTime() async {
+    final isDark = ReactiveMode.isDarkMode(context);
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: const TimeOfDay(hour: 14, minute: 0),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.navy,
-              onPrimary: Colors.white,
-              onSurface: AppColors.textDark,
-            ),
+            colorScheme: isDark
+                ? const ColorScheme.dark(
+                    primary: AppColors.orange,
+                    onPrimary: Colors.white,
+                    surface: AppColors.surfaceDark,
+                    onSurface: Colors.white,
+                  )
+                : const ColorScheme.light(
+                    primary: AppColors.navy,
+                    onPrimary: Colors.white,
+                    onSurface: AppColors.textDark,
+                  ),
           ),
           child: child!,
         );
@@ -74,10 +91,11 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ReactiveMode.isDarkMode(context);
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      backgroundColor: Colors.white,
-      surfaceTintColor: Colors.white,
+      backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+      surfaceTintColor: isDark ? AppColors.surfaceDark : Colors.white,
       titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,13 +112,13 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
                     color: AppColors.orange, size: 22),
               ),
               const SizedBox(width: 16),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Planifier un entretien',
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 22,
-                    color: AppColors.textDark,
+                    color: isDark ? Colors.white : AppColors.textDark,
                   ),
                 ),
               ),
@@ -109,8 +127,8 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
           const SizedBox(height: 12),
           Text(
             'Proposez une date et un lien Meet pour rencontrer ${widget.candidateName}.',
-            style: const TextStyle(
-              color: AppColors.textGray,
+            style: TextStyle(
+              color: isDark ? Colors.white70 : AppColors.textGray,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -131,6 +149,7 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
                 hint: 'Choisir une date',
                 icon: Icons.calendar_today_rounded,
                 onTap: _selectDate,
+                isDark: isDark,
                 validator: (val) =>
                     val == null || val.isEmpty ? 'Veuillez choisir une date' : null,
               ),
@@ -141,6 +160,7 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
                 hint: 'Choisir l\'heure',
                 icon: Icons.access_time_rounded,
                 onTap: _selectTime,
+                isDark: isDark,
                 validator: (val) =>
                     val == null || val.isEmpty ? 'Veuillez choisir l\'heure' : null,
               ),
@@ -150,6 +170,7 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
                 label: 'Lien de la réunion',
                 hint: 'https://meet.google.com/xxx-xxxx-xxx',
                 icon: Icons.videocam_rounded,
+                isDark: isDark,
                 validator: (val) {
                   if (val == null || val.isEmpty) {
                     return 'Veuillez saisir un lien';
@@ -167,10 +188,10 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text(
+          child: Text(
             'Annuler',
             style: TextStyle(
-                color: AppColors.textGray,
+                color: isDark ? Colors.white70 : AppColors.textGray,
                 fontWeight: FontWeight.w600,
                 fontSize: 15),
           ),
@@ -188,7 +209,7 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
             }
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.navy,
+            backgroundColor: isDark ? AppColors.orange : AppColors.navy,
             foregroundColor: Colors.white,
             elevation: 0,
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
@@ -211,6 +232,7 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
     required String hint,
     required IconData icon,
     required VoidCallback onTap,
+    required bool isDark,
     String? Function(String?)? validator,
   }) {
     return Column(
@@ -218,10 +240,10 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.bold,
-            color: AppColors.textDark,
+            color: isDark ? Colors.white : AppColors.textDark,
           ),
         ),
         const SizedBox(height: 8),
@@ -230,16 +252,21 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
           readOnly: true,
           onTap: onTap,
           validator: validator,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white : AppColors.textDark),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle:
-                TextStyle(color: AppColors.textGray.withValues(alpha: 0.5)),
-            prefixIcon: Icon(icon, size: 20, color: AppColors.navy),
-            suffixIcon: const Icon(Icons.arrow_drop_down_rounded,
-                color: AppColors.textGray),
+            hintStyle: TextStyle(
+                color: (isDark ? Colors.white30 : AppColors.textGray)
+                    .withValues(alpha: 0.5)),
+            prefixIcon: Icon(icon,
+                size: 20, color: isDark ? AppColors.orange : AppColors.navy),
+            suffixIcon: Icon(Icons.arrow_drop_down_rounded,
+                color: isDark ? Colors.white30 : AppColors.textGray),
             filled: true,
-            fillColor: AppColors.bg,
+            fillColor: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
@@ -260,7 +287,9 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: AppColors.navy, width: 1.5),
+              borderSide: BorderSide(
+                  color: isDark ? AppColors.orange : AppColors.navy,
+                  width: 1.5),
             ),
           ),
         ),
@@ -273,6 +302,7 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
     required String label,
     required String hint,
     required IconData icon,
+    required bool isDark,
     String? Function(String?)? validator,
   }) {
     return Column(
@@ -280,24 +310,29 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.bold,
-            color: AppColors.textDark,
+            color: isDark ? Colors.white : AppColors.textDark,
           ),
         ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           validator: validator,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white : AppColors.textDark),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle:
-                TextStyle(color: AppColors.textGray.withValues(alpha: 0.5)),
-            prefixIcon: Icon(icon, size: 20, color: AppColors.navy),
+            hintStyle: TextStyle(
+                color: (isDark ? Colors.white30 : AppColors.textGray)
+                    .withValues(alpha: 0.5)),
+            prefixIcon: Icon(icon,
+                size: 20, color: isDark ? AppColors.orange : AppColors.navy),
             filled: true,
-            fillColor: AppColors.bg,
+            fillColor: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
@@ -318,7 +353,9 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: AppColors.navy, width: 1.5),
+              borderSide: BorderSide(
+                  color: isDark ? AppColors.orange : AppColors.navy,
+                  width: 1.5),
             ),
           ),
         ),

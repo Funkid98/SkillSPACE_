@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:reactive_theme/reactive_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:skillspace/core/app_colors.dart';
 import '../../shared/widgets/app_sidebar.dart';
 import '../dashboard/cubit/dashboard_cubit.dart';
 import '../dashboard/presentation/pages/dashboard_page.dart';
@@ -56,10 +58,11 @@ class _DashboardShellState extends State<DashboardShell> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 768;
+    final isMobile = MediaQuery.of(context).size.width < 800;
+    final isDark = ReactiveMode.isDarkMode(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F3EF),
+      backgroundColor: isDark ? AppColors.bgDark : const Color(0xFFF5F3EF),
       body: isMobile
           // ─── Mobile Layout ─────────────────────────────────
           ? Column(
@@ -69,7 +72,11 @@ class _DashboardShellState extends State<DashboardShell> {
                   onTabSelected: _onTabChanged,
                   onLogout: widget.onLogout,
                 ),
-                Container(height: 1, color: const Color(0xFFEAE8E3)),
+                Container(
+                    height: 1,
+                    color: isDark
+                        ? AppColors.borderDark
+                        : const Color(0xFFEAE8E3)),
                 Expanded(child: _buildContent()),
               ],
             )
@@ -82,7 +89,11 @@ class _DashboardShellState extends State<DashboardShell> {
                   onTabSelected: _onTabChanged,
                   onLogout: widget.onLogout,
                 ),
-                Container(width: 1, color: const Color(0xFFEAE8E3)),
+                Container(
+                    width: 1,
+                    color: isDark
+                        ? AppColors.borderDark
+                        : const Color(0xFFEAE8E3)),
                 Expanded(
                   child: _buildContent(),
                 ),

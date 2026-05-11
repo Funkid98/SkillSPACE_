@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 
-class AppColors {
-  static const Color navy = Color(0xFF0A192F);
-  static const Color orange = Color(0xFFFF4D00);
-}
+import 'package:pfe/core/app_colors.dart';
 
 class AppToast {
   static void show(BuildContext context, String message, {bool isError = false}) {

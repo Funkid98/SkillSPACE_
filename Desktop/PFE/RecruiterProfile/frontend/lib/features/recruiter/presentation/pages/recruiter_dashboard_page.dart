@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:reactive_theme/reactive_theme.dart';
 import '../cubits/recruiter_dashboard_cubit.dart';
 import '../../data/models/recruiter_dashboard_model.dart';
 import '../../../../core/app_colors.dart';
@@ -37,6 +38,7 @@ class _DashboardContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = Responsive.isMobile(context);
     final l10n = RecruiterLocalizations.of(context);
+    final isDark = ReactiveMode.isDarkMode(context);
 
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
@@ -76,10 +78,10 @@ class _DashboardContent extends StatelessWidget {
                           ),
                         Text(
                           '${l10n.welcome} ${data.companyName}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w900,
-                            color: AppColors.textDark,
+                            color: isDark ? Colors.white : AppColors.textDark,
                             letterSpacing: -0.5,
                           ),
                         ),
@@ -92,9 +94,9 @@ class _DashboardContent extends StatelessWidget {
                     direction: RevealDirection.fromTop,
                     child: Text(
                       l10n.recruiterDashboard,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
-                        color: AppColors.textGray,
+                        color: isDark ? Colors.white60 : AppColors.textGray,
                       ),
                     ),
                   ),
@@ -256,12 +258,13 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCompact = Responsive.isMobile(context) || Responsive.isTablet(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: EdgeInsets.all(isCompact ? 16 : 24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: isDark ? AppColors.borderDark : AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -278,7 +281,7 @@ class _StatCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.iconBg,
+                  color: isDark ? Colors.white.withOpacity(0.05) : AppColors.iconBg,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(item.icon, size: 20, color: AppColors.orange),
@@ -287,10 +290,10 @@ class _StatCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   item.label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textGray,
+                    color: isDark ? Colors.white60 : AppColors.textGray,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -301,19 +304,19 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 20),
           Text(
             item.value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.w900,
-              color: AppColors.textDark,
+              color: isDark ? Colors.white : AppColors.textDark,
               height: 1,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             item.subtitle,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 12,
-                color: AppColors.textGray,
+                color: isDark ? Colors.white60 : AppColors.textGray,
                 fontWeight: FontWeight.w500),
           ),
         ],
@@ -329,12 +332,13 @@ class _RecentCandidatesCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = RecruiterLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: isDark ? AppColors.borderDark : AppColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -344,10 +348,10 @@ class _RecentCandidatesCard extends StatelessWidget {
             children: [
               Text(
                 l10n.recentCandidates,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textDark,
+                  color: isDark ? Colors.white : AppColors.textDark,
                 ),
               ),
               TextButton(
@@ -373,20 +377,20 @@ class _RecentCandidatesCard extends StatelessWidget {
 class _CandidateRow extends StatelessWidget {
   final RecentCandidate candidate;
   const _CandidateRow({required this.candidate});
-
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: [
           CircleAvatar(
             radius: 22,
-            backgroundColor: AppColors.bg,
+            backgroundColor: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
             child: Text(
               candidate.initials,
-              style: const TextStyle(
-                color: AppColors.navy,
+              style: TextStyle(
+                color: isDark ? Colors.white : AppColors.navy,
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
               ),
@@ -399,19 +403,19 @@ class _CandidateRow extends StatelessWidget {
               children: [
                 Text(
                   candidate.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
+                    color: isDark ? Colors.white : AppColors.textDark,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   candidate.role,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.textGray,
+                    color: isDark ? Colors.white60 : AppColors.textGray,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -481,22 +485,23 @@ class _ActiveOffersCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = RecruiterLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: isDark ? AppColors.borderDark : AppColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             l10n.activeOffers,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
-              color: AppColors.textDark,
+              color: isDark ? Colors.white : AppColors.textDark,
             ),
           ),
           const SizedBox(height: 16),
@@ -514,6 +519,7 @@ class _OfferItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = RecruiterLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
@@ -521,10 +527,10 @@ class _OfferItem extends StatelessWidget {
         children: [
           Text(
             offer.title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: AppColors.textDark,
+              color: isDark ? Colors.white : AppColors.textDark,
             ),
           ),
           const SizedBox(height: 8),
@@ -533,7 +539,7 @@ class _OfferItem extends StatelessWidget {
               Flexible(
                 child: Text(
                   '${offer.applicationCount} ${l10n.receivedApplications.toLowerCase()}',
-                  style: const TextStyle(fontSize: 12, color: AppColors.textGray),
+                  style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : AppColors.textGray),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -542,7 +548,7 @@ class _OfferItem extends StatelessWidget {
               Flexible(
                 child: Text(
                   '· ${offer.viewCount} ${l10n.offerViews.toLowerCase()}',
-                  style: const TextStyle(fontSize: 12, color: AppColors.textGray),
+                  style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : AppColors.textGray),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

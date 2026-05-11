@@ -1,19 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../widgets/recruiter_sidebar.dart';
-import '../cubits/recruiter_dashboard_cubit.dart';
-import '../pages/recruiter_dashboard_page.dart';
-import '../cubits/recruiter_profile_cubit.dart';
-import '../pages/recruiter_profile_page.dart';
-import '../../data/repositories/recruiter_repository.dart';
 import 'package:pfe/core/network/api_client.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../recruiter_profile.dart';
+import '../../data/repositories/recruiter_repository.dart';
+import '../cubits/recruiter_dashboard_cubit.dart';
 import '../cubits/recruiter_extra_cubits.dart';
+import '../cubits/recruiter_profile_cubit.dart';
 import '../../data/repositories/recruiter_job_repository.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 
-import '../pages/recruiter_offers_page.dart';
-import '../pages/recruiter_candidates_page.dart';
 import '../../../../core/app_colors.dart';
 import '../../../../core/app_text_styles.dart';
 import '../../../../shared/widgets/animated_reveal.dart';
@@ -54,14 +50,15 @@ class _RecruiterShellState extends State<RecruiterShell> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 768;
+    final isMobile = MediaQuery.of(context).size.width < 800;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return BlocProvider(
       create: (context) => RecruiterProfileCubit(
         repository: RecruiterRepository(apiClient: ApiClient()),
       )..loadProfile(),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF5F3EF),
+        backgroundColor: isDark ? AppColors.bgDark : const Color(0xFFF5F3EF),
         body: Builder(
           builder: (context) => isMobile
               ? Column(
@@ -73,7 +70,11 @@ class _RecruiterShellState extends State<RecruiterShell> {
                       currentLocale: widget.currentLocale,
                       onLocaleChanged: widget.onLocaleChanged,
                     ),
-                    Container(height: 1, color: const Color(0xFFEAE8E3)),
+                    Container(
+                        height: 1,
+                        color: isDark
+                            ? AppColors.borderDark
+                            : const Color(0xFFEAE8E3)),
                     Expanded(child: _buildContent(context)),
                   ],
                 )
@@ -87,7 +88,11 @@ class _RecruiterShellState extends State<RecruiterShell> {
                       currentLocale: widget.currentLocale,
                       onLocaleChanged: widget.onLocaleChanged,
                     ),
-                    Container(width: 1, color: const Color(0xFFEAE8E3)),
+                    Container(
+                        width: 1,
+                        color: isDark
+                            ? AppColors.borderDark
+                            : const Color(0xFFEAE8E3)),
                     Expanded(
                       child: _buildContent(context),
                     ),
@@ -159,17 +164,24 @@ class _RecruiterMobileTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: 70,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: AppColors.border, width: 1)),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        border: Border(
+            bottom: BorderSide(
+                color: isDark ? AppColors.borderDark : AppColors.border,
+                width: 1)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text('SkillSpace', style: AppTextStyles.navBrand),
+          Text('SkillSpace',
+              style: AppTextStyles.navBrand.copyWith(
+                color: isDark ? Colors.white : AppColors.navy,
+              )),
           Row(
             children: [
               const NotificationBell(isRecruiter: true),
@@ -195,11 +207,12 @@ class _RecruiterMobileTopBar extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.bg,
+                    color:
+                        isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.menu_rounded,
-                      color: AppColors.navy, size: 24),
+                  child: Icon(Icons.menu_rounded,
+                      color: isDark ? Colors.white : AppColors.navy, size: 24),
                 ),
               ),
             ],
@@ -227,10 +240,11 @@ class _RecruiterMobileDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       ),
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
       child: Column(
@@ -240,7 +254,8 @@ class _RecruiterMobileDrawer extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey.shade200,
+              color:
+                  isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade200,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -251,6 +266,11 @@ class _RecruiterMobileDrawer extends StatelessWidget {
               currentLocale: currentLocale ?? Localizations.localeOf(context),
               onLocaleChanged: onLocaleChanged,
             ),
+          ),
+          const SizedBox(height: 16),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: ThemeToggle(),
           ),
           const SizedBox(height: 16),
           ...RecruiterTab.values.asMap().entries.map(
@@ -269,8 +289,8 @@ class _RecruiterMobileDrawer extends StatelessWidget {
                     tab.label(context),
                     style: TextStyle(
                       color: tab == activeTab
-                          ? AppColors.textDark
-                          : AppColors.textGray,
+                          ? (isDark ? AppColors.orange : AppColors.textDark)
+                          : (isDark ? Colors.white60 : AppColors.textGray),
                       fontWeight: tab == activeTab
                           ? FontWeight.bold
                           : FontWeight.normal,

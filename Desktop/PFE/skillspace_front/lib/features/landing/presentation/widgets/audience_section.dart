@@ -343,7 +343,7 @@ class _AudienceCard extends StatelessWidget {
           width: constraints.maxWidth,
           height: isMobile ? 480 : 540,
           borderRadius: 24,
-          blur: 20,
+          blur: 25,
           alignment: Alignment.center,
           border: 2,
           linearGradient: LinearGradient(

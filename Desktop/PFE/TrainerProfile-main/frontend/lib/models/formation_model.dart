@@ -12,6 +12,9 @@ class FormationModel {
   final String category;
   final String level;
   final String imageUrl;
+  final String? meetLink;
+  final DateTime? date;
+  final String? time;
 
   FormationModel({
     required this.id,
@@ -27,6 +30,9 @@ class FormationModel {
     this.category = '',
     this.level = 'Débutant',
     this.imageUrl = '',
+    this.meetLink,
+    this.date,
+    this.time,
   });
 
   factory FormationModel.fromJson(Map<String, dynamic> json) {
@@ -44,6 +50,9 @@ class FormationModel {
       category: json['category'] ?? '',
       level: json['level'] ?? 'Débutant',
       imageUrl: json['imageUrl'] ?? '',
+      meetLink: json['meetLink'],
+      date: json['date'] != null ? DateTime.tryParse(json['date']) : null,
+      time: json['time'],
     );
   }
 
@@ -61,6 +70,9 @@ class FormationModel {
       'category': category,
       'level': level,
       'imageUrl': imageUrl,
+      'meetLink': meetLink,
+      'date': date?.toIso8601String(),
+      'time': time,
     };
   }
 }

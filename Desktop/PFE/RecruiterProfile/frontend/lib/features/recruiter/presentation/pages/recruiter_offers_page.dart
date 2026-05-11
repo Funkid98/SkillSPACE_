@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:reactive_theme/reactive_theme.dart';
 import '../cubits/recruiter_extra_cubits.dart';
 import '../../data/models/recruiter_job_offer_model.dart';
 import '../../../../core/app_colors.dart';
@@ -35,6 +36,8 @@ class RecruiterOffersPage extends StatelessWidget {
 
   Widget _buildContent(BuildContext context, List<RecruiterJobOffer> offers,
       RecruiterLocalizations l10n) {
+    final isDark = ReactiveMode.isDarkMode(context);
+
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
           Responsive.hPad(context), 24, Responsive.hPad(context), 32),
@@ -51,31 +54,35 @@ class RecruiterOffersPage extends StatelessWidget {
                   children: [
                     Text(
                       l10n.myOffersTitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w900,
-                          color: AppColors.textDark),
+                          color: isDark ? Colors.white : AppColors.textDark),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       l10n.myOffersSubtitle,
-                      style: const TextStyle(
-                          fontSize: 15, color: AppColors.textGray),
+                      style: TextStyle(
+                          fontSize: 15,
+                          color: isDark ? Colors.white60 : AppColors.textGray),
                     ),
                   ],
                 ),
-                ElevatedButton.icon(
+                OutlinedButton.icon(
                   onPressed: () => _showNewOfferDialog(context, l10n),
                   icon: const Icon(Icons.add, size: 18),
                   label: Text(l10n.newOffer),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.orange,
-                    foregroundColor: Colors.white,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: isDark ? Colors.white : AppColors.navy,
+                    side: BorderSide(
+                        color: isDark ? Colors.white38 : AppColors.navy,
+                        width: 1.2),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 16),
+                        horizontal: 16, vertical: 12),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
+                        borderRadius: BorderRadius.circular(10)),
+                    textStyle: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ),
               ],
@@ -83,12 +90,14 @@ class RecruiterOffersPage extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           if (offers.isEmpty)
-            const Center(
+            Center(
               child: Padding(
-                padding: EdgeInsets.all(40.0),
+                padding: const EdgeInsets.all(40.0),
                 child: Text(
                   "Aucune offre n'est disponible.",
-                  style: TextStyle(color: AppColors.textGray, fontSize: 16),
+                  style: TextStyle(
+                      color: isDark ? Colors.white38 : AppColors.textGray,
+                      fontSize: 16),
                 ),
               ),
             ),
@@ -97,7 +106,7 @@ class RecruiterOffersPage extends StatelessWidget {
             final o = entry.value;
             return AnimatedReveal(
               delay: Duration(milliseconds: 200 + (index * 100)),
-              child: _OfferCard(offer: o),
+              child: _OfferCard(offer: o, isDark: isDark),
             );
           }),
         ],
@@ -119,6 +128,7 @@ class RecruiterOffersPage extends StatelessWidget {
     final skillsController =
         TextEditingController(text: existingOffer?.requirements.join(', '));
     String selectedType = existingOffer?.type ?? 'Full-time';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
       context: context,
@@ -129,18 +139,22 @@ class RecruiterOffersPage extends StatelessWidget {
           width: 600,
           constraints: const BoxConstraints(maxHeight: 800),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? AppColors.surfaceDark : Colors.white,
             borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+                color: isDark ? AppColors.borderDark : Colors.transparent),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ─── Header ─────
               Container(
                 padding: const EdgeInsets.fromLTRB(32, 28, 24, 20),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   border: Border(
-                      bottom: BorderSide(color: AppColors.border, width: 1)),
+                      bottom: BorderSide(
+                          color:
+                              isDark ? AppColors.borderDark : AppColors.border,
+                          width: 1)),
                 ),
                 child: Row(
                   children: [
@@ -162,10 +176,10 @@ class RecruiterOffersPage extends StatelessWidget {
                             existingOffer == null
                                 ? l10n.newOffer
                                 : "Modifier l'offre",
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w900,
-                              color: AppColors.textDark,
+                              color: isDark ? Colors.white : AppColors.textDark,
                               letterSpacing: -0.5,
                             ),
                           ),
@@ -174,8 +188,11 @@ class RecruiterOffersPage extends StatelessWidget {
                             existingOffer == null
                                 ? "Remplissez les détails pour publier une nouvelle opportunité"
                                 : "Mettez à jour les informations de votre offre",
-                            style: const TextStyle(
-                                fontSize: 13, color: AppColors.textGray),
+                            style: TextStyle(
+                                fontSize: 13,
+                                color: isDark
+                                    ? Colors.white60
+                                    : AppColors.textGray),
                           ),
                         ],
                       ),
@@ -188,17 +205,16 @@ class RecruiterOffersPage extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // ─── Body ───────
               Flexible(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(32),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildSectionTitle("Détails de base"),
+                      _buildSectionTitle("Détails de base", isDark),
                       const SizedBox(height: 16),
                       _buildTextField(
+                        context: context,
                         controller: titleController,
                         label: "Titre du poste",
                         hint: "ex: Développeur Fullstack Senior",
@@ -209,6 +225,7 @@ class RecruiterOffersPage extends StatelessWidget {
                         children: [
                           Expanded(
                             child: _buildTextField(
+                              context: context,
                               controller: locationController,
                               label: "Localisation",
                               hint: "ex: Paris, Remote...",
@@ -218,6 +235,7 @@ class RecruiterOffersPage extends StatelessWidget {
                           const SizedBox(width: 20),
                           Expanded(
                             child: _buildDropdown(
+                              context: context,
                               value: selectedType,
                               label: "Type de contrat",
                               items: [
@@ -233,9 +251,10 @@ class RecruiterOffersPage extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 32),
-                      _buildSectionTitle("Description & Missions"),
+                      _buildSectionTitle("Description & Missions", isDark),
                       const SizedBox(height: 16),
                       _buildTextField(
+                        context: context,
                         controller: descController,
                         label: "Description du poste",
                         hint: "Décrivez les missions et le profil recherché...",
@@ -243,7 +262,7 @@ class RecruiterOffersPage extends StatelessWidget {
                         maxLines: 5,
                       ),
                       const SizedBox(height: 32),
-                      _buildSectionTitle("Compétences requises"),
+                      _buildSectionTitle("Compétences requises", isDark),
                       const SizedBox(height: 6),
                       const Text(
                         "Séparez les compétences par des virgules pour un meilleur affichage",
@@ -252,6 +271,7 @@ class RecruiterOffersPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       _buildTextField(
+                        context: context,
                         controller: skillsController,
                         label: "Compétences clés",
                         hint: "ex: React, Flutter, Python, Docker...",
@@ -261,16 +281,19 @@ class RecruiterOffersPage extends StatelessWidget {
                   ),
                 ),
               ),
-
-              // ─── Footer ─────
               Container(
                 padding: const EdgeInsets.fromLTRB(32, 20, 32, 28),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFAFAFA),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withOpacity(0.02)
+                      : const Color(0xFFFAFAFA),
                   borderRadius:
-                      BorderRadius.vertical(bottom: Radius.circular(28)),
+                      const BorderRadius.vertical(bottom: Radius.circular(28)),
                   border: Border(
-                      top: BorderSide(color: AppColors.border, width: 1)),
+                      top: BorderSide(
+                          color:
+                              isDark ? AppColors.borderDark : AppColors.border,
+                          width: 1)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -342,8 +365,11 @@ class RecruiterOffersPage extends StatelessWidget {
                         existingOffer == null
                             ? "Publier l'offre"
                             : "Enregistrer les modifications",
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15),
+                        style: TextStyle(
+                          color: isDark ? Colors.white : AppColors.navy,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ],
@@ -356,25 +382,27 @@ class RecruiterOffersPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, bool isDark) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w800,
-        color: AppColors.navy,
+        color: isDark ? Colors.white : AppColors.navy,
         letterSpacing: 0.5,
       ),
     );
   }
 
   Widget _buildTextField({
+    required BuildContext context,
     required TextEditingController controller,
     required String label,
     required String hint,
     required IconData icon,
     int maxLines = 1,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -385,10 +413,10 @@ class RecruiterOffersPage extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textDark),
+                  color: isDark ? Colors.white : AppColors.textDark),
             ),
           ],
         ),
@@ -399,15 +427,21 @@ class RecruiterOffersPage extends StatelessWidget {
           style: const TextStyle(fontSize: 15),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle:
-                TextStyle(color: AppColors.textGray.withValues(alpha: 0.5)),
+            hintStyle: TextStyle(
+                color: isDark
+                    ? Colors.white24
+                    : AppColors.textGray.withValues(alpha: 0.5)),
             filled: true,
-            fillColor: const Color(0xFFF9F9F9),
+            fillColor: isDark
+                ? Colors.white.withOpacity(0.05)
+                : const Color(0xFFF9F9F9),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide.none,
+              borderSide: isDark
+                  ? BorderSide(color: AppColors.borderDark)
+                  : BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
@@ -424,12 +458,14 @@ class RecruiterOffersPage extends StatelessWidget {
   }
 
   Widget _buildDropdown({
+    required BuildContext context,
     required String value,
     required String label,
     required List<String> items,
     required Function(String?) onChanged,
     required IconData icon,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -440,10 +476,10 @@ class RecruiterOffersPage extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textDark),
+                  color: isDark ? Colors.white : AppColors.textDark),
             ),
           ],
         ),
@@ -455,15 +491,20 @@ class RecruiterOffersPage extends StatelessWidget {
               .toList(),
           onChanged: onChanged,
           icon: const Icon(Icons.keyboard_arrow_down_rounded),
-          style: const TextStyle(fontSize: 15, color: AppColors.textDark),
+          style: TextStyle(
+              fontSize: 15, color: isDark ? Colors.white : AppColors.textDark),
           decoration: InputDecoration(
             filled: true,
-            fillColor: const Color(0xFFF9F9F9),
+            fillColor: isDark
+                ? Colors.white.withOpacity(0.05)
+                : const Color(0xFFF9F9F9),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide.none,
+              borderSide: isDark
+                  ? BorderSide(color: AppColors.borderDark)
+                  : BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
@@ -482,7 +523,8 @@ class RecruiterOffersPage extends StatelessWidget {
 
 class _OfferCard extends StatelessWidget {
   final RecruiterJobOffer offer;
-  const _OfferCard({required this.offer});
+  final bool isDark;
+  const _OfferCard({required this.offer, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -493,12 +535,13 @@ class _OfferCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 20),
       padding: EdgeInsets.all(isCompact ? 20 : 24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -512,15 +555,15 @@ class _OfferCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   offer.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textDark),
+                      color: isDark ? Colors.white : AppColors.textDark),
                 ),
               ),
-              _StatusBadge(status: offer.status),
+              _StatusBadge(status: offer.status, isDark: isDark),
               const SizedBox(width: 8),
-              _TypeBadge(type: offer.type),
+              _TypeBadge(type: offer.type, isDark: isDark),
             ],
           ),
           const SizedBox(height: 8),
@@ -531,9 +574,9 @@ class _OfferCard extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 offer.location,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.textGray,
+                    color: isDark ? Colors.white60 : AppColors.textGray,
                     fontWeight: FontWeight.w500),
               ),
             ],
@@ -541,8 +584,10 @@ class _OfferCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             offer.description,
-            style: const TextStyle(
-                fontSize: 14, color: AppColors.textGray, height: 1.5),
+            style: TextStyle(
+                fontSize: 14,
+                color: isDark ? Colors.white60 : AppColors.textGray,
+                height: 1.5),
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
@@ -577,11 +622,11 @@ class _OfferCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        _buildStat(
-                            Icons.people_rounded, '${offer.candidateCount}'),
+                        _buildStat(Icons.people_rounded,
+                            '${offer.candidateCount}', isDark),
                         const SizedBox(width: 16),
-                        _buildStat(
-                            Icons.visibility_rounded, '${offer.viewCount}'),
+                        _buildStat(Icons.visibility_rounded,
+                            '${offer.viewCount}', isDark),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -593,9 +638,11 @@ class _OfferCard extends StatelessWidget {
                 )
               : Row(
                   children: [
-                    _buildStat(Icons.people_rounded, '${offer.candidateCount}'),
+                    _buildStat(Icons.people_rounded, '${offer.candidateCount}',
+                        isDark),
                     const SizedBox(width: 24),
-                    _buildStat(Icons.visibility_rounded, '${offer.viewCount}'),
+                    _buildStat(
+                        Icons.visibility_rounded, '${offer.viewCount}', isDark),
                     const Spacer(),
                     ..._buildActions(context),
                   ],
@@ -605,15 +652,16 @@ class _OfferCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStat(IconData icon, String value) {
+  Widget _buildStat(IconData icon, String value, bool isDark) {
     return Row(
       children: [
         Icon(icon, size: 18, color: AppColors.textGray),
         const SizedBox(width: 8),
         Text(
           value,
-          style: const TextStyle(
-              fontWeight: FontWeight.bold, color: AppColors.textDark),
+          style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : AppColors.textDark),
         ),
       ],
     );
@@ -672,7 +720,8 @@ class _OfferCard extends StatelessWidget {
 
 class _StatusBadge extends StatelessWidget {
   final String status;
-  const _StatusBadge({required this.status});
+  final bool isDark;
+  const _StatusBadge({required this.status, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -698,7 +747,8 @@ class _StatusBadge extends StatelessWidget {
 
 class _TypeBadge extends StatelessWidget {
   final String type;
-  const _TypeBadge({required this.type});
+  final bool isDark;
+  const _TypeBadge({required this.type, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -710,8 +760,10 @@ class _TypeBadge extends StatelessWidget {
       ),
       child: Text(
         type,
-        style: const TextStyle(
-            color: AppColors.navy, fontSize: 11, fontWeight: FontWeight.bold),
+        style: TextStyle(
+            color: isDark ? Colors.white70 : AppColors.navy,
+            fontSize: 12,
+            fontWeight: FontWeight.bold),
       ),
     );
   }

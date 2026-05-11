@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:reactive_theme/reactive_theme.dart';
 import '../../cubit/dashboard_cubit.dart';
 import '../../data/models/dashboard_model.dart';
 import '../../../../core/app_colors.dart';
@@ -43,8 +44,9 @@ class _DashboardContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = Responsive.isMobile(context);
     final l10n = AppLocalizations.of(context);
+    final isDark = ReactiveMode.isDarkMode(context);
+    final isMobile = Responsive.isMobile(context);
 
     return MediaQuery.removePadding(
       removeTop: true,
@@ -61,10 +63,10 @@ class _DashboardContent extends StatelessWidget {
               direction: RevealDirection.fromTop,
               child: Text(
                 '${l10n.welcome}, ${data.userName}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w900,
-                  color: AppColors.textDark,
+                  color: isDark ? Colors.white : AppColors.textDark,
                   letterSpacing: -0.5,
                 ),
               ),
@@ -243,14 +245,16 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isCompact =
         Responsive.isMobile(context) || Responsive.isTablet(context);
+    final isDark = ReactiveMode.isDarkMode(context);
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
           horizontal: isCompact ? 16 : 20, vertical: isCompact ? 16 : 24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -267,7 +271,9 @@ class _StatCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.iconBg,
+                  color: isDark
+                      ? Colors.white.withOpacity(0.05)
+                      : AppColors.iconBg,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(item.icon, size: 20, color: AppColors.orange),
@@ -276,10 +282,10 @@ class _StatCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   item.label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textGray,
+                    color: isDark ? Colors.white60 : AppColors.textGray,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -290,19 +296,19 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 20),
           Text(
             item.value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.w900,
-              color: AppColors.textDark,
+              color: isDark ? Colors.white : AppColors.textDark,
               height: 1,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             item.subtitle,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 12,
-                color: AppColors.textGray,
+                color: isDark ? Colors.white60 : AppColors.textGray,
                 fontWeight: FontWeight.w500),
           ),
         ],
@@ -321,13 +327,15 @@ class _RecentOffersCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final isCompact =
         Responsive.isMobile(context) || Responsive.isTablet(context);
+    final isDark = ReactiveMode.isDarkMode(context);
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(isCompact ? 20 : 28),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,10 +345,10 @@ class _RecentOffersCard extends StatelessWidget {
             children: [
               Text(
                 l10n.recentOffers,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textDark,
+                  color: isDark ? Colors.white : AppColors.textDark,
                 ),
               ),
               TextButton(
@@ -398,6 +406,7 @@ class _OfferRowState extends State<_OfferRow> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ReactiveMode.isDarkMode(context);
     return VisibilityDetector(
       key: Key('offer_${widget.offer.title}_${widget.offer.company}'),
       onVisibilityChanged: (info) {
@@ -415,11 +424,11 @@ class _OfferRowState extends State<_OfferRow> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: AppColors.bg,
+                color: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.business_rounded,
-                  color: AppColors.navy, size: 20),
+              child: Icon(Icons.business_rounded,
+                  color: isDark ? Colors.white70 : AppColors.navy, size: 20),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -428,18 +437,18 @@ class _OfferRowState extends State<_OfferRow> {
                 children: [
                   Text(
                     widget.offer.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textDark,
+                      color: isDark ? Colors.white : AppColors.textDark,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${widget.offer.company} · ${widget.offer.city}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textGray,
+                      color: isDark ? Colors.white60 : AppColors.textGray,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -528,13 +537,16 @@ class _SkillsCardState extends State<_SkillsCard> {
     final displaySkills = sortedSkills.take(4).toList();
     final hasMore = sortedSkills.length > 4;
 
+    final isDark = ReactiveMode.isDarkMode(context);
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(isCompact ? 20 : 28),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -545,10 +557,10 @@ class _SkillsCardState extends State<_SkillsCard> {
               Expanded(
                 child: Text(
                   l10n.skills,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textDark,
+                    color: isDark ? Colors.white : AppColors.textDark,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -628,6 +640,8 @@ class _SkillsModalContent extends StatelessWidget {
 
         if (data == null) return const SizedBox.shrink();
 
+        final isDark = ReactiveMode.isDarkMode(context);
+
         return Container(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom + 32,
@@ -635,9 +649,9 @@ class _SkillsModalContent extends StatelessWidget {
             left: 28,
             right: 28,
           ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -646,13 +660,13 @@ class _SkillsModalContent extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Toutes mes compétences',
+                      AppLocalizations.of(context).skills,
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
-                        color: AppColors.textDark,
+                        color: isDark ? Colors.white : AppColors.textDark,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -662,7 +676,9 @@ class _SkillsModalContent extends StatelessWidget {
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.close_rounded),
                     style: IconButton.styleFrom(
-                      backgroundColor: AppColors.bg,
+                      backgroundColor: isDark
+                          ? Colors.white.withOpacity(0.05)
+                          : AppColors.bg,
                     ),
                   ),
                 ],
@@ -728,6 +744,7 @@ class _SkillRowState extends State<_SkillRow> {
           duration: const Duration(milliseconds: 1200),
           curve: Curves.easeOutCubic,
           builder: (context, value, child) {
+            final isDark = ReactiveMode.isDarkMode(context);
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -737,10 +754,10 @@ class _SkillRowState extends State<_SkillRow> {
                     Expanded(
                       child: Text(
                         widget.skill.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textDark,
+                          color: isDark ? Colors.white : AppColors.textDark,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -748,10 +765,10 @@ class _SkillRowState extends State<_SkillRow> {
                     ),
                     Text(
                       '${value.toInt()}%',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.navy,
+                        color: isDark ? AppColors.orange : AppColors.navy,
                       ),
                     ),
                   ],
@@ -762,9 +779,10 @@ class _SkillRowState extends State<_SkillRow> {
                   child: LinearProgressIndicator(
                     value: value / 100,
                     minHeight: 8,
-                    backgroundColor: AppColors.border,
-                    valueColor:
-                        const AlwaysStoppedAnimation<Color>(AppColors.navy),
+                    backgroundColor:
+                        isDark ? AppColors.borderDark : AppColors.border,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                        isDark ? AppColors.orange : AppColors.navy),
                   ),
                 ),
               ],
@@ -786,13 +804,15 @@ class _UpcomingInterviewsCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final isCompact =
         Responsive.isMobile(context) || Responsive.isTablet(context);
+    final isDark = ReactiveMode.isDarkMode(context);
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(isCompact ? 20 : 28),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -802,10 +822,10 @@ class _UpcomingInterviewsCard extends StatelessWidget {
             children: [
               Text(
                 l10n.upcomingInterviews,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textDark,
+                  color: isDark ? Colors.white : AppColors.textDark,
                 ),
               ),
               TextButton(
@@ -862,6 +882,7 @@ class _InterviewRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ReactiveMode.isDarkMode(context);
     final dateStr = '${interview.rawDate} à ${interview.rawTime}';
 
     return Padding(
@@ -871,7 +892,7 @@ class _InterviewRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppColors.iconBg,
+              color: isDark ? Colors.white.withOpacity(0.05) : AppColors.iconBg,
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(Icons.videocam_rounded,
@@ -884,18 +905,18 @@ class _InterviewRow extends StatelessWidget {
               children: [
                 Text(
                   interview.role,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
+                    color: isDark ? Colors.white : AppColors.textDark,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${interview.company} · $dateStr',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.textGray,
+                    color: isDark ? Colors.white60 : AppColors.textGray,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -908,9 +929,10 @@ class _InterviewRow extends StatelessWidget {
               padding:
                   const EdgeInsets.only(left: 14, right: 4, top: 4, bottom: 4),
               decoration: BoxDecoration(
-                color: AppColors.bg,
+                color: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(
+                    color: isDark ? AppColors.borderDark : AppColors.border),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -919,9 +941,9 @@ class _InterviewRow extends StatelessWidget {
                     constraints: const BoxConstraints(maxWidth: 120),
                     child: Text(
                       interview.meetingLink!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textGray,
+                        color: isDark ? Colors.white70 : AppColors.textGray,
                         overflow: TextOverflow.ellipsis,
                       ),
                       maxLines: 1,
@@ -930,19 +952,21 @@ class _InterviewRow extends StatelessWidget {
                   const SizedBox(width: 8),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color:
+                          isDark ? Colors.white.withOpacity(0.1) : Colors.white,
                       borderRadius: BorderRadius.circular(8),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withOpacity(isDark ? 0.1 : 0.05),
                           blurRadius: 2,
                           offset: const Offset(0, 1),
                         )
                       ],
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.copy_rounded,
-                          size: 16, color: AppColors.navy),
+                      icon: Icon(Icons.copy_rounded,
+                          size: 16,
+                          color: isDark ? Colors.white : AppColors.navy),
                       constraints:
                           const BoxConstraints(minWidth: 32, minHeight: 32),
                       padding: EdgeInsets.zero,
@@ -992,6 +1016,7 @@ class _AICoachCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ReactiveMode.isDarkMode(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(28),
@@ -999,15 +1024,17 @@ class _AICoachCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppColors.navy,
-            AppColors.navy.withOpacity(0.85),
-          ],
+          colors: isDark
+              ? [AppColors.surfaceDark, AppColors.surfaceDark.withOpacity(0.8)]
+              : [AppColors.navy, AppColors.navy.withOpacity(0.85)],
         ),
         borderRadius: BorderRadius.circular(24),
+        border: isDark ? Border.all(color: AppColors.borderDark) : null,
         boxShadow: [
           BoxShadow(
-            color: AppColors.navy.withOpacity(0.15),
+            color: isDark
+                ? Colors.black.withOpacity(0.1)
+                : AppColors.navy.withOpacity(0.15),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),

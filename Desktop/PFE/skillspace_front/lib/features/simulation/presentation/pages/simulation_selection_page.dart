@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:reactive_theme/reactive_theme.dart';
 import '../../../../core/app_colors.dart';
 import '../../cubit/simulation_cubit.dart';
 import '../../cubit/simulation_state.dart';
@@ -44,8 +45,9 @@ class _SimulationSelectionPageState extends State<SimulationSelectionPage>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ReactiveMode.isDarkMode(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F3EF),
+      backgroundColor: Colors.transparent,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 900),
@@ -84,21 +86,21 @@ class _SimulationSelectionPageState extends State<SimulationSelectionPage>
                       ),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
+                    Text(
                       'Simulation d\'entretien',
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w900,
-                        color: AppColors.navy,
+                        color: isDark ? Colors.white : AppColors.navy,
                       ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Préparez-vous à vos vrais entretiens pour les offres où vous avez été accepté.\nNotre recruteuse IA adapte ses questions au poste !',
                       style: TextStyle(
                         fontSize: 15,
-                        color: AppColors.textGray,
+                        color: isDark ? Colors.white60 : AppColors.textGray,
                         height: 1.5,
                       ),
                       textAlign: TextAlign.center,
@@ -120,9 +122,14 @@ class _SimulationSelectionPageState extends State<SimulationSelectionPage>
                               return Container(
                                 padding: const EdgeInsets.all(32),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: isDark
+                                      ? AppColors.surfaceDark
+                                      : Colors.white,
                                   borderRadius: BorderRadius.circular(24),
-                                  border: Border.all(color: AppColors.border),
+                                  border: Border.all(
+                                      color: isDark
+                                          ? AppColors.borderDark
+                                          : AppColors.border),
                                 ),
                                 child: const Column(
                                   mainAxisSize: MainAxisSize.min,
@@ -183,15 +190,19 @@ class _SimulationSelectionPageState extends State<SimulationSelectionPage>
                                             const EdgeInsets.only(bottom: 24),
                                         padding: const EdgeInsets.all(24),
                                         decoration: BoxDecoration(
-                                          color: Colors.white,
+                                          color: isDark
+                                              ? AppColors.surfaceDark
+                                              : Colors.white,
                                           borderRadius:
                                               BorderRadius.circular(24),
                                           border: Border.all(
-                                              color: AppColors.border),
+                                              color: isDark
+                                                  ? AppColors.borderDark
+                                                  : AppColors.border),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: Colors.black
-                                                  .withOpacity(0.03),
+                                              color: Colors.black.withOpacity(
+                                                  isDark ? 0.1 : 0.03),
                                               blurRadius: 15,
                                               offset: const Offset(0, 5),
                                             ),
@@ -202,13 +213,18 @@ class _SimulationSelectionPageState extends State<SimulationSelectionPage>
                                             Container(
                                               padding: const EdgeInsets.all(16),
                                               decoration: BoxDecoration(
-                                                color: AppColors.navy
-                                                    .withOpacity(0.1),
+                                                color: isDark
+                                                    ? Colors.white
+                                                        .withOpacity(0.05)
+                                                    : AppColors.navy
+                                                        .withOpacity(0.1),
                                                 borderRadius:
                                                     BorderRadius.circular(16),
                                               ),
-                                              child: const Icon(Icons.work,
-                                                  color: AppColors.navy,
+                                              child: Icon(Icons.work,
+                                                  color: isDark
+                                                      ? Colors.white70
+                                                      : AppColors.navy,
                                                   size: 32),
                                             ),
                                             const SizedBox(width: 24),
@@ -219,11 +235,13 @@ class _SimulationSelectionPageState extends State<SimulationSelectionPage>
                                                 children: [
                                                   Text(
                                                     title,
-                                                    style: const TextStyle(
+                                                    style: TextStyle(
                                                       fontSize: 20,
                                                       fontWeight:
                                                           FontWeight.bold,
-                                                      color: AppColors.navy,
+                                                      color: isDark
+                                                          ? Colors.white
+                                                          : AppColors.navy,
                                                     ),
                                                   ),
                                                   const SizedBox(height: 8),
@@ -272,15 +290,23 @@ class _SimulationSelectionPageState extends State<SimulationSelectionPage>
                                                                           4),
                                                               decoration:
                                                                   BoxDecoration(
-                                                                color: AppColors
-                                                                    .bg,
+                                                                color: isDark
+                                                                    ? Colors
+                                                                        .white
+                                                                        .withOpacity(
+                                                                            0.05)
+                                                                    : AppColors
+                                                                        .bg,
                                                                 borderRadius:
                                                                     BorderRadius
                                                                         .circular(
                                                                             12),
                                                                 border: Border.all(
-                                                                    color: AppColors
-                                                                        .border),
+                                                                    color: isDark
+                                                                        ? AppColors
+                                                                            .borderDark
+                                                                        : AppColors
+                                                                            .border),
                                                               ),
                                                               child: Text(
                                                                   req
