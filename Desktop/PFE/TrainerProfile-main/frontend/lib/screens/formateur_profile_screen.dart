@@ -15,6 +15,8 @@ import '../cubits/trainer_state.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:intl_phone_number_input/intl_phone_number_input.dart';
+import 'package:flutter/foundation.dart';
 
 class FormateurProfileScreen extends StatefulWidget {
   const FormateurProfileScreen({super.key});
@@ -45,6 +47,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
 
   String _profilePictureBase64 = '';
   List<Certification> certificationsList = [];
+  PhoneNumber _number = PhoneNumber(isoCode: 'TN');
 
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
@@ -81,6 +84,22 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
     super.dispose();
   }
 
+  Future<void> _initPhoneNumber(String text) async {
+    try {
+      final number = await PhoneNumber.getRegionInfoFromPhoneNumber(text, 'TN');
+      setState(() {
+        _number = number;
+        if (number.dialCode != null && text.contains(number.dialCode!)) {
+          final national =
+              text.replaceAll(number.dialCode!, '').replaceAll('+', '').trim();
+          _phoneController.text = national;
+        }
+      });
+    } catch (e) {
+      if (kDebugMode) print('Error parsing phone number: $e');
+    }
+  }
+
   Future<void> _loadProfile() async {
     final userId = context.read<AuthCubit>().state.loggedInUser?['id'] ?? '';
     if (userId.isEmpty) return;
@@ -107,7 +126,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
         _firstNameController.text = profile!.firstName;
         _lastNameController.text = profile.lastName;
         _emailController.text = profile.email;
-        _phoneController.text = profile.phone;
+        _initPhoneNumber(profile.phone);
         _jobTitleController.text = profile.jobTitle;
         _locationController.text = profile.location;
         _bioController.text = profile.bio;
@@ -341,7 +360,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
     final current = {
       'firstName': _firstNameController.text.trim(),
       'lastName': _lastNameController.text.trim(),
-      'phone': _phoneController.text.trim(),
+      'phone': _number.phoneNumber ?? _phoneController.text.trim(),
       'jobTitle': _jobTitleController.text.trim(),
       'location': _locationController.text.trim(),
       'bio': _bioController.text.trim(),
@@ -481,7 +500,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
       firstName: _firstNameController.text,
       lastName: _lastNameController.text,
       email: _emailController.text,
-      phone: _phoneController.text,
+      phone: _number.phoneNumber ?? _phoneController.text,
       jobTitle: _jobTitleController.text,
       location: _locationController.text,
       bio: _bioController.text,
@@ -578,8 +597,18 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                       _buildInputField('Nom', _lastNameController),
                     ]),
                     _buildResponsiveRow([
-                      _buildInputField('Email', _emailController),
-                      _buildInputField('Téléphone', _phoneController),
+                      _buildInputField('Email', _emailController,
+                          keyboardType: TextInputType.emailAddress),
+                      _PhoneField(
+                        label: 'Téléphone',
+                        controller: _phoneController,
+                        initialNumber: _number,
+                        onChanged: (PhoneNumber number) {
+                          setState(() {
+                            _number = number;
+                          });
+                        },
+                      ),
                     ]),
                     _buildResponsiveRow([
                       _buildInputField(
@@ -729,44 +758,57 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
   Widget _buildCompletenessCard() {
     final currentScore = _calculateCompleteness();
     final isDark = ReactiveMode.isDarkMode(context);
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-          color:
-              isDark ? const Color(0xFF1E293B).withOpacity(0.5) : Colors.white,
-          borderRadius: BorderRadius.circular(24)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: currentScore.toDouble()),
+      duration: const Duration(milliseconds: 1500),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF1E293B).withOpacity(0.5)
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(24)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Profil complété à',
-                  style: GoogleFonts.outfit(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : const Color(0xFF1E293B))),
-              Text('$currentScore%',
-                  style: GoogleFonts.outfit(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: primaryColor)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Profil complété à',
+                      style: GoogleFonts.outfit(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color:
+                              isDark ? Colors.white : const Color(0xFF1E293B))),
+                  Text('${value.toInt()}%',
+                      style: GoogleFonts.outfit(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: primaryColor)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(5),
+                child: LinearProgressIndicator(
+                  value: value / 100,
+                  backgroundColor: isDark
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.grey[100],
+                  color: primaryColor,
+                  minHeight: 10,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                  'Ajoutez une photo et des certifications pour renforcer votre crédibilité',
+                  style: TextStyle(color: Colors.grey[500], fontSize: 13)),
             ],
           ),
-          const SizedBox(height: 16),
-          LinearProgressIndicator(
-            value: currentScore / 100,
-            backgroundColor: Colors.grey[100],
-            color: const Color(0xFF0F172A),
-            minHeight: 10,
-            borderRadius: BorderRadius.circular(5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-              'Ajoutez une photo et des certifications pour renforcer votre crédibilité',
-              style: TextStyle(color: Colors.grey[500], fontSize: 13)),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -795,7 +837,11 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
   }
 
   Widget _buildInputField(String label, TextEditingController controller,
-      {int maxLines = 1, bool isRequired = true, Widget? labelSuffix}) {
+      {int maxLines = 1,
+      bool isRequired = true,
+      Widget? labelSuffix,
+      TextInputType keyboardType = TextInputType.text,
+      List<TextInputFormatter>? inputFormatters}) {
     final isDark = ReactiveMode.isDarkMode(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 24.0),
@@ -826,19 +872,26 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
           TextField(
             controller: controller,
             maxLines: maxLines,
-            style: TextStyle(color: isDark ? Colors.white : const Color(0xFF1E293B)),
+            keyboardType: keyboardType,
+            inputFormatters: inputFormatters,
+            style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF1E293B)),
             decoration: InputDecoration(
               filled: true,
-              fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF9FAFB),
+              fillColor:
+                  isDark ? const Color(0xFF0F172A) : const Color(0xFFF9FAFB),
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.grey[200]!)),
+                  borderSide: BorderSide(
+                      color: isDark ? Colors.white10 : Colors.grey[200]!)),
               enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.grey[200]!)),
+                  borderSide: BorderSide(
+                      color: isDark ? Colors.white10 : Colors.grey[200]!)),
               focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE9652B), width: 2)),
+                  borderSide:
+                      const BorderSide(color: Color(0xFFE9652B), width: 2)),
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
@@ -937,7 +990,8 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                 Expanded(
                   child: TextField(
                     controller: _expertiseController,
-                    style: TextStyle(color: isDark ? Colors.white : const Color(0xFF1E293B)),
+                    style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF1E293B)),
                     onChanged: (value) => cubit.fetchSuggestions(value),
                     onSubmitted: (value) {
                       cubit.addTag(value);
@@ -945,10 +999,13 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                     },
                     decoration: InputDecoration(
                       hintText: 'Saisir Votre Expertise ...',
-                      hintStyle:
-                          TextStyle(color: isDark ? Colors.white30 : Colors.grey[400], fontSize: 14),
+                      hintStyle: TextStyle(
+                          color: isDark ? Colors.white30 : Colors.grey[400],
+                          fontSize: 14),
                       filled: true,
-                      fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF9FAFB),
+                      fillColor: isDark
+                          ? const Color(0xFF0F172A)
+                          : const Color(0xFFF9FAFB),
                       prefixIcon: const Icon(Icons.auto_awesome,
                           color: Color(0xFFE9652B), size: 20),
                       suffixIcon: expertiseState.isLoading
@@ -964,10 +1021,14 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                           : null,
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.grey[200]!)),
+                          borderSide: BorderSide(
+                              color:
+                                  isDark ? Colors.white10 : Colors.grey[200]!)),
                       enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.grey[200]!)),
+                          borderSide: BorderSide(
+                              color:
+                                  isDark ? Colors.white10 : Colors.grey[200]!)),
                       focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(
@@ -1412,18 +1473,24 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
           TextField(
             controller: controller,
             keyboardType: keyboard,
-            style: TextStyle(color: isDark ? Colors.white : const Color(0xFF1E293B)),
+            style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF1E293B)),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.grey[400], fontSize: 14),
+              hintStyle: TextStyle(
+                  color: isDark ? Colors.white30 : Colors.grey[400],
+                  fontSize: 14),
               filled: true,
-              fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF9FAFB),
+              fillColor:
+                  isDark ? const Color(0xFF0F172A) : const Color(0xFFF9FAFB),
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.grey[200]!)),
+                  borderSide: BorderSide(
+                      color: isDark ? Colors.white10 : Colors.grey[200]!)),
               enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.grey[200]!)),
+                  borderSide: BorderSide(
+                      color: isDark ? Colors.white10 : Colors.grey[200]!)),
               focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide:
@@ -1493,23 +1560,99 @@ class _PdfViewerState extends State<_PdfViewer> {
     if (_hasError) {
       return const Center(child: Text("Erreur lors de l'ouverture du PDF"));
     }
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Force finite dimensions for Web renderer
-        final width = constraints.maxWidth > 0 ? constraints.maxWidth : 400.0;
-        final height =
-            constraints.maxHeight > 0 ? constraints.maxHeight : 600.0;
+    return LayoutBuilder(builder: (context, constraints) {
+      // Force finite dimensions for Web renderer
+      final width = constraints.maxWidth > 0 ? constraints.maxWidth : 400.0;
+      final height = constraints.maxHeight > 0 ? constraints.maxHeight : 600.0;
 
-        return RepaintBoundary(
-          child: SizedBox(
-            width: width,
-            height: height,
-            child: PdfView(
-              controller: _pdfController,
+      return RepaintBoundary(
+        child: SizedBox(
+          width: width,
+          height: height,
+          child: PdfView(
+            controller: _pdfController,
+          ),
+        ),
+      );
+    });
+  }
+}
+
+class _PhoneField extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+  final PhoneNumber initialNumber;
+  final ValueChanged<PhoneNumber> onChanged;
+
+  const _PhoneField({
+    required this.label,
+    required this.controller,
+    required this.initialNumber,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ReactiveMode.isDarkMode(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Text(
+              label,
+              style: GoogleFonts.outfit(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: isDark ? Colors.white70 : const Color(0xFF1E293B),
+              ),
             ),
           ),
-        );
-      },
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                  color: isDark ? Colors.white10 : Colors.grey[200]!, width: 1),
+            ),
+            child: InternationalPhoneNumberInput(
+              onInputChanged: onChanged,
+              textFieldController: controller,
+              initialValue: initialNumber,
+              formatInput: false,
+              selectorConfig: const SelectorConfig(
+                selectorType: PhoneInputSelectorType.DIALOG,
+                setSelectorButtonAsPrefixIcon: true,
+                leadingPadding: 0,
+              ),
+              ignoreBlank: false,
+              autoValidateMode: AutovalidateMode.onUserInteraction,
+              selectorTextStyle: GoogleFonts.outfit(
+                color: isDark ? Colors.white : const Color(0xFF1E293B),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+              textStyle: GoogleFonts.outfit(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: isDark ? Colors.white : const Color(0xFF1E293B),
+              ),
+              inputDecoration: const InputDecoration(
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+                fillColor: Colors.transparent,
+                filled: true,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

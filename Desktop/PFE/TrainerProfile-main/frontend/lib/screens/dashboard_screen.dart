@@ -681,406 +681,499 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return StatefulBuilder(
           builder: (dialogContext, setDialogState) {
             return Dialog(
-                backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24)),
-                child: Container(
-                  width: 600,
-                  padding: const EdgeInsets.all(32),
-                  child: SingleChildScrollView(
-                    child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFE9652B)
-                                          .withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: const Icon(Icons.auto_awesome,
-                                        color: Color(0xFFE9652B), size: 20),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                      isEdit
-                                          ? 'Modifier la formation'
-                                          : 'Créer une nouvelle formation',
-                                      style: GoogleFonts.outfit(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                              IconButton(
-                                onPressed: () => Navigator.pop(dialogContext),
-                                icon: const Icon(Icons.close),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                              'Partagez vos compétences avec la communauté SkillSpace.',
-                              style: TextStyle(
-                                  color: Colors.grey[500], fontSize: 14)),
-                          const SizedBox(height: 32),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Expanded(
-                                  child: _buildTextField(
-                                      'Titre de la formation *',
-                                      'Ex : React avancé & Performance',
-                                      titleController)),
-                              const SizedBox(width: 12),
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 24.0),
-                                child: IconButton(
-                                  onPressed: () async {
-                                    if (titleController.text.trim().isEmpty) {
-                                      Fluttertoast.showToast(
-                                          msg: "Entrez d'abord un titre.");
-                                      return;
-                                    }
-                                    Fluttertoast.showToast(
-                                        msg: "Génération en cours...");
-                                    final content = await trainerCubit
-                                        .generateFormationContent(
-                                            titleController.text.trim());
-                                    if (content != null) {
-                                      setDialogState(() {
-                                        descController.text =
-                                            content['description'] ?? '';
-                                        tagsController.text =
-                                            (content['tags'] as List?)
-                                                    ?.join(', ') ??
-                                                '';
-                                      });
-                                      Fluttertoast.showToast(
-                                          msg: "Contenu généré !");
-                                    } else {
-                                      Fluttertoast.showToast(
-                                          msg: "Erreur lors de la génération.");
-                                    }
-                                  },
-                                  icon: const Icon(Icons.auto_awesome,
-                                      color: Color(0xFFE9652B)),
-                                  tooltip: 'Améliorer avec l\'IA',
-                                  style: IconButton.styleFrom(
-                                    backgroundColor: const Color(0xFFFFF7ED),
-                                    padding: const EdgeInsets.all(12),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          _buildTextField(
-                              'Description',
-                              'Décrivez en quelques phrases ce que les apprenants vont maîtriser...',
-                              descController,
-                              maxLines: 3),
-                          _buildTextField(
-                              'Compétences (séparées par des virgules) *',
-                              'React, TypeScript, Performance',
-                              tagsController),
-                          Row(
-                            children: [
-                              Expanded(
-                                  child: _buildTextField('Durée (en heures) *',
-                                      'Ex : 12', durationController,
-                                      keyboardType: TextInputType.number,
-                                      inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly
-                                  ])),
-                              const SizedBox(width: 20),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                      child: Container(
+                        width: 600,
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? AppColors.surfaceDark.withOpacity(0.8)
+                              : Colors.white.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                              color: isDark
+                                  ? Colors.white.withOpacity(0.1)
+                                  : Colors.black.withOpacity(0.05)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(32),
+                        child: SingleChildScrollView(
+                          child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const Text('Niveau',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14)),
-                                    const SizedBox(height: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 12),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF8FAFC),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                            color: Colors.grey[200]!),
-                                      ),
-                                      child: DropdownButtonHideUnderline(
-                                        child: DropdownButton<String>(
-                                          value: selectedLevel,
-                                          isExpanded: true,
-                                          items: [
-                                            'Débutant',
-                                            'Intermédiaire',
-                                            'Avancé'
-                                          ].map((String value) {
-                                            return DropdownMenuItem<String>(
-                                              value: value,
-                                              child: Text(value),
-                                            );
-                                          }).toList(),
-                                          onChanged: (val) {
-                                            setDialogState(
-                                                () => selectedLevel = val!);
-                                          },
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFE9652B)
+                                                .withOpacity(0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: const Icon(Icons.auto_awesome,
+                                              color: Color(0xFFE9652B),
+                                              size: 20),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                            isEdit
+                                                ? 'Modifier la formation'
+                                                : 'Créer une nouvelle formation',
+                                            style: GoogleFonts.outfit(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                    IconButton(
+                                      onPressed: () =>
+                                          Navigator.pop(dialogContext),
+                                      icon: const Icon(Icons.close),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                    'Partagez vos compétences avec la communauté SkillSpace.',
+                                    style: TextStyle(
+                                        color: Colors.grey[500], fontSize: 14)),
+                                const SizedBox(height: 32),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Expanded(
+                                        child: _buildTextField(
+                                            'Titre de la formation *',
+                                            'Ex : React avancé & Performance',
+                                            titleController,
+                                            inputFormatters: [
+                                          FilteringTextInputFormatter.deny(
+                                              RegExp(r'[0-9]'))
+                                        ])),
+                                    const SizedBox(width: 12),
+                                    Padding(
+                                      padding:
+                                          const EdgeInsets.only(bottom: 24.0),
+                                      child: IconButton(
+                                        onPressed: () async {
+                                          if (titleController.text
+                                              .trim()
+                                              .isEmpty) {
+                                            Fluttertoast.showToast(
+                                                msg:
+                                                    "Entrez d'abord un titre.");
+                                            return;
+                                          }
+                                          Fluttertoast.showToast(
+                                              msg: "Génération en cours...");
+                                          final content = await trainerCubit
+                                              .generateFormationContent(
+                                                  titleController.text.trim());
+                                          if (content != null) {
+                                            setDialogState(() {
+                                              descController.text =
+                                                  content['description'] ?? '';
+                                              tagsController.text =
+                                                  (content['tags'] as List?)
+                                                          ?.join(', ') ??
+                                                      '';
+                                            });
+                                            Fluttertoast.showToast(
+                                                msg: "Contenu généré !");
+                                          } else {
+                                            Fluttertoast.showToast(
+                                                msg:
+                                                    "Erreur lors de la génération.");
+                                          }
+                                        },
+                                        icon: const Icon(Icons.auto_awesome,
+                                            color: Color(0xFFE9652B)),
+                                        tooltip: 'Améliorer avec l\'IA',
+                                        style: IconButton.styleFrom(
+                                          backgroundColor:
+                                              const Color(0xFFFFF7ED),
+                                          padding: const EdgeInsets.all(12),
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ],
-                          ),
-                          _buildTextField(
-                              'Lien de la réunion (Meet, Zoom...) *',
-                              'Ex : https://meet.google.com/abc-defg-hij',
-                              meetLinkController),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildDateTimePickerField(
-                                  'Date de la formation *',
-                                  dateController,
-                                  Icons.calendar_today,
-                                  () async {
-                                    _showCalendarPickerDialog(
-                                      dialogContext,
-                                      selectedDate,
-                                      (date) {
-                                        setDialogState(() {
-                                          selectedDate = date;
-                                          dateController.text =
-                                              DateFormat('dd/MM/yyyy')
-                                                  .format(date);
-                                        });
-                                      },
-                                    );
-                                  },
+                                _buildTextField(
+                                    'Description',
+                                    'Décrivez en quelques phrases ce que les apprenants vont maîtriser...',
+                                    descController,
+                                    maxLines: 3,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.deny(
+                                          RegExp(r'[0-9]'))
+                                    ]),
+                                _buildTextField(
+                                    'Compétences (séparées par des virgules) *',
+                                    'React, TypeScript, Performance',
+                                    tagsController,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.deny(
+                                          RegExp(r'[0-9]'))
+                                    ]),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                        child: _buildTextField(
+                                            'Durée (en heures) *',
+                                            'Ex : 12',
+                                            durationController,
+                                            keyboardType: TextInputType.number,
+                                            inputFormatters: [
+                                          FilteringTextInputFormatter.digitsOnly
+                                        ])),
+                                    const SizedBox(width: 20),
+                                    Expanded(
+                                      child: Padding(
+                                        padding:
+                                            const EdgeInsets.only(bottom: 24.0),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text('Niveau',
+                                                style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 14,
+                                                    color: isDark
+                                                        ? Colors.white70
+                                                        : Colors.black)),
+                                            const SizedBox(height: 8),
+                                            ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              child: BackdropFilter(
+                                                filter: ImageFilter.blur(
+                                                    sigmaX: 10, sigmaY: 10),
+                                                child: Container(
+                                                  height: 56,
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 16),
+                                                  decoration: BoxDecoration(
+                                                    color: isDark
+                                                        ? Colors.white
+                                                            .withOpacity(0.05)
+                                                        : Colors.white
+                                                            .withOpacity(0.2),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                    border: Border.all(
+                                                        color: isDark
+                                                            ? Colors.white
+                                                                .withOpacity(
+                                                                    0.1)
+                                                            : Colors.black
+                                                                .withOpacity(
+                                                                    0.05)),
+                                                  ),
+                                                  child:
+                                                      DropdownButtonHideUnderline(
+                                                    child:
+                                                        DropdownButton<String>(
+                                                      value: selectedLevel,
+                                                      isExpanded: true,
+                                                      dropdownColor: isDark
+                                                          ? AppColors
+                                                              .surfaceDark
+                                                          : Colors.white,
+                                                      icon: Icon(
+                                                          Icons
+                                                              .keyboard_arrow_down,
+                                                          color: isDark
+                                                              ? Colors.white54
+                                                              : Colors.black54),
+                                                      items: [
+                                                        'Débutant',
+                                                        'Intermédiaire',
+                                                        'Avancé'
+                                                      ].map((String value) {
+                                                        return DropdownMenuItem<
+                                                            String>(
+                                                          value: value,
+                                                          child: Text(value,
+                                                              style: TextStyle(
+                                                                  color: isDark
+                                                                      ? Colors
+                                                                          .white
+                                                                      : Colors
+                                                                          .black,
+                                                                  fontSize:
+                                                                      14)),
+                                                        );
+                                                      }).toList(),
+                                                      onChanged: (val) {
+                                                        setDialogState(() =>
+                                                            selectedLevel =
+                                                                val!);
+                                                      },
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              const SizedBox(width: 20),
-                              Expanded(
-                                child: _buildDateTimePickerField(
-                                  'Heure *',
-                                  timeController,
-                                  Icons.access_time,
-                                  () async {
-                                    final time = await showTimePicker(
-                                      context: dialogContext,
-                                      initialTime: TimeOfDay.now(),
-                                    );
-                                    if (time != null) {
-                                      setDialogState(() {
-                                        timeController.text =
-                                            time.format(dialogContext);
-                                      });
-                                    }
-                                  },
+                                _buildTextField(
+                                    'Lien de la réunion (Meet, Zoom...) *',
+                                    'Ex : https://meet.google.com/abc-defg-hij',
+                                    meetLinkController),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildDateTimePickerField(
+                                        'Date de la formation *',
+                                        dateController,
+                                        Icons.calendar_today,
+                                        () async {
+                                          _showCalendarPickerDialog(
+                                            dialogContext,
+                                            selectedDate,
+                                            (date) {
+                                              setDialogState(() {
+                                                selectedDate = date;
+                                                dateController.text =
+                                                    DateFormat('dd/MM/yyyy')
+                                                        .format(date);
+                                              });
+                                            },
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 20),
+                                    Expanded(
+                                      child: _buildDateTimePickerField(
+                                        'Heure *',
+                                        timeController,
+                                        Icons.access_time,
+                                        () async {
+                                          final time = await showTimePicker(
+                                            context: dialogContext,
+                                            initialTime: TimeOfDay.now(),
+                                          );
+                                          if (time != null) {
+                                            setDialogState(() {
+                                              timeController.text =
+                                                  time.format(dialogContext);
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              const SizedBox(height: 40),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text('Annuler',
-                                        style: TextStyle(
-                                            color: Color(0xFF64748B))),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  ElevatedButton(
-                                    onPressed: () async {
-                                      final title = titleController.text.trim();
-                                      final duration =
-                                          "${durationController.text.trim()} heures";
-                                      final tagsString =
-                                          tagsController.text.trim();
+                                const SizedBox(height: 32),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('Annuler',
+                                          style: TextStyle(
+                                              color: Color(0xFF64748B))),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    ElevatedButton(
+                                      onPressed: () async {
+                                        final title =
+                                            titleController.text.trim();
+                                        final duration =
+                                            "${durationController.text.trim()} heures";
+                                        final tagsString =
+                                            tagsController.text.trim();
 
-                                      if (title.isEmpty) {
-                                        Fluttertoast.showToast(
-                                            msg: "Le titre est requis.");
-                                        return;
-                                      }
-                                      if (duration.isEmpty) {
-                                        Fluttertoast.showToast(
-                                            msg: "La durée est requise.");
-                                        return;
-                                      }
-                                      if (tagsString.isEmpty) {
-                                        Fluttertoast.showToast(
-                                            msg:
-                                                "Au moins une compétence est requise.");
-                                        return;
-                                      }
-
-                                      if (meetLinkController.text
-                                          .trim()
-                                          .isEmpty) {
-                                        Fluttertoast.showToast(
-                                            msg:
-                                                "Le lien de réunion est requis.");
-                                        return;
-                                      }
-
-                                      // ── Meet/Zoom Validation ──────────────────────────────────
-                                      final meetLink =
-                                          meetLinkController.text.trim();
-                                      final isMeetLink =
-                                          meetLink.contains('meet.google.com');
-                                      final isZoomLink =
-                                          meetLink.contains('zoom.us');
-
-                                      if (!isMeetLink && !isZoomLink) {
-                                        Fluttertoast.showToast(
-                                            msg:
-                                                "Seuls les liens Google Meet ou Zoom sont acceptés.");
-                                        return;
-                                      }
-
-                                      if (selectedDate == null) {
-                                        Fluttertoast.showToast(
-                                            msg: "La date est requise.");
-                                        return;
-                                      }
-                                      if (timeController.text.trim().isEmpty) {
-                                        Fluttertoast.showToast(
-                                            msg: "L'heure est requise.");
-                                        return;
-                                      }
-
-                                      // ── Duplicate Check ──────────────────────────────────────
-                                      final currentDashboardData =
-                                          trainerCubit.state.dashboardData;
-                                      if (currentDashboardData == null) return;
-
-                                      final tags = tagsString
-                                          .split(',')
-                                          .map((e) => e.trim())
-                                          .where((e) => e.isNotEmpty)
-                                          .toList();
-
-                                      final isDuplicate = currentDashboardData
-                                          .formations
-                                          .any((f) {
-                                        // Ignore current formation if editing
-                                        if (isEdit && f.id == formation.id) {
-                                          return false;
+                                        if (title.isEmpty) {
+                                          Fluttertoast.showToast(
+                                              msg: "Le titre est requis.");
+                                          return;
+                                        }
+                                        if (duration.isEmpty) {
+                                          Fluttertoast.showToast(
+                                              msg: "La durée est requise.");
+                                          return;
+                                        }
+                                        if (tagsString.isEmpty) {
+                                          Fluttertoast.showToast(
+                                              msg:
+                                                  "Au moins une compétence est requise.");
+                                          return;
                                         }
 
-                                        final sameTitle =
-                                            f.title.trim().toLowerCase() ==
-                                                title.trim().toLowerCase();
-                                        final sameDate = f.date != null &&
-                                            selectedDate != null &&
-                                            f.date!.year ==
-                                                selectedDate!.year &&
-                                            f.date!.month ==
-                                                selectedDate!.month &&
-                                            f.date!.day == selectedDate!.day;
-                                        final sameLink =
-                                            f.meetLink!.trim() == meetLink;
+                                        final meetLink =
+                                            meetLinkController.text.trim();
+                                        final isMeetLink = meetLink
+                                            .contains('meet.google.com');
+                                        final isZoomLink =
+                                            meetLink.contains('zoom.us');
 
-                                        // Skills check
-                                        final sameTags = f.tags.length ==
-                                                tags.length &&
-                                            f.tags
-                                                .every((t) => tags.contains(t));
+                                        if (!isMeetLink && !isZoomLink) {
+                                          Fluttertoast.showToast(
+                                              msg:
+                                                  "Seuls les liens Google Meet ou Zoom sont acceptés.");
+                                          return;
+                                        }
 
-                                        return sameTitle &&
-                                            sameDate &&
-                                            sameLink &&
-                                            sameTags;
-                                      });
+                                        if (selectedDate == null) {
+                                          Fluttertoast.showToast(
+                                              msg: "La date est requise.");
+                                          return;
+                                        }
+                                        if (timeController.text
+                                            .trim()
+                                            .isEmpty) {
+                                          Fluttertoast.showToast(
+                                              msg: "L'heure est requise.");
+                                          return;
+                                        }
 
-                                      if (isDuplicate) {
-                                        Fluttertoast.showToast(
-                                            msg:
-                                                "Une formation identique existe déjà pour cette date.");
-                                        return;
-                                      }
+                                        // ── Duplicate Check ──────────────────────────────────────
+                                        final currentDashboardData =
+                                            trainerCubit.state.dashboardData;
+                                        if (currentDashboardData == null)
+                                          return;
 
-                                      final userId =
-                                          authCubit.state.loggedInUser?['id'] ??
-                                              '';
-                                      final newFData = FormationModel(
-                                        id: formation?.id ?? '',
-                                        trainerId:
-                                            formation?.trainerId ?? userId,
-                                        title: title,
-                                        description: descController.text.trim(),
-                                        tags: tagsString
+                                        final tags = tagsString
                                             .split(',')
                                             .map((e) => e.trim())
                                             .where((e) => e.isNotEmpty)
-                                            .toList(),
-                                        duration: duration,
-                                        level: selectedLevel,
-                                        category:
-                                            formation?.category ?? 'General',
-                                        studentCount:
-                                            formation?.studentCount ?? 0,
-                                        rating: formation?.rating ?? 0.0,
-                                        reviewCount:
-                                            formation?.reviewCount ?? 0,
-                                        price: formation?.price ?? 0.0,
-                                        imageUrl: formation?.imageUrl ?? '',
-                                        meetLink:
-                                            meetLinkController.text.trim(),
-                                        date: selectedDate,
-                                        time: timeController.text.trim(),
-                                      );
+                                            .toList();
 
-                                      bool success;
-                                      if (isEdit) {
-                                        success =
-                                            await trainerCubit.editFormation(
-                                                formation.id, newFData);
-                                      } else {
-                                        success = await trainerCubit
-                                            .addFormation(userId, newFData);
-                                      }
+                                        final isDuplicate = currentDashboardData
+                                            .formations
+                                            .any((f) {
+                                          // Ignore current formation if editing
+                                          if (isEdit && f.id == formation.id) {
+                                            return false;
+                                          }
 
-                                      if (success) {
-                                        if (!dialogContext.mounted) return;
-                                        Navigator.pop(dialogContext);
-                                        Fluttertoast.showToast(
-                                            msg: isEdit
-                                                ? "Formation mise à jour !"
-                                                : "Formation créée !");
-                                      }
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFE9652B),
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 32, vertical: 16),
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12)),
+                                          final sameTitle =
+                                              f.title.trim().toLowerCase() ==
+                                                  title.trim().toLowerCase();
+                                          final sameDate = f.date != null &&
+                                              selectedDate != null &&
+                                              f.date!.year ==
+                                                  selectedDate!.year &&
+                                              f.date!.month ==
+                                                  selectedDate!.month &&
+                                              f.date!.day == selectedDate!.day;
+                                          final sameLink =
+                                              f.meetLink!.trim() == meetLink;
+
+                                          // Skills check
+                                          final sameTags =
+                                              f.tags.length == tags.length &&
+                                                  f.tags.every(
+                                                      (t) => tags.contains(t));
+
+                                          return sameTitle &&
+                                              sameDate &&
+                                              sameLink &&
+                                              sameTags;
+                                        });
+
+                                        if (isDuplicate) {
+                                          Fluttertoast.showToast(
+                                              msg:
+                                                  "Une formation identique existe déjà pour cette date.");
+                                          return;
+                                        }
+
+                                        final userId = authCubit
+                                                .state.loggedInUser?['id'] ??
+                                            '';
+                                        final newFData = FormationModel(
+                                          id: formation?.id ?? '',
+                                          trainerId:
+                                              formation?.trainerId ?? userId,
+                                          title: title,
+                                          description:
+                                              descController.text.trim(),
+                                          tags: tagsString
+                                              .split(',')
+                                              .map((e) => e.trim())
+                                              .where((e) => e.isNotEmpty)
+                                              .toList(),
+                                          duration: duration,
+                                          level: selectedLevel,
+                                          category:
+                                              formation?.category ?? 'General',
+                                          studentCount:
+                                              formation?.studentCount ?? 0,
+                                          rating: formation?.rating ?? 0.0,
+                                          reviewCount:
+                                              formation?.reviewCount ?? 0,
+                                          price: formation?.price ?? 0.0,
+                                          imageUrl: formation?.imageUrl ?? '',
+                                          meetLink:
+                                              meetLinkController.text.trim(),
+                                          date: selectedDate,
+                                          time: timeController.text.trim(),
+                                        );
+
+                                        bool success;
+                                        if (isEdit) {
+                                          success =
+                                              await trainerCubit.editFormation(
+                                                  formation.id, newFData);
+                                        } else {
+                                          success = await trainerCubit
+                                              .addFormation(userId, newFData);
+                                        }
+
+                                        if (success) {
+                                          if (!dialogContext.mounted) return;
+                                          Navigator.pop(dialogContext);
+                                          Fluttertoast.showToast(
+                                              msg: isEdit
+                                                  ? "Formation mise à jour !"
+                                                  : "Formation créée !");
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            const Color(0xFFE9652B),
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 32, vertical: 16),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12)),
+                                      ),
+                                      child: Text(isEdit
+                                          ? 'Enregistrer'
+                                          : 'Créer la formation'),
                                     ),
-                                    child: Text(isEdit
-                                        ? 'Enregistrer'
-                                        : 'Créer la formation'),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ]),
-                  ),
-                ));
+                                  ],
+                                ),
+                              ]),
+                        ),
+                      ),
+                    )));
           },
         );
       },
@@ -1104,38 +1197,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   fontSize: 14,
                   color: isDark ? Colors.white70 : Colors.black)),
           const SizedBox(height: 8),
-          TextField(
-            controller: controller,
-            maxLines: maxLines,
-            keyboardType: keyboardType,
-            inputFormatters: inputFormatters,
-            style: TextStyle(color: isDark ? Colors.white : Colors.black),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: TextStyle(
-                  color: isDark ? Colors.white38 : Colors.grey[400],
-                  fontSize: 14),
-              filled: true,
-              fillColor: isDark
-                  ? Colors.white.withOpacity(0.05)
-                  : const Color(0xFFF8FAFC),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                    color: isDark ? Colors.white10 : Colors.grey[200]!),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: TextField(
+                controller: controller,
+                maxLines: maxLines,
+                keyboardType: keyboardType,
+                inputFormatters: inputFormatters,
+                style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                decoration: InputDecoration(
+                  hintText: hint,
+                  hintStyle: TextStyle(
+                      color: isDark ? Colors.white38 : Colors.grey[400],
+                      fontSize: 14),
+                  filled: true,
+                  fillColor: isDark
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.white.withOpacity(0.2),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                        color: isDark
+                            ? Colors.white.withOpacity(0.1)
+                            : Colors.black.withOpacity(0.05)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                        color: isDark
+                            ? Colors.white.withOpacity(0.1)
+                            : Colors.black.withOpacity(0.05)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                        color:
+                            isDark ? AppColors.orange : const Color(0xFFE9652B),
+                        width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.all(16),
+                ),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                    color: isDark ? Colors.white10 : Colors.grey[200]!),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                    color: isDark ? AppColors.orange : const Color(0xFFE9652B),
-                    width: 2),
-              ),
-              contentPadding: const EdgeInsets.all(16),
             ),
           ),
         ],
@@ -1147,7 +1251,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       TextEditingController controller, IconData icon, VoidCallback onTap) {
     final isDark = ReactiveMode.isDarkMode(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24.0),
+      padding: const EdgeInsets.only(bottom: 18.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1157,33 +1261,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   fontSize: 14,
                   color: isDark ? Colors.white70 : Colors.black)),
           const SizedBox(height: 8),
-          InkWell(
-            onTap: onTap,
+          ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: IgnorePointer(
-              child: TextField(
-                controller: controller,
-                style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                decoration: InputDecoration(
-                  hintText: 'Sélectionner',
-                  hintStyle: TextStyle(
-                      color: isDark ? Colors.white38 : Colors.grey[400],
-                      fontSize: 14),
-                  filled: true,
-                  fillColor: isDark
-                      ? Colors.white.withOpacity(0.05)
-                      : const Color(0xFFF8FAFC),
-                  prefixIcon:
-                      Icon(icon, size: 20, color: const Color(0xFFE9652B)),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                        color: isDark ? Colors.white10 : Colors.grey[200]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                        color: isDark ? Colors.white10 : Colors.grey[200]!),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(12),
+                child: IgnorePointer(
+                  child: TextField(
+                    controller: controller,
+                    style:
+                        TextStyle(color: isDark ? Colors.white : Colors.black),
+                    decoration: InputDecoration(
+                      hintText: 'Sélectionner',
+                      hintStyle: TextStyle(
+                          color: isDark ? Colors.white38 : Colors.grey[400],
+                          fontSize: 14),
+                      filled: true,
+                      fillColor: isDark
+                          ? Colors.white.withOpacity(0.05)
+                          : Colors.white.withOpacity(0.2),
+                      prefixIcon:
+                          Icon(icon, size: 20, color: const Color(0xFFE9652B)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                            color: isDark
+                                ? Colors.white.withOpacity(0.1)
+                                : Colors.black.withOpacity(0.05)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                            color: isDark
+                                ? Colors.white.withOpacity(0.1)
+                                : Colors.black.withOpacity(0.05)),
+                      ),
+                      contentPadding: const EdgeInsets.all(16),
+                    ),
                   ),
                 ),
               ),
@@ -1469,13 +1585,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : Colors.white, borderRadius: BorderRadius.circular(24)),
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          borderRadius: BorderRadius.circular(24)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Formations les plus suivies',
               style: GoogleFonts.outfit(
-                  fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1E293B))),
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF1E293B))),
           const SizedBox(height: 24),
           if (formations.isEmpty)
             Center(
@@ -1506,13 +1625,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         Expanded(
                           child: Text(f['name'],
-                              style:
-                                  TextStyle(fontWeight: FontWeight.w500, color: isDark ? Colors.white : const Color(0xFF1E293B)),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF1E293B)),
                               overflow: TextOverflow.ellipsis),
                         ),
                         Text('${f['count']}',
-                            style:
-                                TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1E293B))),
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF1E293B))),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -1550,6 +1675,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _showCalendarPickerDialog(BuildContext context, DateTime? initialDate,
       Function(DateTime) onSelected) async {
+    final isDark = ReactiveMode.isDarkMode(context);
     final values = await showCalendarDatePicker2Dialog(
       context: context,
       config: CalendarDatePicker2WithActionButtonsConfig(
@@ -1557,6 +1683,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
         lastDate: DateTime.now().add(const Duration(days: 365)),
         calendarType: CalendarDatePicker2Type.single,
         selectedDayHighlightColor: const Color(0xFFE9652B),
+        weekdayLabelTextStyle: TextStyle(
+          color: isDark ? Colors.white60 : Colors.black54,
+          fontWeight: FontWeight.bold,
+        ),
+        controlsTextStyle: TextStyle(
+          color: isDark ? Colors.white : Colors.black87,
+          fontWeight: FontWeight.bold,
+          fontSize: 15,
+        ),
+        dayTextStyle: TextStyle(
+          color: isDark ? Colors.white : Colors.black87,
+        ),
+        selectedDayTextStyle: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
         okButtonTextStyle: const TextStyle(
           color: Color(0xFFE9652B),
           fontWeight: FontWeight.bold,
@@ -1566,7 +1708,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       dialogSize: const Size(325, 400),
       value: [initialDate ?? DateTime.now()],
       borderRadius: BorderRadius.circular(20),
-      dialogBackgroundColor: Colors.white,
+      dialogBackgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
     );
 
     if (values != null && values.isNotEmpty && values[0] != null) {
