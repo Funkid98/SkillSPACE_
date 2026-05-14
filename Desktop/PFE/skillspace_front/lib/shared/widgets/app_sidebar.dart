@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_theme/reactive_theme.dart';
@@ -8,6 +10,7 @@ import '../../../../core/app_text_styles.dart';
 import '../../../../core/l10n/l10n_cubit.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import 'notification_bell.dart';
+import 'video_background.dart';
 
 enum DashboardTab { tableau, profil, offres, simulation, formations }
 
@@ -61,197 +64,121 @@ class AppSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isRtl = Directionality.of(context) == TextDirection.rtl;
-
     final isDark = ReactiveMode.isDarkMode(context);
-
     return Container(
       width: 240,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : Colors.white,
+        color: isDark ? Colors.transparent : Colors.white,
         border: Border(
           right: isRtl
               ? BorderSide.none
               : BorderSide(
-                  color: isDark ? AppColors.borderDark : AppColors.border,
-                  width: 1),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.08),
+                  width: 1.5),
           left: isRtl
               ? BorderSide(
-                  color: isDark ? AppColors.borderDark : AppColors.border,
-                  width: 1)
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.08),
+                  width: 1.5)
               : BorderSide.none,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.15)
+                : Colors.black.withValues(alpha: 0.05),
+            blurRadius: isDark ? 30 : 15,
+            spreadRadius: -5,
+            offset: Offset(isRtl ? -10 : 10, 0),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 16, 40),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: VideoBackground(
+        assetPath: 'assets/sidebar-video.mp4',
+        opacity: isDark ? 0.75 : 0.0,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.35)
+                : Colors.white.withValues(alpha: 0.25),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('SkillSpace', style: AppTextStyles.navBrand),
-                Builder(
-                  builder: (ctx) {
-                    final role = ctx.watch<AuthCubit>().state.role;
-                    final isRecruiter = role == UserRole.recruteur;
-                    return NotificationBell(isRecruiter: isRecruiter);
-                  },
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 16, 40),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('SkillSpace', style: AppTextStyles.navBrand),
+                      Builder(
+                        builder: (ctx) {
+                          final role = ctx.watch<AuthCubit>().state.role;
+                          final isRecruiter = role == UserRole.recruteur;
+                          return NotificationBell(isRecruiter: isRecruiter);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                ...DashboardTab.values.where((tab) {
+                  final role = context.read<AuthCubit>().state.role;
+                  if (role == UserRole.recruteur) {
+                    return tab == DashboardTab.tableau ||
+                        tab == DashboardTab.profil;
+                  }
+                  if (role == UserRole.formateur) {
+                    return tab == DashboardTab.tableau ||
+                        tab == DashboardTab.profil ||
+                        tab == DashboardTab.formations;
+                  }
+                  return true;
+                }).map(
+                  (tab) => _NavItem(
+                    tab: tab,
+                    isActive: tab == activeTab,
+                    onTap: () => onTabSelected(tab),
+                  ),
+                ),
+                const Spacer(),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: _ThemeToggle(),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  child: TextButton.icon(
+                    onPressed: () => _showLogoutConfirmation(context, onLogout),
+                    icon: const Icon(Icons.logout_rounded,
+                        size: 18, color: AppColors.textGray),
+                    label: Text(
+                      l10n.logout,
+                      style: const TextStyle(
+                          color: AppColors.textGray, fontSize: 14),
+                    ),
+                    style: TextButton.styleFrom(
+                      alignment:
+                          isRtl ? Alignment.centerRight : Alignment.centerLeft,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 12),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          ...DashboardTab.values.where((tab) {
-            final role = context.read<AuthCubit>().state.role;
-            if (role == UserRole.recruteur) {
-              return tab == DashboardTab.tableau || tab == DashboardTab.profil;
-            }
-            if (role == UserRole.formateur) {
-              return tab == DashboardTab.tableau ||
-                  tab == DashboardTab.profil ||
-                  tab == DashboardTab.formations;
-            }
-            return true;
-          }).map(
-            (tab) => _NavItem(
-              tab: tab,
-              isActive: tab == activeTab,
-              onTap: () => onTabSelected(tab),
-            ),
-          ),
-          const Spacer(),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: _ThemeToggle(),
-          ),
-          const SizedBox(height: 12),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: _LanguageSelector(),
-          ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            child: TextButton.icon(
-              onPressed: () => _showLogoutConfirmation(context, onLogout),
-              icon: const Icon(Icons.logout_rounded,
-                  size: 18, color: AppColors.textGray),
-              label: Text(
-                l10n.logout,
-                style: const TextStyle(color: AppColors.textGray, fontSize: 14),
-              ),
-              style: TextButton.styleFrom(
-                alignment: isRtl ? Alignment.centerRight : Alignment.centerLeft,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LanguageSelector extends StatelessWidget {
-  const _LanguageSelector();
-
-  @override
-  Widget build(BuildContext context) {
-    final currentLocale = context.watch<L10nCubit>().state;
-
-    final isDark = ReactiveMode.isDarkMode(context);
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-            color: (isDark ? Colors.white : AppColors.border).withOpacity(0.1)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _LangBtn(
-              label: 'FR',
-              isActive: currentLocale.languageCode == 'fr',
-              onTap: () =>
-                  context.read<L10nCubit>().setLocale(const Locale('fr')),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: _LangBtn(
-              label: 'EN',
-              isActive: currentLocale.languageCode == 'en',
-              onTap: () =>
-                  context.read<L10nCubit>().setLocale(const Locale('en')),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: _LangBtn(
-              label: 'AR',
-              isActive: currentLocale.languageCode == 'ar',
-              onTap: () =>
-                  context.read<L10nCubit>().setLocale(const Locale('ar')),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LangBtn extends StatelessWidget {
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _LangBtn({
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = ReactiveMode.isDarkMode(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isActive
-              ? (isDark ? AppColors.orange : Colors.white)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: isActive && !isDark
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  )
-                ]
-              : null,
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
-            color: isActive
-                ? (isDark ? Colors.white : AppColors.navy)
-                : (isDark ? Colors.white60 : AppColors.textGray),
-          ),
         ),
       ),
     );
   }
 }
+
+
 
 class _ThemeToggle extends StatelessWidget {
   const _ThemeToggle();
@@ -446,66 +373,76 @@ class _MobileDrawer extends StatelessWidget {
     final isDark = ReactiveMode.isDarkMode(context);
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : Colors.white,
+        color: isDark
+            ? AppColors.surfaceDark.withValues(alpha: 0.8)
+            : Colors.white.withValues(alpha: 0.8),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       ),
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(2),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        child: VideoBackground(
+          assetPath: 'assets/sidebar-video.mp4',
+          opacity: isDark ? 0.8 : 0.0,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                const Row(
+                  children: [
+                    Text('SkillSpace', style: AppTextStyles.navBrand),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                ...DashboardTab.values.where((tab) {
+                  final role = context.read<AuthCubit>().state.role;
+                  if (role == UserRole.recruteur) {
+                    return tab == DashboardTab.tableau ||
+                        tab == DashboardTab.profil;
+                  }
+                  if (role == UserRole.formateur) {
+                    return tab == DashboardTab.tableau ||
+                        tab == DashboardTab.profil ||
+                        tab == DashboardTab.formations;
+                  }
+                  return true;
+                }).map(
+                  (tab) => _DrawerItem(
+                    tab: tab,
+                    isActive: tab == activeTab,
+                    onTap: () => onTabSelected(tab),
+                  ),
+                ),
+                const Divider(height: 40),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.logout_rounded,
+                      color: AppColors.error, size: 22),
+                  title: Text(
+                    l10n.logout,
+                    style: const TextStyle(
+                        color: AppColors.error,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context); // Close drawer
+                    _showLogoutConfirmation(context, onLogout);
+                  },
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 32),
-          const Row(
-            children: [
-              Text('SkillSpace', style: AppTextStyles.navBrand),
-            ],
-          ),
-          const SizedBox(height: 24),
-          ...DashboardTab.values.where((tab) {
-            final role = context.read<AuthCubit>().state.role;
-            if (role == UserRole.recruteur) {
-              return tab == DashboardTab.tableau || tab == DashboardTab.profil;
-            }
-            if (role == UserRole.formateur) {
-              return tab == DashboardTab.tableau ||
-                  tab == DashboardTab.profil ||
-                  tab == DashboardTab.formations;
-            }
-            return true;
-          }).map(
-            (tab) => _DrawerItem(
-              tab: tab,
-              isActive: tab == activeTab,
-              onTap: () => onTabSelected(tab),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const _LanguageSelector(),
-          const Divider(height: 40),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.logout_rounded,
-                color: AppColors.error, size: 22),
-            title: Text(
-              l10n.logout,
-              style: const TextStyle(
-                  color: AppColors.error,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600),
-            ),
-            onTap: () {
-              Navigator.pop(context); // Close drawer
-              _showLogoutConfirmation(context, onLogout);
-            },
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -536,10 +473,26 @@ class _DrawerItem extends StatelessWidget {
           decoration: BoxDecoration(
             color: isActive
                 ? (isDark
-                    ? AppColors.orange.withOpacity(0.1)
-                    : AppColors.iconBg)
+                    ? Colors.white.withValues(alpha: 0.12)
+                    : Colors.white.withValues(alpha: 0.7))
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
+            border: isActive
+                ? Border.all(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.15)
+                        : Colors.white.withValues(alpha: 0.5),
+                    width: 1.5)
+                : null,
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: AppColors.orange.withValues(alpha: 0.15),
+                      blurRadius: 15,
+                      spreadRadius: -2,
+                    )
+                  ]
+                : null,
           ),
           child: Row(
             children: [
@@ -601,10 +554,26 @@ class _NavItem extends StatelessWidget {
             decoration: BoxDecoration(
               color: isActive
                   ? (isDark
-                      ? AppColors.orange.withOpacity(0.1)
-                      : AppColors.iconBg)
+                      ? Colors.white.withValues(alpha: 0.12)
+                      : Colors.white.withValues(alpha: 0.6))
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
+              border: isActive
+                  ? Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.15)
+                          : Colors.white.withValues(alpha: 0.4),
+                      width: 1)
+                  : null,
+              boxShadow: isActive
+                  ? [
+                      BoxShadow(
+                        color: AppColors.orange.withValues(alpha: 0.1),
+                        blurRadius: 10,
+                        spreadRadius: -2,
+                      )
+                    ]
+                  : null,
             ),
             child: Row(
               children: [

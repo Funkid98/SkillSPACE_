@@ -265,12 +265,19 @@ Return ONLY valid JSON, no markdown:
     {
       "title": "Very specific course title targeting their weak topics",
       "platform": "Coursera | Udemy | YouTube | edX | LinkedIn Learning",
-      "url": "realistic URL",
+      "url": "MUST be a valid, real-world URL (e.g., https://www.udemy.com/course/name-of-course/). NO placeholder links.",
       "type": "Course | Workshop | Tutorial | Bootcamp",
       "why": "1-sentence explanation of why this targets their specific gap"
     }
   ]
-}`;
+}
+
+CRITICAL URL RULES:
+- Provide REAL, specific links from major platforms.
+- For YouTube: use https://www.youtube.com/results?search_query=[topic]+tutorial if a specific video ID is unknown.
+- For Udemy: use https://www.udemy.com/topic/[topic]/ or a specific course slug.
+- For Coursera: use https://www.coursera.org/learn/[course-slug].
+- NEVER return "example.com" or "course-link-here". If unsure, use a search results link as shown above.`;
 
   const response = await groq.chat.completions.create({
     model: 'llama-3.3-70b-versatile',
@@ -354,15 +361,12 @@ const generateCoachAdvice = async (candidate) => {
         
         Return ONLY a JSON object with:
         1. advice: A short (1-2 sentences), highly motivational and unique advice for today, in French. Avoid generic phrases.
-        2. tasks: An array of 4-5 objects: { "text": "string in French", "isDone": boolean }. 
-           - Mark as true if they have the info.
-           - Mark as false if they need to add/improve it.
-        
-        Example task texts: "CV analysé par l'IA", "Simulations d'entretien", "Ajouter des projets GitHub", "Compléter votre bio", "Préciser votre localisation".`
+        `
       },
       {
         role: 'user',
-        content: `Analyze this candidate profile and give coach advice:\n${profileSummary}`
+        content: `Today's Date: ${new Date().toLocaleDateString('fr-FR')}
+        Analyze this candidate profile and give coach advice:\n${profileSummary}`
       }
     ],
     temperature: 0.7,
@@ -374,12 +378,8 @@ const generateCoachAdvice = async (candidate) => {
     return JSON.parse(content)
   } catch (err) {
     console.error('Groq Coach Advice Parse Error:', err.message)
-    return { 
-      advice: "Continuez à persévérer, chaque effort vous rapproche de votre succès !",
-      tasks: [
-        { text: "CV analysé par l'IA", isDone: true },
-        { text: "Compléter votre profil", isDone: false }
-      ]
+    return {
+      advice: "Continuez à persévérer, chaque effort vous rapproche de votre succès !"
     }
   }
 }

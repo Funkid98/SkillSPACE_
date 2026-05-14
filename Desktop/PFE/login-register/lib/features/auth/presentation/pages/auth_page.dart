@@ -166,78 +166,89 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
               ),
             ],
           ),
-          body: SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Column(
-                children: [
-                  _HeroPanel(isDark: _isDarkMode),
-                  const _TrailLine(),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(22, 20, 22, 32),
-                    child: BlocBuilder<AuthCubit, AuthState>(
-                      builder: (context, authState) {
-                        print(
-                            'AuthPage Build: awaitingVerification=${authState.awaitingVerification}, error=${authState.error}');
-                        return Column(
-                          children: [
-                            if (!_showForgot &&
-                                !authState.awaitingVerification) ...[
-                              _TabSwitcher(
-                                selected: authState.tab,
-                                isDark: _isDarkMode,
-                                onSwitch: _onTabSwitch,
-                              ),
-                              const SizedBox(height: 32),
-                            ],
-                            FadeTransition(
-                              opacity: _fadeAnim,
-                              child: SlideTransition(
-                                position: _slideAnim,
-                                child: _GlassCard(
-                                  isDark: _isDarkMode,
-                                  child: _showForgot
-                                      ? _ForgotPasswordFlow(
-                                          isDark: _isDarkMode,
-                                          onBack: _hideForgotFlow)
-                                      : authState.awaitingVerification
-                                          ? _SignupVerificationFlow(
-                                              isDark: _isDarkMode,
-                                              onBack: () => context
-                                                  .read<AuthCubit>()
-                                                  .cancelVerification(),
-                                            )
-                                          : authState.tab == AuthTab.login
-                                              ? _LoginForm(
-                                                  formKey: _loginFormKey,
-                                                  emailCtrl: _emailCtrl,
-                                                  passCtrl: _passCtrl,
-                                                  state: authState,
-                                                  isDark: _isDarkMode,
-                                                  onForgot: _showForgotFlow,
-                                                )
-                                              : _RegisterForm(
-                                                  formKey: _registerFormKey,
-                                                  firstCtrl: _firstCtrl,
-                                                  lastCtrl: _lastCtrl,
-                                                  entrepriseCtrl:
-                                                      _entrepriseCtrl,
-                                                  emailCtrl: _emailCtrl,
-                                                  passCtrl: _passCtrl,
-                                                  state: authState,
-                                                  isDark: _isDarkMode,
-                                                ),
-                                ),
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 1000;
+
+              if (isWide) {
+                return Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 60),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          flex: 1,
+                          child: _WideHeroContent(isDark: _isDarkMode),
+                        ),
+                        const SizedBox(width: 80),
+                        Expanded(
+                          flex: 1,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 480),
+                              child: _AuthFormContent(
+                                isDarkMode: _isDarkMode,
+                                showForgot: _showForgot,
+                                fadeAnim: _fadeAnim,
+                                slideAnim: _slideAnim,
+                                onTabSwitch: _onTabSwitch,
+                                onForgotFlow: _showForgotFlow,
+                                onHideForgotFlow: _hideForgotFlow,
+                                loginFormKey: _loginFormKey,
+                                registerFormKey: _registerFormKey,
+                                emailCtrl: _emailCtrl,
+                                passCtrl: _passCtrl,
+                                firstCtrl: _firstCtrl,
+                                lastCtrl: _lastCtrl,
+                                entrepriseCtrl: _entrepriseCtrl,
                               ),
                             ),
-                          ],
-                        );
-                      },
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
+                );
+              }
+
+              return SafeArea(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    children: [
+                      _HeroPanel(isDark: _isDarkMode, isPlayful: true),
+                      const _TrailLine(),
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 500),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(22, 20, 22, 32),
+                            child: _AuthFormContent(
+                              isDarkMode: _isDarkMode,
+                              showForgot: _showForgot,
+                              fadeAnim: _fadeAnim,
+                              slideAnim: _slideAnim,
+                              onTabSwitch: _onTabSwitch,
+                              onForgotFlow: _showForgotFlow,
+                              onHideForgotFlow: _hideForgotFlow,
+                              loginFormKey: _loginFormKey,
+                              registerFormKey: _registerFormKey,
+                              emailCtrl: _emailCtrl,
+                              passCtrl: _passCtrl,
+                              firstCtrl: _firstCtrl,
+                              lastCtrl: _lastCtrl,
+                              entrepriseCtrl: _entrepriseCtrl,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -301,7 +312,7 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
 class _HeroPanel extends StatelessWidget {
   final bool isDark;
   final bool isPlayful;
-  const _HeroPanel({required this.isDark, this.isPlayful = false});
+  const _HeroPanel({required this.isDark, required this.isPlayful});
 
   @override
   Widget build(BuildContext context) {
@@ -595,11 +606,11 @@ class _Label extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 10),
         child: Text(text,
             style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
                 color: isDark
-                    ? Colors.white.withOpacity(0.9)
-                    : const Color(0xFF1E2B6B))),
+                    ? Colors.white.withOpacity(0.7)
+                    : const Color(0xFF1E2B6B).withOpacity(0.8))),
       );
 }
 
@@ -674,14 +685,14 @@ class _RoleCard extends StatelessWidget {
                 ? const Color(0xFFE8622A).withOpacity(0.15)
                 : (isDark
                     ? Colors.white.withOpacity(0.03)
-                    : const Color(0xFF1E2B6B).withOpacity(0.03)),
+                    : Colors.white.withOpacity(0.2)),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
                 color: isSelected
                     ? const Color(0xFFE8622A)
                     : (isDark
                         ? Colors.white.withOpacity(0.1)
-                        : const Color(0xFF1E2B6B).withOpacity(0.1)),
+                        : Colors.white.withOpacity(0.3)),
                 width: isSelected ? 2 : 1),
             boxShadow: [
               if (isSelected)
@@ -748,20 +759,26 @@ class _LoginForm extends StatelessWidget {
         children: [
           _StaggeredReveal(
               index: 0,
-              child: Text('Bon retour ! ',
-                  style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                      color: isDark ? Colors.white : const Color(0xFF1E2B6B),
-                      letterSpacing: -1.0))),
-          const SizedBox(height: 8),
-          _StaggeredReveal(
-              index: 1,
-              child: Text('Connectez-vous pour continuer',
-                  style: TextStyle(
-                      fontSize: 15,
-                      color: isDark ? Colors.white70 : Colors.grey[600]))),
-          const SizedBox(height: 26),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Sign in',
+                      style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          color: isDark
+                              ? Colors.white.withOpacity(0.1)
+                              : const Color(0xFF1E2B6B),
+                          letterSpacing: -1.0)),
+                  const SizedBox(height: 4),
+                  Container(
+                    width: 30,
+                    height: 2,
+                    color: Colors.white.withOpacity(0.3),
+                  ),
+                ],
+              )),
+          const SizedBox(height: 24),
           if (state.error != null) ...[
             _StaggeredReveal(index: 2, child: _ErrorBanner(state.error!)),
             const SizedBox(height: 10),
@@ -931,20 +948,25 @@ class _RegisterForm extends StatelessWidget {
         children: [
           _StaggeredReveal(
               index: 0,
-              child: Text('Créer un compte ',
-                  style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                      color: isDark ? Colors.white : const Color(0xFF1E2B6B),
-                      letterSpacing: -1.0))),
-          const SizedBox(height: 8),
-          _StaggeredReveal(
-              index: 1,
-              child: Text('Commencez votre parcours SkillSpace',
-                  style: TextStyle(
-                      fontSize: 15,
-                      color: isDark ? Colors.white70 : Colors.grey[600]))),
-          const SizedBox(height: 26),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Create Account',
+                      style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          color:
+                              isDark ? Colors.white : const Color(0xFF1E2B6B),
+                          letterSpacing: -1.0)),
+                  const SizedBox(height: 4),
+                  Container(
+                    width: 30,
+                    height: 2,
+                    color: Colors.white.withOpacity(0.3),
+                  ),
+                ],
+              )),
+          const SizedBox(height: 24),
           if (state.error != null) ...[
             _StaggeredReveal(index: 2, child: _ErrorBanner(state.error!)),
             const SizedBox(height: 10),
@@ -1723,10 +1745,10 @@ class _SubmitButtonState extends State<_SubmitButton>
           height: 52,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-                colors: [Color(0xFFE8622A), Color(0xFFFF8A50)],
+                colors: [Color(0xFFE8622A), Color(0xFFE91E63)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(30),
             boxShadow: [
               BoxShadow(
                   color: const Color(0xFFE8622A).withOpacity(0.4),
@@ -1898,7 +1920,7 @@ class _StaggeredReveal extends StatefulWidget {
   const _StaggeredReveal({
     required this.child,
     this.index = 0,
-    this.delayMs = 100,
+    this.delayMs = 150,
   });
 
   @override
@@ -1965,23 +1987,23 @@ InputDecoration _inputDecoration(
         : const Color(0xFF1E2B6B).withOpacity(0.03),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(30),
       borderSide: BorderSide(
           color: (isDark ? Colors.white : const Color(0xFF1E2B6B))
-              .withOpacity(0.1)),
+              .withOpacity(0.05)),
     ),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(30),
       borderSide: BorderSide(
           color: (isDark ? Colors.white : const Color(0xFF1E2B6B))
-              .withOpacity(0.1)),
+              .withOpacity(0.05)),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
-      borderSide: const BorderSide(color: Color(0xFFF7931E), width: 1.5),
+      borderRadius: BorderRadius.circular(30),
+      borderSide: const BorderSide(color: Color(0xFFE8622A), width: 1.5),
     ),
     errorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(30),
       borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
     ),
   );
@@ -2015,22 +2037,239 @@ class _VibrantBackground extends StatelessWidget {
             right: -100,
             child: _GlowSphere(
                 color:
-                    (isDark ? const Color(0xFFE8622A) : const Color(0xFFFF8A50))
-                        .withOpacity(isDark ? 0.15 : 0.08),
-                size: 400),
+                    const Color(0xFFE8622A).withOpacity(isDark ? 0.15 : 0.12),
+                size: 500),
           ),
           Positioned(
-            bottom: -50,
-            left: -50,
+            bottom: -150,
+            left: -150,
             child: _GlowSphere(
-                color:
-                    (isDark ? const Color(0xFF1E3A8A) : const Color(0xFF3B82F6))
-                        .withOpacity(isDark ? 0.2 : 0.1),
+                color: const Color(0xFF1E3A8A).withOpacity(isDark ? 0.2 : 0.15),
+                size: 600),
+          ),
+          Positioned(
+            top: 200,
+            left: 100,
+            child: _GlowSphere(
+                color: const Color(0xFFE8622A).withOpacity(isDark ? 0.1 : 0.08),
                 size: 300),
           ),
           child,
         ],
       ),
+    );
+  }
+}
+
+class _WideHeroContent extends StatelessWidget {
+  final bool isDark;
+  const _WideHeroContent({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor = isDark ? Colors.white : const Color(0xFF1E2B6B);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFE8622A), Color(0xFFFF8A50)],
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child:
+                  const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Text('SkillSpace',
+                style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 24,
+                    letterSpacing: -0.5)),
+          ],
+        ),
+        const SizedBox(height: 60),
+        Text(
+          'Vos compétences sont\nvotre meilleur atout',
+          style: TextStyle(
+            color: textColor,
+            fontSize: 64,
+            fontWeight: FontWeight.w900,
+            height: 1.1,
+            letterSpacing: -2,
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'La plateforme IA qui connecte les talents\naux meilleures opportunités.',
+          style: TextStyle(
+            color: textColor.withOpacity(0.7),
+            fontSize: 18,
+            height: 1.6,
+          ),
+        ),
+        const SizedBox(height: 80),
+        Row(
+          children: [
+            _StatChipWide(value: '15k+', label: 'Talents', isDark: isDark),
+            const SizedBox(width: 20),
+            _StatChipWide(value: '150+', label: 'Entreprises', isDark: isDark),
+            const SizedBox(width: 20),
+            _StatChipWide(value: '98%', label: 'Satisfaction', isDark: isDark),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _StatChipWide extends StatelessWidget {
+  final String value;
+  final String label;
+  final bool isDark;
+  const _StatChipWide(
+      {required this.value, required this.label, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 180,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withOpacity(0.06) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withOpacity(0.1)
+              : Colors.black.withOpacity(0.05),
+        ),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                )
+              ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(value,
+              style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF1E2B6B),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 20)),
+          const SizedBox(height: 4),
+          Text(label,
+              style: TextStyle(
+                  color: (isDark ? Colors.white : const Color(0xFF1E2B6B))
+                      .withOpacity(0.5),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+}
+
+class _AuthFormContent extends StatelessWidget {
+  final bool isDarkMode;
+  final bool showForgot;
+  final Animation<double> fadeAnim;
+  final Animation<Offset> slideAnim;
+  final Function(AuthTab) onTabSwitch;
+  final VoidCallback onForgotFlow;
+  final VoidCallback onHideForgotFlow;
+  final GlobalKey<FormState> loginFormKey;
+  final GlobalKey<FormState> registerFormKey;
+  final TextEditingController emailCtrl;
+  final TextEditingController passCtrl;
+  final TextEditingController firstCtrl;
+  final TextEditingController lastCtrl;
+  final TextEditingController entrepriseCtrl;
+
+  const _AuthFormContent({
+    required this.isDarkMode,
+    required this.showForgot,
+    required this.fadeAnim,
+    required this.slideAnim,
+    required this.onTabSwitch,
+    required this.onForgotFlow,
+    required this.onHideForgotFlow,
+    required this.loginFormKey,
+    required this.registerFormKey,
+    required this.emailCtrl,
+    required this.passCtrl,
+    required this.firstCtrl,
+    required this.lastCtrl,
+    required this.entrepriseCtrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, authState) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!showForgot && !authState.awaitingVerification) ...[
+              _TabSwitcher(
+                selected: authState.tab,
+                isDark: isDarkMode,
+                onSwitch: onTabSwitch,
+              ),
+              const SizedBox(height: 32),
+            ],
+            FadeTransition(
+              opacity: fadeAnim,
+              child: SlideTransition(
+                position: slideAnim,
+                child: _GlassCard(
+                  isDark: isDarkMode,
+                  child: showForgot
+                      ? _ForgotPasswordFlow(
+                          isDark: isDarkMode, onBack: onHideForgotFlow)
+                      : authState.awaitingVerification
+                          ? _SignupVerificationFlow(
+                              isDark: isDarkMode,
+                              onBack: () => context
+                                  .read<AuthCubit>()
+                                  .cancelVerification(),
+                            )
+                          : authState.tab == AuthTab.login
+                              ? _LoginForm(
+                                  formKey: loginFormKey,
+                                  emailCtrl: emailCtrl,
+                                  passCtrl: passCtrl,
+                                  state: authState,
+                                  isDark: isDarkMode,
+                                  onForgot: onForgotFlow,
+                                )
+                              : _RegisterForm(
+                                  formKey: registerFormKey,
+                                  firstCtrl: firstCtrl,
+                                  lastCtrl: lastCtrl,
+                                  entrepriseCtrl: entrepriseCtrl,
+                                  emailCtrl: emailCtrl,
+                                  passCtrl: passCtrl,
+                                  state: authState,
+                                  isDark: isDarkMode,
+                                ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -2069,22 +2308,24 @@ class _GlassCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(32),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
           padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
             color: isDark
                 ? Colors.white.withOpacity(0.06)
-                : Colors.white.withOpacity(0.8),
+                : Colors.white.withOpacity(0.4),
             borderRadius: BorderRadius.circular(32),
             border: Border.all(
-                color: isDark ? Colors.white.withOpacity(0.12) : Colors.white,
+                color: isDark
+                    ? Colors.white.withOpacity(0.12)
+                    : Colors.white.withOpacity(0.6),
                 width: 1.5),
             boxShadow: [
               BoxShadow(
                 color: isDark
                     ? Colors.black.withOpacity(0.2)
-                    : Colors.black.withOpacity(0.08),
+                    : const Color(0xFF1E2B6B).withOpacity(0.06),
                 blurRadius: 40,
                 offset: const Offset(0, 15),
               ),

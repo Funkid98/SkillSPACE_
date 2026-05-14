@@ -39,6 +39,7 @@ class _DashboardShellState extends State<DashboardShell> {
   void initState() {
     super.initState();
     _activeTab = widget.initialTab;
+    _loadPersistedTab();
 
     // Safety: Ensure trainers and recruiters don't land on candidate dashboard
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -48,6 +49,20 @@ class _DashboardShellState extends State<DashboardShell> {
         setState(() => _activeTab = DashboardTab.profil);
       }
     });
+  }
+
+  Future<void> _loadPersistedTab() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedIndex = prefs.getInt('active_tab_index');
+      if (savedIndex != null && savedIndex < DashboardTab.values.length) {
+        setState(() {
+          _activeTab = DashboardTab.values[savedIndex];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading persisted tab: $e');
+    }
   }
 
   Future<void> _onTabChanged(DashboardTab tab) async {

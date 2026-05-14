@@ -57,4 +57,53 @@ class FormationsCubit extends Cubit<FormationsState> {
       // Handle error if needed
     }
   }
+
+  Future<void> leaveFormation(String formationId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('jwt_token') ?? '';
+
+      final response = await http.post(
+        Uri.parse('http://127.0.0.1:5000/candidat/leave/$formationId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Refresh list to remove the formation
+        await fetchFormations();
+      }
+    } catch (e) {
+      // Handle error if needed
+    }
+  }
+
+  Future<bool> submitReview(
+      String formationId, int rating, String review) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('jwt_token') ?? '';
+
+      final response = await http.post(
+        Uri.parse('http://127.0.0.1:5000/candidat/review/$formationId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'rating': rating,
+          'review': review,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        await fetchFormations();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
 }

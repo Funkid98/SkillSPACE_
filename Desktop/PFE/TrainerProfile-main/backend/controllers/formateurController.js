@@ -253,22 +253,27 @@ const getDashboardData = async (req, res) => {
 
     // Extract real recent students from formations
     let allStudents = [];
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+
     formations.forEach(f => {
       if (f.students && f.students.length > 0) {
         f.students.forEach(s => {
-          allStudents.push({
-            id: s._id || Math.random().toString(),
-            name: s.name,
-            course: f.title,
-            joinedAt: new Date(s.joinedAt),
-            // Format time dynamically based on distance from now
-            time: formatTimeDiff(new Date(s.joinedAt))
-          });
+          const joinedDate = new Date(s.joinedAt);
+          // Only include students who joined in the last 3 days
+          if (joinedDate >= threeDaysAgo) {
+            allStudents.push({
+              id: s._id || Math.random().toString(),
+              name: s.name,
+              course: f.title,
+              joinedAt: joinedDate,
+              time: formatTimeDiff(joinedDate)
+            });
+          }
         });
       }
     });
 
-    // Sort by joinedAt descending
+    // Sort by joinedAt descending (newest first)
     allStudents.sort((a, b) => b.joinedAt - a.joinedAt);
 
     let recentStudents = allStudents.slice(0, 5);
@@ -276,11 +281,9 @@ const getDashboardData = async (req, res) => {
     // Fallback to mock data ONLY if absolutely empty to keep UI populated during demo
     if (recentStudents.length === 0) {
       recentStudents = [
-        { id: 1, name: 'Alice Dupont', course: 'SQL for Data Analytics', time: 'Hier' },
-        { id: 2, name: 'Thomas Bernard', course: 'Introduction to Data Visualization', time: 'Hier' },
-        { id: 3, name: 'Sarah Martin', course: 'Cybersecurity Fundamentals', time: 'Aujourd\'hui' },
-        { id: 4, name: 'Kevin Leroy', course: 'DevOps CI/CD Masterclass', time: 'Aujourd\'hui' },
-        { id: 5, name: 'Léa Petit', course: 'Fullstack Web Development with React & Node', time: 'Hier' }
+        { id: 1, name: 'Youssef Borcheni', course: 'Flutter Development Masterclass', time: 'À l\'instant' },
+        { id: 2, name: 'Alice Dupont', course: 'SQL for Data Analytics', time: 'Il y a 5h' },
+        { id: 3, name: 'Thomas Bernard', course: 'Introduction to Data Visualization', time: 'Hier' }
       ];
     }
 
@@ -495,6 +498,36 @@ const seedDummyData = async (req, res) => {
         meetLink: 'https://meet.google.com/abc-defg-hij',
         date: new Date(),
         time: '08:00'
+      },
+      {
+        trainerId: formateur._id,
+        title: 'Flutter Development Masterclass',
+        tags: ['Flutter', 'Dart', 'Mobile', 'App Development'],
+        studentCount: 342,
+        rating: 4.9,
+        reviewCount: 45,
+        category: 'Development',
+        duration: '40h',
+        level: 'Intermédiaire',
+        description: 'Maîtrisez Flutter et Dart pour créer des applications iOS et Android magnifiques.',
+        meetLink: 'https://meet.google.com/flutter-class',
+        date: new Date(),
+        time: '14:00'
+      },
+      {
+        trainerId: formateur._id,
+        title: 'Bases de Flutter pour Débutants',
+        tags: ['Flutter', 'Dart', 'Mobile', 'UI'],
+        studentCount: 120,
+        rating: 4.8,
+        reviewCount: 18,
+        category: 'Development',
+        duration: '10h',
+        level: 'Débutant',
+        description: 'Apprenez les fondamentaux de Flutter et créez votre première application mobile.',
+        meetLink: 'https://meet.google.com/flutter-beginners',
+        date: new Date(),
+        time: '09:00'
       }
     ];
 
@@ -571,6 +604,29 @@ const createFormation = async (req, res) => {
       trainerId: formateur._id
     };
 
+    // Strict Field Validation
+    const requiredFields = ['title', 'description', 'category', 'duration', 'meetLink', 'date', 'time', 'level'];
+    const missingFields = requiredFields.filter(field => !formationData[field] || formationData[field].toString().trim() === '');
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({ 
+        message: 'Veuillez remplir tous les champs obligatoires.',
+        missingFields: missingFields 
+      });
+    }
+
+    // Prevent duplicate meet links
+    if (formationData.meetLink) {
+      const existingLink = await Formation.findOne({ 
+        meetLink: formationData.meetLink 
+      });
+      if (existingLink) {
+        return res.status(400).json({ 
+          message: 'Ce lien de réunion est déjà utilisé pour une autre formation.' 
+        });
+      }
+    }
+
     // Explicitly handle date if it's a string
     if (formationData.date && typeof formationData.date === 'string') {
       if (formationData.date.includes('/')) {
@@ -593,8 +649,8 @@ const createFormation = async (req, res) => {
     res.status(201).json(saved);
   } catch (error) {
     console.error(`[CreateFormation] Error:`, error);
-    res.status(500).json({ 
-      message: 'Erreur lors de la création de la formation', 
+    res.status(500).json({
+      message: 'Erreur lors de la création de la formation',
       error: error.message,
       details: error.errors // Include validation details if any
     });
@@ -611,6 +667,18 @@ const updateFormation = async (req, res) => {
     // Remove protected fields
     delete updateData.trainerId;
     delete updateData._id;
+
+    if (updateData.meetLink) {
+      const existingLink = await Formation.findOne({ 
+        meetLink: updateData.meetLink,
+        _id: { $ne: id }
+      });
+      if (existingLink) {
+        return res.status(400).json({ 
+          message: 'Ce lien de réunion est déjà utilisé pour une autre formation.' 
+        });
+      }
+    }
 
     const updated = await Formation.findByIdAndUpdate(
       id,
@@ -713,7 +781,7 @@ const enrollFormation = async (req, res) => {
 
     const updated = await Formation.findByIdAndUpdate(
       id,
-      { 
+      {
         $inc: { studentCount: 1 },
         $push: { students: { name: studentName } }
       },
@@ -729,6 +797,66 @@ const enrollFormation = async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de l\'inscription', error: error.message });
   }
 };
+const leaveFormation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userName } = req.body;
+
+    const updated = await Formation.findByIdAndUpdate(
+      id,
+      {
+        $inc: { studentCount: -1 },
+        $pull: { students: { name: userName } }
+      },
+      { returnDocument: 'after' }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Formation non trouvée' });
+    }
+
+    res.status(200).json({ message: 'Désinscrit avec succès', studentCount: updated.studentCount });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la désinscription', error: error.message });
+  }
+};
+const updateFormationRating = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rating } = req.body;
+
+    const formation = await Formation.findById(id);
+    if (!formation) {
+      return res.status(404).json({ message: 'Formation non trouvée' });
+    }
+
+    // Recalculate average rating for formation
+    const currentTotal = formation.rating * formation.reviewCount;
+    const newCount = formation.reviewCount + 1;
+    const newAvg = (currentTotal + rating) / newCount;
+
+    formation.rating = parseFloat(newAvg.toFixed(1));
+    formation.reviewCount = newCount;
+    await formation.save();
+
+    // Update the trainer's global average rating
+    const trainer = await Formateur.findById(formation.trainerId);
+    if (trainer) {
+      const currentGlobalTotal = (trainer.averageRating || 0) * (trainer.totalReviews || 0);
+      const newGlobalCount = (trainer.totalReviews || 0) + 1;
+      const newGlobalAvg = (currentGlobalTotal + rating) / newGlobalCount;
+      
+      trainer.averageRating = parseFloat(newGlobalAvg.toFixed(1));
+      trainer.totalReviews = newGlobalCount;
+      await trainer.save();
+    }
+
+    res.status(200).json({ message: 'Note mise à jour', rating: formation.rating, count: formation.reviewCount });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la mise à jour de la note', error: error.message });
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -749,5 +877,7 @@ module.exports = {
   checkEmailExists,
   patchProfile,
   enrollFormation,
-  getFormationById
+  leaveFormation,
+  getFormationById,
+  updateFormationRating
 };

@@ -928,7 +928,9 @@ const enrollFormation = async (req, res) => {
 
         // Increment student count on trainer service (fire and forget)
         try {
-            await axios.post(`http://127.0.0.1:5004/api/formateur/formations/item/${formationId}/enroll`);
+            await axios.post(`http://127.0.0.1:5004/api/formateur/formations/item/${formationId}/enroll`, {
+                userName: `${user.prenom} ${user.nom}`
+            });
         } catch (e) {
             console.error('Failed to increment student count on trainer service:', e.message);
         }
@@ -959,7 +961,9 @@ const getEnrolledFormations = async (req, res) => {
                         ...response.data,
                         aiReason: enrollment.aiReason || '',
                         enrolledAt: enrollment.enrolledAt,
-                        status: enrollment.status || 'ENROLLED'
+                        status: enrollment.status || 'ENROLLED',
+                        rating: enrollment.rating || 0,
+                        review: enrollment.review || ''
                     };
                 }
             } catch (e) {
@@ -1019,6 +1023,44 @@ const completeFormation = async (req, res) => {
         res.status(200).json({ message: 'Formation terminée ! Compétences mises à jour.', skills: user.skills });
     } catch (err) {
         console.error('completeFormation error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Submit a review for a completed formation
+const submitReview = async (req, res) => {
+    try {
+        const candidateId = req.userId;
+        const { formationId } = req.params;
+        const { rating, review } = req.body;
+
+        if (rating === undefined || rating < 0 || rating > 5) {
+            return res.status(400).json({ error: 'Valide rating (0-5) is required' });
+        }
+
+        const user = await User.findById(candidateId);
+        if (!user) return res.status(404).json({ error: 'Candidate not found' });
+
+        const enrollment = user.enrolledFormations.find(f => f.formationId === formationId);
+        if (!enrollment) return res.status(404).json({ error: 'Not enrolled in this formation' });
+
+        // Update local rating and review
+        enrollment.rating = rating;
+        enrollment.review = review || '';
+        await user.save();
+
+        // Forward rating to trainer service to update average
+        try {
+            await axios.post(`http://127.0.0.1:5004/api/formateur/formations/item/${formationId}/review`, {
+                rating: rating
+            });
+        } catch (e) {
+            console.error('Failed to update rating on trainer service:', e.message);
+        }
+
+        res.status(200).json({ message: 'Avis enregistré avec succès !' });
+    } catch (err) {
+        console.error('submitReview error:', err.message);
         res.status(500).json({ error: err.message });
     }
 };
@@ -1111,11 +1153,43 @@ const getCoachAdvice = async (req, res) => {
     }
 };
 
+// Unenroll from a formation
+const leaveFormation = async (req, res) => {
+    try {
+        const candidateId = req.userId;
+        const { formationId } = req.params;
+
+        const user = await User.findById(candidateId);
+        if (!user) return res.status(404).json({ error: 'Candidate not found' });
+
+        const enrollmentIndex = user.enrolledFormations.findIndex(f => f.formationId === formationId);
+        if (enrollmentIndex === -1) return res.status(404).json({ error: 'Not enrolled in this formation' });
+
+        // Remove enrollment locally
+        user.enrolledFormations.splice(enrollmentIndex, 1);
+        await user.save();
+
+        // Decrement student count on trainer service
+        try {
+            await axios.post(`http://127.0.0.1:5004/api/formateur/formations/item/${formationId}/leave`, {
+                userName: `${user.prenom} ${user.nom}`
+            });
+        } catch (e) {
+            console.error('Failed to decrement student count on trainer service:', e.message);
+        }
+
+        res.status(200).json({ message: 'Désinscrit avec succès' });
+    } catch (err) {
+        console.error('leaveFormation error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+
 module.exports = {
     register, login, getProfile, updateProfile, getRecentCandidatesBySector,
     getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer,
     applyToOffer, receiveNotification, getNotifications, markNotificationRead,
     internalUpdateApplication, deleteNotification, clearAllNotifications,
-    enrollFormation, getEnrolledFormations, completeFormation,
+    enrollFormation, leaveFormation, getEnrolledFormations, completeFormation,
     getEnrolledCandidatesByFormation, getAcceptedOffers, getCoachAdvice
 };

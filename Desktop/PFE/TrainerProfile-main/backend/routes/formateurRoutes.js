@@ -4,7 +4,7 @@ const {
   getProfile, updateProfile, patchProfile, getDashboardData, getFormations,
   getAllFormations, seedDummyData, suggestExpertise, generateBio, validateUrl,
   createFormation, updateFormation, deleteFormation, enhanceFormation,
-  register, login, verifySignupOtp, checkEmailExists, enrollFormation, getFormationById
+  register, login, verifySignupOtp, checkEmailExists, enrollFormation, leaveFormation, getFormationById, updateFormationRating
 } = require('../controllers/formateurController');
 
 router.route('/profile/:userId').get(getProfile).put(updateProfile).patch(patchProfile);
@@ -22,6 +22,8 @@ router.get('/exists/:email', checkEmailExists);
 router.route('/formations/:userId').get(getFormations).post(createFormation);
 router.route('/formations/item/:id').get(getFormationById).put(updateFormation).delete(deleteFormation);
 router.post('/formations/item/:id/enroll', enrollFormation);
+router.post('/formations/item/:id/leave', leaveFormation);
+router.post('/formations/item/:id/review', updateFormationRating);
 router.get('/all-formations', getAllFormations);
 router.route('/seed/:userId').post(seedDummyData);
 router.route('/suggest-expertise').post(suggestExpertise);

@@ -68,11 +68,7 @@ class UpcomingInterview {
   });
 }
 
-class CoachTask {
-  final String text;
-  final bool isDone;
-  const CoachTask({required this.text, required this.isDone});
-}
+
 
 class DashboardData {
   final String userName;
@@ -83,7 +79,7 @@ class DashboardData {
   final int profileViewsCount;
   final int profileViewsPercentChange;
   final String coachAdvice;
-  final List<CoachTask> coachTasks;
+
 
   const DashboardData({
     required this.userName,
@@ -94,7 +90,6 @@ class DashboardData {
     required this.profileViewsCount,
     required this.profileViewsPercentChange,
     required this.coachAdvice,
-    required this.coachTasks,
   });
 
   static Future<DashboardData> fetch() async {
@@ -178,23 +173,13 @@ class DashboardData {
 
     // Fetch Coach Advice
     String realCoachAdvice = 'Analysez votre profil pour obtenir des conseils personnalisés.';
-    List<CoachTask> realCoachTasks = [
-      const CoachTask(text: 'CV analysé par l\'IA', isDone: true),
-      const CoachTask(text: 'Profil complet à 85%', isDone: false),
-    ];
+
 
     try {
       final coachRes = await apiClient.get('/candidat/coach-advice');
       if (coachRes.statusCode == 200) {
         final coachData = jsonDecode(coachRes.body);
         realCoachAdvice = coachData['advice'] ?? realCoachAdvice;
-        final List tasksRaw = coachData['tasks'] ?? [];
-        if (tasksRaw.isNotEmpty) {
-          realCoachTasks = tasksRaw.map((t) => CoachTask(
-            text: t['text'] ?? '',
-            isDone: t['isDone'] ?? false,
-          )).toList();
-        }
       }
     } catch (_) {}
 
@@ -219,7 +204,6 @@ class DashboardData {
       profileViewsCount: hasAnalysing ? -1 : 0, // Hack to pass analysing state to Cubit without rewriting whole model
       profileViewsPercentChange: 0,
       coachAdvice: realCoachAdvice,
-      coachTasks: realCoachTasks,
     );
   }
 

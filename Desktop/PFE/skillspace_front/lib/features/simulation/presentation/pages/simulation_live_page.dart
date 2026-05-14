@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart' hide Animation;
 import 'package:http/http.dart' as http;
+import 'package:reactive_theme/reactive_theme.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http_parser/http_parser.dart';
@@ -450,30 +451,37 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
       );
     }
 
+    final isDark = ReactiveMode.isDarkMode(context);
+
     if (!_hasPermissions) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF5F3EF),
+        backgroundColor: isDark ? AppColors.bgDark : const Color(0xFFF5F3EF),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(32.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.videocam_off_outlined,
-                    size: 80, color: Colors.redAccent),
+                Icon(Icons.videocam_off_outlined,
+                    size: 80,
+                    color: isDark
+                        ? Colors.redAccent.withOpacity(0.8)
+                        : Colors.redAccent),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'Accès requis',
                   style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.navy),
+                      color: isDark ? Colors.white : AppColors.navy),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Pour commencer l\'entretien, nous avons besoin d\'accéder à votre caméra et à votre microphone.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: AppColors.textGray),
+                  style: TextStyle(
+                      fontSize: 16,
+                      color: isDark ? Colors.white70 : AppColors.textGray),
                 ),
                 const SizedBox(height: 32),
                 ElevatedButton(
@@ -490,8 +498,9 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Retour',
-                      style: TextStyle(color: AppColors.textGray)),
+                  child: Text('Retour',
+                      style: TextStyle(
+                          color: isDark ? Colors.white38 : AppColors.textGray)),
                 ),
               ],
             ),
@@ -501,7 +510,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F3EF),
+      backgroundColor: isDark ? AppColors.bgDark : const Color(0xFFF5F3EF),
       body: SafeArea(
         child: Column(
           children: [
@@ -515,15 +524,17 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEBE9E4),
+                      color: isDark
+                          ? AppColors.surfaceDark
+                          : const Color(0xFFEBE9E4),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       widget.roleTitle.replaceAll(' ', '\n'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.navy,
+                        color: isDark ? Colors.white : AppColors.navy,
                       ),
                       maxLines: 2,
                     ),
@@ -533,8 +544,10 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                     onPressed: () {
                       Navigator.popUntil(context, (route) => route.isFirst);
                     },
-                    child: const Text('Quitter',
-                        style: TextStyle(color: AppColors.textGray)),
+                    child: Text('Quitter',
+                        style: TextStyle(
+                            color:
+                                isDark ? Colors.white38 : AppColors.textGray)),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
@@ -568,7 +581,9 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      AppColors.navy.withOpacity(0.8),
+                                      isDark
+                                          ? AppColors.surfaceDark
+                                          : AppColors.navy.withOpacity(0.8),
                                       AppColors.navy,
                                     ],
                                     begin: Alignment.topLeft,
@@ -577,13 +592,16 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                                   borderRadius: BorderRadius.circular(32),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.navy.withOpacity(0.3),
+                                      color: Colors.black
+                                          .withOpacity(isDark ? 0.4 : 0.3),
                                       blurRadius: 30,
                                       offset: const Offset(0, 15),
                                     ),
                                   ],
                                   border: Border.all(
-                                    color: Colors.white.withOpacity(0.1),
+                                    color: isDark
+                                        ? AppColors.borderDark
+                                        : Colors.white.withOpacity(0.1),
                                     width: 1.5,
                                   ),
                                 ),
@@ -622,51 +640,41 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 10, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.15),
+                                    color: Colors.black.withOpacity(0.4),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: Colors.white.withOpacity(0.3),
+                                      color: Colors.white.withOpacity(0.2),
                                       width: 1,
                                     ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.1),
-                                        blurRadius: 10,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFF00FF88),
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Color(0xFF00FF88),
+                                              blurRadius: 4,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      const Text(
+                                        'EN DIRECT',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w900,
+                                          color: Colors.white,
+                                          letterSpacing: 0.5,
+                                        ),
                                       ),
                                     ],
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          width: 8,
-                                          height: 8,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFF00FF88),
-                                            shape: BoxShape.circle,
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Color(0xFF00FF88),
-                                                blurRadius: 4,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'EN DIRECT',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w900,
-                                            color:
-                                                Colors.white.withOpacity(0.9),
-                                            letterSpacing: 0.5,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
                                   ),
                                 ),
                               ),
@@ -676,12 +684,12 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text(
+                              Text(
                                 'Thomas Lefebvre',
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w900,
-                                  color: AppColors.navy,
+                                  color: isDark ? Colors.white : AppColors.navy,
                                   letterSpacing: -0.5,
                                 ),
                               ),
@@ -693,12 +701,13 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                               ),
                             ],
                           ),
-                          const Text(
+                          Text(
                             'RECRUTEUR IA • SKILLSPACE',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.textGray,
+                              color:
+                                  isDark ? Colors.white38 : AppColors.textGray,
                               letterSpacing: 1.2,
                             ),
                           ),
@@ -710,7 +719,9 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                             decoration: BoxDecoration(
                               color: _secondsRemaining < 15
                                   ? Colors.red.withOpacity(0.1)
-                                  : AppColors.navy.withOpacity(0.05),
+                                  : (isDark
+                                      ? Colors.white.withOpacity(0.05)
+                                      : AppColors.navy.withOpacity(0.05)),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Row(
@@ -721,7 +732,9 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                                   size: 14,
                                   color: _secondsRemaining < 15
                                       ? Colors.red
-                                      : AppColors.navy,
+                                      : (isDark
+                                          ? Colors.white70
+                                          : AppColors.navy),
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
@@ -731,7 +744,9 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                                     fontWeight: FontWeight.bold,
                                     color: _secondsRemaining < 15
                                         ? Colors.red
-                                        : AppColors.navy,
+                                        : (isDark
+                                            ? Colors.white70
+                                            : AppColors.navy),
                                   ),
                                 ),
                               ],
@@ -890,14 +905,16 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                   Container(
                     constraints: const BoxConstraints(maxWidth: 800),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isDark ? AppColors.surfaceDark : Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                           color: _isMicOn
                               ? AppColors.orange
                               : (_isTranscribing
                                   ? Colors.blue
-                                  : const Color(0xFFEBE9E4)),
+                                  : (isDark
+                                      ? AppColors.borderDark
+                                      : const Color(0xFFEBE9E4))),
                           width: 2),
                     ),
                     child: Row(
@@ -919,14 +936,18 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                         Expanded(
                           child: TextField(
                             controller: _textController,
+                            style: TextStyle(
+                                color: isDark ? Colors.white : AppColors.navy),
                             decoration: InputDecoration(
                               hintText: _isMicOn
                                   ? 'Enregistrement en cours (Whisper)...'
                                   : (_isTranscribing
                                       ? 'Transcription par Whisper...'
                                       : 'Tapez votre réponse ou utilisez le micro...'),
-                              hintStyle:
-                                  const TextStyle(color: AppColors.textGray),
+                              hintStyle: TextStyle(
+                                  color: isDark
+                                      ? Colors.white38
+                                      : AppColors.textGray),
                               border: InputBorder.none,
                               contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 24, vertical: 16),
@@ -960,6 +981,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                         label: _isMicOn ? 'Micro ON' : 'Micro OFF',
                         isActive: _isMicOn,
                         onTap: _toggleMicrophone,
+                        isDark: isDark,
                       ),
                       const SizedBox(width: 16),
                       _buildControlButton(
@@ -967,10 +989,11 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                         label: _isCamOn ? 'Caméra ON' : 'Caméra OFF',
                         isActive: _isCamOn,
                         onTap: _toggleCamera,
+                        isDark: isDark,
                       ),
                       const SizedBox(width: 16),
                       // Language Selector
-                      _buildLanguageButton(),
+                      _buildLanguageButton(isDark),
                     ],
                   )
                 ],
@@ -987,6 +1010,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
     required String label,
     required bool isActive,
     required VoidCallback onTap,
+    required bool isDark,
   }) {
     return InkWell(
       onTap: onTap,
@@ -995,15 +1019,25 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.navy : const Color(0xFFEBE9E4),
+          color: isActive
+              ? (isDark ? AppColors.orange : AppColors.navy)
+              : (isDark
+                  ? Colors.white.withOpacity(0.05)
+                  : const Color(0xFFEBE9E4)),
           borderRadius: BorderRadius.circular(24),
+          border: isActive
+              ? null
+              : Border.all(
+                  color: isDark ? AppColors.borderDark : Colors.transparent),
         ),
         child: Row(
           children: [
             Icon(
               icon,
               size: 18,
-              color: isActive ? Colors.white : AppColors.navy,
+              color: isActive
+                  ? Colors.white
+                  : (isDark ? Colors.white70 : AppColors.navy),
             ),
             const SizedBox(width: 8),
             Text(
@@ -1011,7 +1045,9 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
-                color: isActive ? Colors.white : AppColors.navy,
+                color: isActive
+                    ? Colors.white
+                    : (isDark ? Colors.white70 : AppColors.navy),
               ),
             ),
           ],
@@ -1020,7 +1056,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
     );
   }
 
-  Widget _buildLanguageButton() {
+  Widget _buildLanguageButton(bool isDark) {
     return InkWell(
       onTap: () {
         setState(() {
@@ -1038,20 +1074,25 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFFEBE9E4),
+          color:
+              isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFEBE9E4),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.navy.withOpacity(0.2)),
+          border: Border.all(
+              color: isDark
+                  ? AppColors.borderDark
+                  : AppColors.navy.withOpacity(0.2)),
         ),
         child: Row(
           children: [
-            const Icon(Icons.language, size: 18, color: AppColors.navy),
+            Icon(Icons.language,
+                size: 18, color: isDark ? Colors.white70 : AppColors.navy),
             const SizedBox(width: 8),
             Text(
               _selectedLanguage.toUpperCase(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
-                color: AppColors.navy,
+                color: isDark ? Colors.white70 : AppColors.navy,
               ),
             ),
           ],
@@ -1061,22 +1102,28 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
   }
 
   Widget _buildChatBubble(bool isUser, String text) {
+    final isDark = ReactiveMode.isDarkMode(context);
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isUser ? AppColors.orange : const Color(0xFFEBE9E4),
+          color: isUser
+              ? AppColors.orange
+              : (isDark ? AppColors.surfaceDark : const Color(0xFFEBE9E4)),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
             bottomLeft: Radius.circular(isUser ? 16 : 0),
             bottomRight: Radius.circular(isUser ? 0 : 16),
           ),
+          border: !isUser && isDark
+              ? Border.all(color: AppColors.borderDark)
+              : null,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
               blurRadius: 5,
               offset: const Offset(0, 2),
             ),
@@ -1086,7 +1133,9 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
         child: Text(
           text,
           style: TextStyle(
-            color: isUser ? Colors.white : AppColors.navy,
+            color: isUser
+                ? Colors.white
+                : (isDark ? Colors.white : AppColors.navy),
             fontSize: 14,
             height: 1.5,
           ),
@@ -1096,18 +1145,20 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
   }
 
   Widget _buildLoadingBubble() {
+    final isDark = ReactiveMode.isDarkMode(context);
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          color: Color(0xFFEBE9E4),
-          borderRadius: BorderRadius.only(
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surfaceDark : const Color(0xFFEBE9E4),
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(16),
             topRight: Radius.circular(16),
             bottomRight: Radius.circular(16),
           ),
+          border: isDark ? Border.all(color: AppColors.borderDark) : null,
         ),
         child: const SizedBox(
           width: 20,

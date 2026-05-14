@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:reactive_theme/reactive_theme.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:video_player/video_player.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import 'dashboard_screen.dart';
 import 'formateur_profile_screen.dart';
@@ -29,8 +31,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
-    // Use addPostFrameCallback to ensure context is available if needed,
-    // but BlocProvider will handle it.
+    _loadPersistedIndex();
+  }
+
+  Future<void> _loadPersistedIndex() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedIndex = prefs.getInt('trainer_active_index');
+      if (savedIndex != null && savedIndex < 3) {
+        setState(() => _selectedIndex = savedIndex);
+      }
+    } catch (e) {
+      debugPrint('Error loading trainer index: $e');
+    }
+  }
+
+  Future<void> _updateIndex(int index) async {
+    setState(() => _selectedIndex = index);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('trainer_active_index', index);
   }
 
   // We'll use a wrapper to provide the Cubit and trigger loading
@@ -136,7 +155,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 ),
                 child: BottomNavigationBar(
                   currentIndex: _selectedIndex == 2 ? 0 : _selectedIndex,
-                  onTap: (index) => setState(() => _selectedIndex = index),
+                  onTap: (index) => _updateIndex(index),
                   selectedItemColor: const Color(0xFFE9652B),
                   unselectedItemColor: Colors.grey[400],
                   showUnselectedLabels: true,
@@ -226,6 +245,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           sideCtx, 1, 'Mon profil', Icons.person_outline),
                       _buildNavItem(
                           sideCtx, 2, 'Mes formations', Icons.school_outlined),
+                      const SizedBox(height: 24),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: _SidebarVideo(),
+                      ),
                       const Spacer(),
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 16),
@@ -267,9 +291,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           _showLogoutConfirmation(context);
           return;
         }
-        setState(() {
-          _selectedIndex = index;
-        });
+        _updateIndex(index);
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -389,6 +411,76 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SidebarVideo extends StatefulWidget {
+  const _SidebarVideo();
+
+  @override
+  State<_SidebarVideo> createState() => _SidebarVideoState();
+}
+
+class _SidebarVideoState extends State<_SidebarVideo> {
+  late VideoPlayerController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.asset('assets/sidebar-video.mp4')
+      ..initialize().then((_) {
+        _controller.setLooping(true);
+        _controller.setVolume(0);
+        _controller.play();
+        if (mounted) setState(() {});
+      });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_controller.value.isInitialized) {
+      return Container(
+        height: 120,
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+                strokeWidth: 2, color: Color(0xFFE9652B)),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: AspectRatio(
+          aspectRatio: _controller.value.aspectRatio,
+          child: VideoPlayer(_controller),
         ),
       ),
     );

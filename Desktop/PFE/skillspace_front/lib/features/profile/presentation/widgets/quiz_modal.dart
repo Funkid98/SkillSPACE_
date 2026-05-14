@@ -37,6 +37,7 @@ class _QuizModalState extends State<QuizModal> {
   String _determinedLevel = '';
   List<dynamic> _answersAnalysis = [];
   int _finalScore = 0; // computed score after evaluation
+  int _quizRawScore = 0; // raw 0-100 score for the specific quiz level
 
   Future<void> _generateQuiz() async {
     setState(() => _step = 1);
@@ -95,20 +96,8 @@ class _QuizModalState extends State<QuizModal> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
-        int rawScore = (data['score'] ?? 0).toInt();
-        int score = 0;
-
-        // Scale the raw score based on the selected difficulty level
-        if (_selectedLevel == 'Beginner') {
-          score = (rawScore * 0.4).round(); // Max 40
-        } else if (_selectedLevel == 'Intermediate') {
-          score = (rawScore * 0.8).round(); // Max 80
-        } else {
-          score = rawScore; // Max 100
-        }
-
-        // Round score to nearest 5: 10, 15, 20 ...
-        score = ((score / 5).round() * 5).clamp(0, 100);
+        // Use the strictly calculated score from the backend
+        int score = (data['updated_score'] ?? 0).toInt();
 
         // Sanitize the level for UI display
         String displayLevel = 'Beginner';
@@ -125,13 +114,14 @@ class _QuizModalState extends State<QuizModal> {
 
         setState(() {
           _finalScore = score;
+          _quizRawScore = (data['score'] ?? 0).toInt();
           _determinedLevel = displayLevel;
           _evaluationFeedback = data['feedback'] ?? '';
           _answersAnalysis = data['answers_analysis'] ?? [];
 
           if ((_selectedLevel == 'Beginner' ||
                   _selectedLevel == 'Intermediate') &&
-              rawScore >= 95) {
+              (data['score'] ?? 0) >= 95) {
             _step = 5; // Go to "Suggest Next Level" step
           } else {
             _step = 4; // Final Result
@@ -163,56 +153,112 @@ class _QuizModalState extends State<QuizModal> {
 
   @override
   Widget build(BuildContext context) {
-    Widget content;
+    Widget content = const SizedBox.shrink();
 
     final isDark = ReactiveMode.isDarkMode(context);
     if (_step == 0) {
       content = Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Quel niveau pensez-vous avoir ?',
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Évaluation de compétence',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      letterSpacing: 1.1,
+                      color: AppColors.orange)),
+              IconButton(
+                icon: const Icon(Icons.close, size: 20),
+                onPressed: () => Navigator.of(context).pop(),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+              'Quel niveau pensez-vous avoir pour la compétence ${widget.skill.name} ?',
               style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontSize: 18,
                   color: isDark ? Colors.white : AppColors.textDark)),
-          const SizedBox(height: 16),
-          ...['Beginner', 'Intermediate', 'Advanced']
-              .map((level) => RadioListTile(
-                    title: Text(level,
-                        style: TextStyle(
-                            color: isDark ? Colors.white : AppColors.textDark)),
-                    value: level,
-                    groupValue: _selectedLevel,
-                    activeColor: AppColors.orange,
-                    onChanged: (val) {
-                      setState(() => _selectedLevel = val.toString());
-                    },
-                  )),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.orange,
-                  foregroundColor: Colors.white),
-              onPressed: () => _generateQuiz(),
-              child: const Text('Commencer le quiz'),
-            ),
-          ),
           const SizedBox(height: 8),
-          TextButton(
-            onPressed: () {
-              // Ensure it defaults to beginner and save
-              widget.parentContext
-                  .read<ProfileCubit>()
-                  .updateSkillPercent(widget.skill.name, 33);
-              widget.parentContext.read<ProfileCubit>().saveProfile();
-              Navigator.of(context).pop();
-            },
-            child: Text('Passer plus tard (Sauvegardé comme débutant)',
-                style: TextStyle(
-                    color: isDark ? Colors.white38 : AppColors.textGray,
-                    fontSize: 13)),
+          Text(
+              'L\'IA va générer un quiz personnalisé pour valider votre niveau.',
+              style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? Colors.white54 : AppColors.textGray)),
+          const SizedBox(height: 20),
+          ...{
+            'Beginner': 'Débutant',
+            'Intermediate': 'Intermédiaire',
+            'Advanced': 'Avancé'
+          }.entries.map((entry) => Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: _selectedLevel == entry.key
+                      ? AppColors.orange.withOpacity(0.1)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _selectedLevel == entry.key
+                        ? AppColors.orange
+                        : (isDark ? Colors.white10 : Colors.black12),
+                  ),
+                ),
+                child: RadioListTile(
+                  title: Text(entry.value,
+                      style: TextStyle(
+                          fontWeight: _selectedLevel == entry.key
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: isDark ? Colors.white : AppColors.textDark)),
+                  value: entry.key,
+                  groupValue: _selectedLevel,
+                  activeColor: AppColors.orange,
+                  onChanged: (val) {
+                    setState(() => _selectedLevel = val.toString());
+                  },
+                ),
+              )),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor:
+                        isDark ? Colors.white70 : AppColors.textGray,
+                    side: BorderSide(
+                        color: isDark ? Colors.white24 : Colors.black12),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Plus tard'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.orange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => _generateQuiz(),
+                  child: const Text('Commencer',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
           ),
         ],
       );
@@ -315,7 +361,7 @@ class _QuizModalState extends State<QuizModal> {
                     fontSize: 18,
                     color: isDark ? Colors.white : AppColors.textDark)),
             const SizedBox(height: 16),
-            Text('Niveau Déterminé: $_determinedLevel',
+            Text('Niveau Déterminé: ${_mapLevelToFrench(_determinedLevel)}',
                 style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
@@ -330,7 +376,7 @@ class _QuizModalState extends State<QuizModal> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                'Score Brut: ${_answersAnalysis.where((a) => a['is_correct'] == true).fold(0, (sum, a) => sum + (_answersAnalysis.indexOf(a) < 4 ? 15 : 40))}/100',
+                'Score Brut: $_quizRawScore/100',
                 style: TextStyle(
                     color: isDark ? AppColors.orange : AppColors.navy,
                     fontWeight: FontWeight.bold,
@@ -498,58 +544,83 @@ class _QuizModalState extends State<QuizModal> {
           ],
         ),
       );
-    } else {
-      final isBeginner = _selectedLevel == 'Beginner';
-      final nextLevel = isBeginner ? 'Intermediate' : 'Advanced';
-      final currentLevelText = isBeginner ? 'débutant' : 'intermédiaire';
-      final nextLevelText = isBeginner ? 'intermédiaire' : 'avancé';
-
+    } else if (_step == 5) {
+      final nextLevelFr =
+          _selectedLevel == 'Beginner' ? 'Intermédiaire' : 'Avancé';
       content = Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.stars, color: Colors.amber, size: 64),
-          const SizedBox(height: 16),
-          Text('Excellent !',
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.orange.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.auto_awesome,
+                color: AppColors.orange, size: 64),
+          ),
+          const SizedBox(height: 24),
+          Text('Performance Exceptionnelle !',
+              textAlign: TextAlign.center,
               style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontSize: 20,
                   color: isDark ? Colors.white : AppColors.textDark)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Text(
-              'Vous avez maîtrisé le test $currentLevelText. Voulez-vous passer le test $nextLevelText pour améliorer votre score ?',
-              style: TextStyle(
-                  fontSize: 14,
-                  color: isDark ? Colors.white70 : AppColors.textDark),
-              textAlign: TextAlign.center),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.orange,
-                  foregroundColor: Colors.white),
-              onPressed: () {
-                setState(() {
-                  _selectedLevel = nextLevel;
-                  _qna.clear();
-                  _currentQuestionIndex = 0;
-                  _generateQuiz();
-                });
-              },
-              child: Text('Passer le test $nextLevelText'),
-            ),
+            'Vous avez maîtrisé le niveau ${_mapLevelToFrench(_selectedLevel)} avec un score parfait de 100%.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 15,
+                color: isDark ? Colors.white70 : AppColors.textGray),
           ),
-          const SizedBox(height: 8),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              AppToast.showSuccess(
-                  context, 'Niveau $currentLevelText Sauvegardé!');
-            },
-            child: Text('Garder mon niveau $currentLevelText',
-                style: TextStyle(
-                    color: isDark ? Colors.white38 : AppColors.textGray,
-                    fontSize: 13)),
+          const SizedBox(height: 32),
+          Text('Voulez-vous tenter le niveau $nextLevelFr immédiatement ?',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  color: isDark ? Colors.white : AppColors.textDark)),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => setState(() => _step = 4),
+                  style: TextButton.styleFrom(
+                    foregroundColor:
+                        isDark ? Colors.white60 : AppColors.textGray,
+                  ),
+                  child: const Text('Voir mes résultats'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedLevel = _selectedLevel == 'Beginner'
+                          ? 'Intermediate'
+                          : 'Advanced';
+                      _currentQuestionIndex = 0;
+                      _qna.clear();
+                      _step = 1;
+                    });
+                    _generateQuiz();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.orange,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Passer au niveau suivant',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
           ),
         ],
       );
@@ -564,5 +635,18 @@ class _QuizModalState extends State<QuizModal> {
         child: content,
       ),
     );
+  }
+
+  String _mapLevelToFrench(String level) {
+    switch (level) {
+      case 'Beginner':
+        return 'Débutant';
+      case 'Intermediate':
+        return 'Intermédiaire';
+      case 'Advanced':
+        return 'Avancé';
+      default:
+        return level;
+    }
   }
 }

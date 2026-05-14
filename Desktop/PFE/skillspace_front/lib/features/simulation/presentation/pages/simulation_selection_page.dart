@@ -100,7 +100,7 @@ class _SimulationSelectionPageState extends State<SimulationSelectionPage>
                       'Préparez-vous à vos vrais entretiens pour les offres où vous avez été accepté.\nNotre recruteuse IA adapte ses questions au poste !',
                       style: TextStyle(
                         fontSize: 15,
-                        color: isDark ? Colors.white60 : AppColors.textGray,
+                        color: isDark ? Colors.white70 : AppColors.textGray,
                         height: 1.5,
                       ),
                       textAlign: TextAlign.center,
@@ -119,30 +119,49 @@ class _SimulationSelectionPageState extends State<SimulationSelectionPage>
                                     style: const TextStyle(color: Colors.red)));
                           } else if (state is SimulationLoaded) {
                             if (state.acceptedOffers.isEmpty) {
-                              return Container(
-                                padding: const EdgeInsets.all(32),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? AppColors.surfaceDark
-                                      : Colors.white,
-                                  borderRadius: BorderRadius.circular(24),
-                                  border: Border.all(
-                                      color: isDark
-                                          ? AppColors.borderDark
-                                          : AppColors.border),
-                                ),
-                                child: const Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.work_off_outlined,
-                                        size: 48, color: AppColors.textGray),
-                                    SizedBox(height: 16),
-                                    Text(
-                                        'Aucune offre acceptée pour le moment.',
-                                        style: TextStyle(
-                                            color: AppColors.textGray,
-                                            fontSize: 16)),
-                                  ],
+                              return Center(
+                                child: Container(
+                                  padding: const EdgeInsets.all(40),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? AppColors.surfaceDark
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(
+                                        color: isDark
+                                            ? AppColors.borderDark
+                                            : AppColors.border),
+                                    boxShadow: [
+                                      if (!isDark)
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.work_off_outlined,
+                                          size: 64, color: isDark ? Colors.white30 : AppColors.textGray),
+                                      const SizedBox(height: 20),
+                                      Text(
+                                          'Aucune offre acceptée pour le moment.',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                              color: isDark ? Colors.white70 : AppColors.textGray,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500)),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                          'Les simulations seront disponibles dès qu\'une entreprise acceptera votre candidature.',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                              color: isDark ? Colors.white38 : AppColors.textGray.withOpacity(0.6),
+                                              fontSize: 13)),
+                                    ],
+                                  ),
                                 ),
                               );
                             }

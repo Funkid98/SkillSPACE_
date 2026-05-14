@@ -109,7 +109,6 @@ class _DashboardContent extends StatelessWidget {
                           delay: const Duration(milliseconds: 1000),
                           child: _AICoachCard(
                             advice: data.coachAdvice,
-                            tasks: data.coachTasks,
                           )),
                     ],
                   )
@@ -148,7 +147,6 @@ class _DashboardContent extends StatelessWidget {
                                 delay: const Duration(milliseconds: 1000),
                                 child: _AICoachCard(
                                   advice: data.coachAdvice,
-                                  tasks: data.coachTasks,
                                 )),
                           ],
                         ),
@@ -1010,9 +1008,8 @@ class _InterviewRow extends StatelessWidget {
 // ─── AI Coach Card ────────────────────────────────────────────────────────
 class _AICoachCard extends StatelessWidget {
   final String advice;
-  final List<CoachTask> tasks;
 
-  const _AICoachCard({required this.advice, required this.tasks});
+  const _AICoachCard({required this.advice});
 
   @override
   Widget build(BuildContext context) {
@@ -1085,41 +1082,10 @@ class _AICoachCard extends StatelessWidget {
               height: 1.5,
             ),
           ),
-          const SizedBox(height: 28),
-          ...tasks.map((t) => _CoachCheckItem(text: t.text, isDone: t.isDone)),
         ],
       ),
     );
   }
 }
 
-class _CoachCheckItem extends StatelessWidget {
-  final String text;
-  final bool isDone;
-  const _CoachCheckItem({required this.text, required this.isDone});
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Icon(
-            isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
-            size: 18,
-            color: isDone ? AppColors.orange : Colors.white.withOpacity(0.3),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 13,
-              color: isDone ? Colors.white : Colors.white.withOpacity(0.6),
-              fontWeight: isDone ? FontWeight.w600 : FontWeight.w400,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

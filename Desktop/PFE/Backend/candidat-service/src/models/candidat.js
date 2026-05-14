@@ -33,6 +33,8 @@ const userSchema = new mongoose.Schema({
         enrolledAt: { type: Date, default: Date.now },
         aiReason: { type: String, default: '' },
         status: { type: String, enum: ['ENROLLED', 'COMPLETED'], default: 'ENROLLED' },
+        rating: { type: Number, default: 0, min: 0, max: 5 },
+        review: { type: String, default: '' },
     }],
     resetOtp: {
         type: String,

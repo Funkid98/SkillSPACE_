@@ -1333,7 +1333,7 @@ class _SkillRow extends StatelessWidget {
                   icon: const Icon(Icons.psychology,
                       size: 18, color: AppColors.orange),
                   label: const Text(
-                    'Check my level',
+                    'Vérifier mon niveau',
                     style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -1357,29 +1357,29 @@ class _SkillRow extends StatelessWidget {
                   onTap: () => context
                       .read<ProfileCubit>()
                       .updateSkillPercent(skill.name, 33),
-                  child: buildLevelChip('Beginner', SkillLevel.beginner),
+                  child: buildLevelChip('Débutant', SkillLevel.beginner),
                 ),
                 GestureDetector(
                   onTap: () => context
                       .read<ProfileCubit>()
                       .updateSkillPercent(skill.name, 66),
                   child:
-                      buildLevelChip('Intermediate', SkillLevel.intermediate),
+                      buildLevelChip('Intermédiaire', SkillLevel.intermediate),
                 ),
                 GestureDetector(
                   onTap: () => context
                       .read<ProfileCubit>()
                       .updateSkillPercent(skill.name, 100),
-                  child: buildLevelChip('Advanced', SkillLevel.advanced),
+                  child: buildLevelChip('Avancé', SkillLevel.advanced),
                 ),
               ],
             )
           else
             Row(
               children: [
-                buildLevelChip('Beginner', SkillLevel.beginner),
-                buildLevelChip('Intermediate', SkillLevel.intermediate),
-                buildLevelChip('Advanced', SkillLevel.advanced),
+                buildLevelChip('Débutant', SkillLevel.beginner),
+                buildLevelChip('Intermédiaire', SkillLevel.intermediate),
+                buildLevelChip('Avancé', SkillLevel.advanced),
               ],
             ),
         ],

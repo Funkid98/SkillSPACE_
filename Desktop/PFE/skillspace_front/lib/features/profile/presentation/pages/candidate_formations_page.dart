@@ -225,6 +225,101 @@ class CandidateFormationsPage extends StatelessWidget {
                                   ),
                                 ),
                               ],
+                              if (isCompleted) ...[
+                                const SizedBox(height: 24),
+                                if ((f['rating'] ?? 0) > 0)
+                                  Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? Colors.white.withOpacity(0.05)
+                                          : AppColors.bg,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Text('Votre avis :',
+                                                style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 14)),
+                                            const SizedBox(width: 8),
+                                            Row(
+                                              children: List.generate(5, (i) {
+                                                return Icon(
+                                                  i < (f['rating'] ?? 0)
+                                                      ? Icons.star
+                                                      : Icons.star_border,
+                                                  color: Colors.amber,
+                                                  size: 18,
+                                                );
+                                              }),
+                                            ),
+                                          ],
+                                        ),
+                                        if (f['review'] != null &&
+                                            f['review'].isNotEmpty) ...[
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            f['review'],
+                                            style: TextStyle(
+                                                fontSize: 13,
+                                                fontStyle: FontStyle.italic,
+                                                color: isDark
+                                                    ? Colors.white70
+                                                    : AppColors.textGray),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  )
+                                else
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton.icon(
+                                      icon: const Icon(Icons.star_outline),
+                                      onPressed: () =>
+                                          _showReviewDialog(context, f),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.orange,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 12),
+                                      ),
+                                      label: const Text('Laisser un avis',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold)),
+                                    ),
+                                  ),
+                              ] else ...[
+                                const SizedBox(height: 24),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton(
+                                    onPressed: () =>
+                                        _showLeaveDialog(context, f),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.red,
+                                      side: const BorderSide(color: Colors.red),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12),
+                                    ),
+                                    child: const Text('Se désinscrire',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         );
@@ -236,6 +331,103 @@ class CandidateFormationsPage extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+
+  void _showReviewDialog(BuildContext context, dynamic formation) {
+    int localRating = 5;
+    final controller = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Laisser un avis'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Quelle note donneriez-vous à cette formation ?'),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (index) {
+                  return IconButton(
+                    icon: Icon(
+                      index < localRating ? Icons.star : Icons.star_border,
+                      color: Colors.amber,
+                      size: 32,
+                    ),
+                    onPressed: () {
+                      setDialogState(() {
+                        localRating = index + 1;
+                      });
+                    },
+                  );
+                }),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  hintText: 'Votre commentaire (optionnel)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final success = await context
+                    .read<FormationsCubit>()
+                    .submitReview(
+                        formation['_id'] ?? formation['id'].toString(),
+                        localRating,
+                        controller.text);
+                if (success && context.mounted) {
+                  Navigator.pop(dialogContext);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Merci pour votre avis !')),
+                  );
+                }
+              },
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: AppColors.orange),
+              child: const Text('Envoyer'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showLeaveDialog(BuildContext context, dynamic formation) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Se désinscrire ?'),
+        content: Text(
+            'Voulez-vous vraiment vous désinscrire de la formation "${formation['title']}" ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () {
+              context.read<FormationsCubit>().leaveFormation(
+                  formation['_id'] ?? formation['id'].toString());
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Confirmer', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }

@@ -42,14 +42,29 @@ const evaluateQuizHandler = async (req, res) => {
 
     let rawScore = result.score || 0;
     let score = 0;
+
     if (claimedLevel === 'Beginner') {
-      score = Math.round(rawScore * 0.4); // Max 40%
+      // Beginner range: 0-39. Intermediate starts at 40.
+      if (rawScore === 100) {
+        score = 40; // Entry point for Intermediate
+      } else {
+        // Map 0-99 raw score to 0-39 final score
+        score = Math.floor((rawScore / 100) * 39);
+      }
     } else if (claimedLevel === 'Intermediate') {
-      score = Math.round(rawScore * 0.8); // Max 80%
+      // Intermediate range: 40-79. Advanced starts at 80.
+      if (rawScore === 100) {
+        score = 80; // Entry point for Advanced
+      } else {
+        // Map 0-99 raw score to 40-79 final score
+        score = 40 + Math.floor((rawScore / 100) * 39);
+      }
     } else {
-      score = rawScore; // Max 100%
+      // Advanced range: 80-100.
+      score = 80 + Math.floor((rawScore / 100) * 20);
     }
-    score = Math.max(0, Math.min(100, (Math.round(score / 5) * 5)));
+
+    score = Math.max(0, Math.min(100, score));
 
     // Update user skill in database
     const user = await User.findById(userId);
@@ -114,12 +129,13 @@ const recommendCoursesHandler = async (req, res) => {
       });
       const allFormations = response.data || [];
 
-      // Pre-filter by relevant levels so AI gets a meaningful, scoped list
+      // Pre-filter by relevant levels
       availableInternalFormations = allFormations.filter(f =>
         relevantLevels.includes(f.level)
       );
 
-      // Fallback: if filter returns nothing, send all (AI will still reason about level)
+      // If no exact level match, widen the search to include ALL internal formations for this skill
+      // (AI will still receive the score/level and can decide if it's too advanced or not)
       if (availableInternalFormations.length === 0) {
         availableInternalFormations = allFormations;
       }

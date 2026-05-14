@@ -1054,8 +1054,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         // ── Duplicate Check ──────────────────────────────────────
                                         final currentDashboardData =
                                             trainerCubit.state.dashboardData;
-                                        if (currentDashboardData == null)
+                                        if (currentDashboardData == null) {
                                           return;
+                                        }
 
                                         final tags = tagsString
                                             .split(',')

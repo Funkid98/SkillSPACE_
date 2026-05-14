@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:pfe/core/app_colors.dart';
 
 class AppToast {
-  static void show(BuildContext context, String message, {bool isError = false}) {
+  static void show(BuildContext context, String message,
+      {bool isError = false}) {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     scaffoldMessenger.clearSnackBars();
     scaffoldMessenger.showSnackBar(
@@ -28,7 +29,9 @@ class AppToast {
           child: Row(
             children: [
               Icon(
-                isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+                isError
+                    ? Icons.error_outline_rounded
+                    : Icons.check_circle_outline_rounded,
                 color: Colors.white,
                 size: 24,
               ),

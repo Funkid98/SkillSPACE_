@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { register, login, getProfile, updateProfile, getRecentCandidatesBySector, getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer, applyToOffer, receiveNotification, getNotifications, markNotificationRead, internalUpdateApplication, deleteNotification, clearAllNotifications, enrollFormation, getEnrolledFormations, completeFormation, getEnrolledCandidatesByFormation, getAcceptedOffers, getCoachAdvice } = require('../controllers/candidat-controller')
+const { register, login, getProfile, updateProfile, getRecentCandidatesBySector, getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer, applyToOffer, receiveNotification, getNotifications, markNotificationRead, internalUpdateApplication, deleteNotification, clearAllNotifications, enrollFormation, getEnrolledFormations, completeFormation, getEnrolledCandidatesByFormation, getAcceptedOffers, getCoachAdvice, leaveFormation, submitReview } = require('../controllers/candidat-controller')
 const auth = require('../middleware/auth-middleware')
 
 
@@ -36,6 +36,7 @@ router.get('/internal/:id', async (req, res) => {
 
 // Formation Enrollment
 router.post('/enroll/:formationId', auth, enrollFormation)
+router.post('/leave/:formationId', auth, leaveFormation)
 router.post('/internal/complete/:candidateId/:formationId', completeFormation)
 router.get('/internal/enrolled/:formationId', getEnrolledCandidatesByFormation)
 router.get('/formations', auth, getEnrolledFormations)

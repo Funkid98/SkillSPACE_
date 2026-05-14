@@ -91,6 +91,19 @@ class _RecommendationsModalState extends State<RecommendationsModal> {
     }
   }
 
+  String _mapLevelToFrench(String level) {
+    switch (level) {
+      case 'Beginner':
+        return 'Débutant';
+      case 'Intermediate':
+        return 'Intermédiaire';
+      case 'Advanced':
+        return 'Avancé';
+      default:
+        return level;
+    }
+  }
+
   Future<void> _launchUrl(String urlString) async {
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url)) {
@@ -163,7 +176,7 @@ class _RecommendationsModalState extends State<RecommendationsModal> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Basé sur votre score de ${widget.score}% (Niveau $_levelDetermined)',
+              'Basé sur votre score de ${widget.score}% (Niveau ${_mapLevelToFrench(_levelDetermined)})',
               style: TextStyle(
                   fontSize: 14,
                   color: isDark ? Colors.white60 : AppColors.textGray),
@@ -258,11 +271,36 @@ class _RecommendationsModalState extends State<RecommendationsModal> {
                             fontSize: 15,
                             color: isDark ? Colors.white : AppColors.textDark)),
                     const SizedBox(height: 4),
-                    Text('Par $trainer',
-                        style: TextStyle(
-                            fontSize: 13,
-                            color:
-                                isDark ? Colors.white60 : AppColors.textGray)),
+                    Row(
+                      children: [
+                        Row(
+                          children: List.generate(5, (index) {
+                            return Icon(
+                              index < (f['rating'] ?? 0).floor()
+                                  ? Icons.star
+                                  : Icons.star_border,
+                              color: Colors.amber,
+                              size: 14,
+                            );
+                          }),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '(${(f['reviewCount'] ?? 0)})',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color:
+                                  isDark ? Colors.white54 : AppColors.textGray),
+                        ),
+                        const SizedBox(width: 8),
+                        Text('· Par $trainer',
+                            style: TextStyle(
+                                fontSize: 13,
+                                color: isDark
+                                    ? Colors.white60
+                                    : AppColors.textGray)),
+                      ],
+                    ),
                   ],
                 ),
               ),
