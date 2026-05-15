@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pfe/core/network/api_client.dart';
 import 'package:reactive_theme/reactive_theme.dart';
-import '../../../../core/app_colors.dart';
+import 'package:pfe/core/app_colors.dart';
 import 'scheduling_dialog.dart';
 
 class NotificationBell extends StatefulWidget {
@@ -216,7 +216,7 @@ class _NotificationBellState extends State<NotificationBell> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.error.withValues(alpha: 0.1),
+                  color: AppColors.error.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.close_rounded,
@@ -323,7 +323,7 @@ class _NotificationBellState extends State<NotificationBell> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: AppColors.orange.withValues(alpha: 0.1),
+                                color: AppColors.orange.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -437,7 +437,7 @@ class _NotificationBellState extends State<NotificationBell> {
                                 color: isRead
                                     ? (isDark
                                         ? Colors.white.withOpacity(0.05)
-                                        : Colors.white.withValues(alpha: 0.5))
+                                        : Colors.white.withOpacity(0.5))
                                     : (isDark
                                         ? AppColors.surfaceDark
                                         : Colors.white),
@@ -447,7 +447,7 @@ class _NotificationBellState extends State<NotificationBell> {
                                       ? (isDark
                                           ? AppColors.borderDark
                                           : AppColors.border)
-                                      : AppColors.orange.withValues(alpha: 0.3),
+                                      : AppColors.orange.withOpacity(0.3),
                                   width: isRead ? 1 : 2,
                                 ),
                               ),
@@ -463,10 +463,10 @@ class _NotificationBellState extends State<NotificationBell> {
                                         decoration: BoxDecoration(
                                           color: type == 'APPLICATION'
                                               ? AppColors.navy
-                                                  .withValues(alpha: 0.1)
+                                                  .withOpacity(0.1)
                                               : type == 'INTERVIEW_SCHEDULED'
                                                   ? AppColors.success
-                                                      .withValues(alpha: 0.1)
+                                                      .withOpacity(0.1)
                                                   : AppColors.bg,
                                           shape: BoxShape.circle,
                                         ),

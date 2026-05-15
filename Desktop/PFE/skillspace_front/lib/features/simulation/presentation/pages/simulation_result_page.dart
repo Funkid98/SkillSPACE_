@@ -133,8 +133,6 @@ class _SimulationResultPageState extends State<SimulationResultPage>
     final analysis = _evaluationData!['analysis'] ?? {};
     final skills = _evaluationData!['skills'] ?? {};
     final improvements = _evaluationData!['improvements'] as List? ?? [];
-    final speechAnalysis = _evaluationData!['speechAnalysis'] ?? {};
-    final metrics = speechAnalysis['metrics'] ?? {};
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.bgDark : const Color(0xFFF5F3EF),
@@ -358,84 +356,6 @@ class _SimulationResultPageState extends State<SimulationResultPage>
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-
-                  // Speech Fluency Details Card
-                  if (_evaluationData!['speechAnalysis'] != null)
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.surfaceDark
-                            : const Color(0xFFEBE9E4),
-                        borderRadius: BorderRadius.circular(24),
-                        border: isDark
-                            ? Border.all(color: AppColors.borderDark)
-                            : null,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.record_voice_over_outlined,
-                                  color: AppColors.orange),
-                              const SizedBox(width: 8),
-                              Text('Analyse Vocale & Élocution',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: isDark
-                                          ? Colors.white
-                                          : AppColors.navy)),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          // Vocal Stress Progress Row
-                          _buildProgressRow(
-                              context,
-                              'Stress Vocal (basé sur les hésitations)',
-                              (metrics['hesitationScore'] ?? 0) / 100.0,
-                              Icons.graphic_eq,
-                              Colors.orange),
-                          const SizedBox(height: 24),
-                          if (speechAnalysis['fluencyFeedback'] != null)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 20.0),
-                              child: Text(
-                                speechAnalysis['fluencyFeedback'],
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    fontStyle: FontStyle.italic,
-                                    color: isDark
-                                        ? Colors.white70
-                                        : AppColors.textGray),
-                              ),
-                            ),
-                          Row(
-                            children: [
-                              _buildMetricItem(
-                                  context,
-                                  'Mots / min',
-                                  '${metrics['wordsPerMinute'] ?? 0}',
-                                  Icons.speed),
-                              const SizedBox(width: 16),
-                              _buildMetricItem(
-                                  context,
-                                  'Hésitations',
-                                  '${metrics['fillerCount'] ?? 0}',
-                                  Icons.hourglass_empty),
-                              const SizedBox(width: 16),
-                              _buildMetricItem(
-                                  context,
-                                  'Répétitions',
-                                  '${metrics['repetitionCount'] ?? 0}',
-                                  Icons.repeat),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
                   const SizedBox(height: 24),
 
                   // 3 Mini Cards
