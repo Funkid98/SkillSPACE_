@@ -3,17 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:reactive_theme/reactive_theme.dart';
 import '../../../../core/app_colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SimulationResultPage extends StatefulWidget {
   final List<Map<String, dynamic>> chatHistory;
   final String roleTitle;
   final String language;
+  final Map<String, dynamic>? preloadedData;
 
   const SimulationResultPage({
     super.key,
     required this.chatHistory,
     required this.roleTitle,
     this.language = 'fr',
+    this.preloadedData,
   });
 
   @override
@@ -35,11 +38,31 @@ class _SimulationResultPageState extends State<SimulationResultPage>
       vsync: this,
       duration: const Duration(seconds: 1),
     );
-    _fetchEvaluation();
+    if (widget.preloadedData != null) {
+      _evaluationData = widget.preloadedData;
+      _isLoading = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _controller.forward();
+      });
+    } else {
+      _fetchEvaluation();
+    }
   }
 
   Future<void> _fetchEvaluation() async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final userDataStr = prefs.getString('user_data');
+      String? candidateId;
+      if (userDataStr != null) {
+        final user = jsonDecode(userDataStr);
+        candidateId = user['id'] ?? user['_id'];
+        print('SimulationResultPage: Found candidateId = $candidateId');
+      } else {
+        print('SimulationResultPage: userDataStr is null! Cannot get candidateId');
+      }
+
+      print('SimulationResultPage: Sending /finish request with candidateId = $candidateId');
       final response = await http.post(
         Uri.parse('http://localhost:5005/api/interview/finish'),
         headers: {'Content-Type': 'application/json'},
@@ -47,6 +70,7 @@ class _SimulationResultPageState extends State<SimulationResultPage>
           'history': widget.chatHistory,
           'roleTitle': widget.roleTitle,
           'language': widget.language,
+          if (candidateId != null) 'candidateId': candidateId,
         }),
       );
 
@@ -437,28 +461,30 @@ class _SimulationResultPageState extends State<SimulationResultPage>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.popUntil(context, (route) => route.isFirst);
-                        },
-                        icon: const Icon(
-                          Icons.refresh,
-                          size: 18,
-                          color: Colors.white,
+                      if (widget.preloadedData == null) ...[
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.popUntil(context, (route) => route.isFirst);
+                          },
+                          icon: const Icon(
+                            Icons.refresh,
+                            size: 18,
+                            color: Colors.white,
+                          ),
+                          label: const Text('Refaire',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFC65D3B),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 16),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
                         ),
-                        label: const Text('Refaire',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFC65D3B),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 16),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
+                        const SizedBox(width: 16),
+                      ],
                       OutlinedButton.icon(
                         onPressed: () {
                           Navigator.popUntil(context, (route) => route.isFirst);

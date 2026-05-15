@@ -29,6 +29,9 @@ router.post('/chat', interviewController.chatWithAI);
 // Finish simulation and get final score analysis
 router.post('/finish', interviewController.finishSimulation);
 
+// Get interview history
+router.get('/history/:candidateId', interviewController.getHistory);
+
 // Transcribe audio file
 router.post('/transcribe', upload.single('audio'), interviewController.transcribeAudio);
 

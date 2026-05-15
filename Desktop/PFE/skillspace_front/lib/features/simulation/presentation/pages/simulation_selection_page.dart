@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_theme/reactive_theme.dart';
 import '../../../../core/app_colors.dart';
+import '../../../profile/presentation/widgets/interview_history_modal.dart';
 import '../../cubit/simulation_cubit.dart';
 import '../../cubit/simulation_state.dart';
 import 'simulation_live_page.dart';
@@ -61,29 +62,47 @@ class _SimulationSelectionPageState extends State<SimulationSelectionPage>
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.orange.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.auto_awesome,
-                              size: 16, color: AppColors.orange),
-                          SizedBox(width: 8),
-                          Text(
-                            'Pré-entraînement IA',
-                            style: TextStyle(
-                              color: AppColors.orange,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.orange.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.auto_awesome,
+                                  size: 16, color: AppColors.orange),
+                              SizedBox(width: 8),
+                              Text(
+                                'Pré-entraînement IA',
+                                style: TextStyle(
+                                  color: AppColors.orange,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () => InterviewHistoryModal.show(context),
+                          icon: const Icon(Icons.history,
+                              size: 18, color: Colors.white),
+                          label: const Text('Historique',
+                              style: TextStyle(color: Colors.white)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.orange,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 24),
                     Text(
@@ -144,13 +163,18 @@ class _SimulationSelectionPageState extends State<SimulationSelectionPage>
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Icon(Icons.work_off_outlined,
-                                          size: 64, color: isDark ? Colors.white30 : AppColors.textGray),
+                                          size: 64,
+                                          color: isDark
+                                              ? Colors.white30
+                                              : AppColors.textGray),
                                       const SizedBox(height: 20),
                                       Text(
                                           'Aucune offre acceptée pour le moment.',
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
-                                              color: isDark ? Colors.white70 : AppColors.textGray,
+                                              color: isDark
+                                                  ? Colors.white70
+                                                  : AppColors.textGray,
                                               fontSize: 16,
                                               fontWeight: FontWeight.w500)),
                                       const SizedBox(height: 8),
@@ -158,7 +182,10 @@ class _SimulationSelectionPageState extends State<SimulationSelectionPage>
                                           'Les simulations seront disponibles dès qu\'une entreprise acceptera votre candidature.',
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
-                                              color: isDark ? Colors.white38 : AppColors.textGray.withOpacity(0.6),
+                                              color: isDark
+                                                  ? Colors.white38
+                                                  : AppColors.textGray
+                                                      .withOpacity(0.6),
                                               fontSize: 13)),
                                     ],
                                   ),

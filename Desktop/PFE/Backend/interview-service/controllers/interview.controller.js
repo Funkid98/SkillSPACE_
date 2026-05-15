@@ -20,8 +20,8 @@ exports.transcribeAudio = async (req, res) => {
       model: "whisper-large-v3",
       language: language || 'fr',
       response_format: "json",
-      prompt: language === 'en' 
-        ? "Umm, mmm, hmm, uh, like, you know..." 
+      prompt: language === 'en'
+        ? "Umm, mmm, hmm, uh, like, you know..."
         : "Euh, mmm, hmm, donc, alors, c'est-à-dire, d'accord...",
     });
 
@@ -447,12 +447,48 @@ ${transcript}`;
       };
     }
 
-    res.status(200).json({
+    const finalData = {
       success: true,
       ...evaluationData
-    });
+    };
+
+    if (req.body.candidateId) {
+      try {
+        console.log("Attempting to save interview history for candidateId:", req.body.candidateId);
+        const InterviewHistory = require('../models/InterviewHistory');
+        const historyRecord = new InterviewHistory({
+          candidateId: req.body.candidateId,
+          roleTitle: roleTitle,
+          globalScore: evaluationData.globalScore || evaluationData.score,
+          emotionalState: evaluationData.emotionalState,
+          analysis: evaluationData
+        });
+        await historyRecord.save();
+        console.log("Successfully saved interview history! ID:", historyRecord._id);
+      } catch (err) {
+        console.error("Failed to save interview history:", err);
+      }
+    } else {
+      console.log("No candidateId provided, skipping history save.");
+    }
+
+    res.status(200).json(finalData);
   } catch (error) {
     console.error("Finish simulation error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getHistory = async (req, res) => {
+  try {
+    const { candidateId } = req.params;
+    console.log("Fetching interview history for candidateId:", candidateId);
+    const InterviewHistory = require('../models/InterviewHistory');
+    const history = await InterviewHistory.find({ candidateId }).sort({ createdAt: -1 });
+    console.log(`Found ${history.length} history records for candidateId:`, candidateId);
+    res.status(200).json({ success: true, history });
+  } catch (error) {
+    console.error("Error fetching history:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
