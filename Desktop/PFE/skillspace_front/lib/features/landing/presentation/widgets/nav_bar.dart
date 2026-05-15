@@ -18,65 +18,64 @@ import '../pages/landing_page.dart';
 
 enum NavSection { features, steps, audience }
 
+void _goToAuth(BuildContext context, AuthTab tab) {
+  final authCubit = context.read<AuthCubit>();
+  authCubit.switchTab(tab);
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (navContext) => AuthPage(
+        onSuccess: () {
+          final authState = authCubit.state;
+          final role = authState.role;
+          final userData = authState.loggedInUser;
+
+          Navigator.of(navContext).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (_) {
+                if (role == UserRole.recruteur) {
+                  return const RecruiterShell(initialTab: RecruiterTab.profile);
+                } else if (role == UserRole.formateur) {
+                  return MainNavigationScreen(
+                    onLogout: () {
+                      if (navContext.mounted) {
+                        Navigator.of(navContext).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (_) => const LandingPage()),
+                          (route) => false,
+                        );
+                      }
+                    },
+                  );
+                } else {
+                  final sector = userData?['sector'];
+                  if (sector == null || sector.toString().isEmpty) {
+                    return const FieldSelectionPage();
+                  }
+                  return DashboardShell(
+                    initialTab: DashboardTab.profil,
+                    initialUserData: userData,
+                  );
+                }
+              },
+            ),
+            (route) => false,
+          );
+        },
+      ),
+    ),
+  );
+}
+
 class NavBar extends StatelessWidget {
   final void Function(GlobalKey) scrollTo;
   final NavSection activeSection;
-  const NavBar(
-      {super.key,
-      required this.scrollTo,
-      this.activeSection = NavSection.features});
+  const NavBar({
+    super.key,
+    required this.scrollTo,
+    this.activeSection = NavSection.features,
+  });
 
   void _scrollToSection(GlobalKey key) => scrollTo(key);
-
-  void _goToAuth(BuildContext context, AuthTab tab) {
-    final authCubit = context.read<AuthCubit>();
-    authCubit.switchTab(tab);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (navContext) => AuthPage(
-          onSuccess: () {
-            final authState = authCubit.state;
-            final role = authState.role;
-            final userData = authState.loggedInUser;
-
-            Navigator.of(navContext).pushAndRemoveUntil(
-              MaterialPageRoute(
-                builder: (_) {
-                  if (role == UserRole.recruteur) {
-                    return const RecruiterShell(
-                        initialTab: RecruiterTab.profile);
-                  } else if (role == UserRole.formateur) {
-                    return MainNavigationScreen(
-                      onLogout: () {
-                        if (navContext.mounted) {
-                          Navigator.of(navContext).pushAndRemoveUntil(
-                            MaterialPageRoute(
-                                builder: (_) => const LandingPage()),
-                            (route) => false,
-                          );
-                        }
-                      },
-                    );
-                  } else {
-                    final sector = userData?['sector'];
-                    if (sector == null || sector.toString().isEmpty) {
-                      return const FieldSelectionPage();
-                    }
-                    return DashboardShell(
-                      initialTab: DashboardTab.profil,
-                      initialUserData: userData,
-                    );
-                  }
-                },
-              ),
-              (route) => false,
-            );
-          },
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -240,17 +239,17 @@ class NavDrawer extends StatelessWidget {
             bottomRight: Radius.circular(32),
           ),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.7),
+                color: const Color(0xFF0F172A).withValues(alpha: 0.75),
                 borderRadius: const BorderRadius.only(
                   topRight: Radius.circular(32),
                   bottomRight: Radius.circular(32),
                 ),
                 border: Border(
                   right: BorderSide(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Colors.white.withValues(alpha: 0.1),
                     width: 1,
                   ),
                 ),
@@ -258,7 +257,7 @@ class NavDrawer extends StatelessWidget {
               child: SafeArea(
                 child: Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -266,26 +265,26 @@ class NavDrawer extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text('SkillSpace',
-                              style: AppTextStyles.navBrand),
+                              style: AppTextStyles.navBrandLight),
                           GestureDetector(
                             onTap: () => Navigator.pop(context),
                             child: Container(
                               width: 40,
                               height: 40,
-                              decoration: const BoxDecoration(
-                                color: AppColors.bg,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
                                 Icons.close_rounded,
-                                color: AppColors.textDark,
+                                color: Colors.white,
                                 size: 20,
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 40),
                       _DrawerLink(
                         label: l10n.features,
                         onTap: () {
@@ -293,7 +292,7 @@ class NavDrawer extends StatelessWidget {
                           scrollTo(SectionKeys.features);
                         },
                       ),
-                      const Divider(color: AppColors.border, height: 1),
+                      Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
                       _DrawerLink(
                         label: l10n.howItWorks,
                         onTap: () {
@@ -301,7 +300,7 @@ class NavDrawer extends StatelessWidget {
                           scrollTo(SectionKeys.steps);
                         },
                       ),
-                      const Divider(color: AppColors.border, height: 1),
+                      Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
                       _DrawerLink(
                         label: l10n.forWhom,
                         onTap: () {
@@ -309,30 +308,37 @@ class NavDrawer extends StatelessWidget {
                           scrollTo(SectionKeys.audience);
                         },
                       ),
-                      const Divider(color: AppColors.border, height: 1),
-                      const SizedBox(height: 32),
+                      Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
                       const Spacer(),
                       SizedBox(
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _goToAuth(context, AuthTab.login);
+                          },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.navy,
+                            backgroundColor: Colors.white.withValues(alpha: 0.05),
                             foregroundColor: Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16)),
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                            ),
                           ),
-                          child: Text(l10n.login),
+                          child: Text(l10n.login, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _goToAuth(context, AuthTab.register);
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.orange,
                             foregroundColor: Colors.white,
@@ -340,9 +346,10 @@ class NavDrawer extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16)),
                           ),
-                          child: Text(l10n.register),
+                          child: Text(l10n.register, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                         ),
                       ),
+                      const SizedBox(height: 8),
                     ],
                   ),
                 ),
@@ -377,7 +384,7 @@ class _DrawerLinkState extends State<_DrawerLink> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
         color: _pressed
-            ? AppColors.navy.withValues(alpha: 0.05)
+            ? Colors.white.withValues(alpha: 0.05)
             : Colors.transparent,
         padding: const EdgeInsets.symmetric(vertical: 20),
         child: SizedBox(
@@ -387,7 +394,7 @@ class _DrawerLinkState extends State<_DrawerLink> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: _pressed ? AppColors.navy : AppColors.textDark,
+              color: _pressed ? AppColors.orange : Colors.white,
             ),
           ),
         ),

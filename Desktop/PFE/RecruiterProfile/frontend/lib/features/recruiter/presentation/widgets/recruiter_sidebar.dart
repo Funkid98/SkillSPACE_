@@ -3,7 +3,9 @@ import '../../../../core/app_colors.dart';
 import '../../../../core/app_text_styles.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:ui';
 import '../../../../shared/widgets/animated_reveal.dart';
+import '../../../../shared/widgets/video_background.dart';
 import '../cubits/recruiter_profile_cubit.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
@@ -66,23 +68,47 @@ class RecruiterSidebar extends StatelessWidget {
 
     return Container(
       width: 240,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : Colors.white,
+        color: isDark ? Colors.transparent : Colors.white,
         border: Border(
           right: isRtl
               ? BorderSide.none
               : BorderSide(
-                  color: isDark ? AppColors.borderDark : AppColors.border,
-                  width: 1),
+                  color: isDark
+                      ? Colors.white.withOpacity(0.15)
+                      : Colors.black.withOpacity(0.08),
+                  width: 1.5),
           left: isRtl
               ? BorderSide(
-                  color: isDark ? AppColors.borderDark : AppColors.border,
-                  width: 1)
+                  color: isDark
+                      ? Colors.white.withOpacity(0.15)
+                      : Colors.black.withOpacity(0.08),
+                  width: 1.5)
               : BorderSide.none,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withOpacity(0.15)
+                : Colors.black.withOpacity(0.05),
+            blurRadius: isDark ? 30 : 15,
+            spreadRadius: -5,
+            offset: Offset(isRtl ? -10 : 10, 0),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: VideoBackground(
+        assetPath: 'assets/sidebar-video.mp4',
+        opacity: isDark ? 0.75 : 0.0,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            color: isDark
+                ? Colors.black.withOpacity(0.35)
+                : Colors.white.withOpacity(0.25),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 24, 12, 40),
@@ -161,14 +187,6 @@ class RecruiterSidebar extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: LanguageSelector(
-              currentLocale: currentLocale ?? Localizations.localeOf(context),
-              onLocaleChanged: onLocaleChanged,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             child: TextButton.icon(
               onPressed: () => _showLogoutConfirmation(context, onLogout),
@@ -190,7 +208,10 @@ class RecruiterSidebar extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ),
+  ),
+),
+);
   }
 
   void _showLogoutConfirmation(BuildContext context, [VoidCallback? onLogout]) {
@@ -357,107 +378,6 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-class LanguageSelector extends StatelessWidget {
-  final Locale currentLocale;
-  final ValueChanged<Locale>? onLocaleChanged;
-
-  const LanguageSelector({
-    required this.currentLocale,
-    this.onLocaleChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-            color: (isDark ? AppColors.borderDark : AppColors.border)
-                .withValues(alpha: 0.5)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: LangBtn(
-              label: 'FR',
-              isActive: currentLocale.languageCode == 'fr',
-              onTap: () => onLocaleChanged?.call(const Locale('fr')),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: LangBtn(
-              label: 'EN',
-              isActive: currentLocale.languageCode == 'en',
-              onTap: () => onLocaleChanged?.call(const Locale('en')),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: LangBtn(
-              label: 'AR',
-              isActive: currentLocale.languageCode == 'ar',
-              onTap: () => onLocaleChanged?.call(const Locale('ar')),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class LangBtn extends StatelessWidget {
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const LangBtn({
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isActive
-              ? (isDark ? Colors.white.withOpacity(0.1) : Colors.white)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: isActive && !isDark
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  )
-                ]
-              : null,
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
-            color: isActive
-                ? (isDark ? AppColors.orange : AppColors.navy)
-                : (isDark ? Colors.white60 : AppColors.textGray),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class ThemeToggle extends StatelessWidget {
   const ThemeToggle({super.key});

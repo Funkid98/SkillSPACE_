@@ -14,7 +14,7 @@ import '../services/dashboard_service.dart';
 import '../cubits/trainer_cubit.dart';
 import '../cubits/trainer_state.dart';
 import '../widgets/mesh_gradient_background.dart';
-
+import '../widgets/video_background.dart';
 class MainNavigationScreen extends StatefulWidget {
   final VoidCallback? onLogout;
   const MainNavigationScreen({super.key, this.onLogout});
@@ -199,71 +199,91 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
             final isDark = ReactiveMode.isDarkMode(context);
             return Container(
-                width: 260,
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.black.withOpacity(0.3) : Colors.white.withOpacity(0.4),
-                  border: Border(
-                      right: BorderSide(color: isDark ? Colors.white10 : Colors.grey.withOpacity(0.1))),
+              width: 260,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.transparent : Colors.white,
+                border: Border(
+                  right: BorderSide(
+                      color: isDark
+                          ? Colors.white.withOpacity(0.15)
+                          : Colors.black.withOpacity(0.08),
+                      width: 1.5),
                 ),
-                child: ClipRRect(
-                    child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 30),
-                      // Logo
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                        child: Row(
-                          children: [
-                            if (imageBase64.isNotEmpty)
-                              CircleAvatar(
-                                radius: 18,
-                                backgroundImage:
-                                    MemoryImage(base64Decode(imageBase64)),
-                              )
-                            else
-                              const Icon(Icons.hub,
-                                  color: Color(0xFFE9652B), size: 30),
-                            const SizedBox(width: 12),
-                            Text(
-                              'SkillSpace',
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : Colors.blue[900],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-                      // Nav Items
-                      _buildNavItem(sideCtx, 0, 'Tableau de bord',
-                          Icons.grid_view_outlined),
-                      _buildNavItem(
-                          sideCtx, 1, 'Mon profil', Icons.person_outline),
-                      _buildNavItem(
-                          sideCtx, 2, 'Mes formations', Icons.school_outlined),
-                      const SizedBox(height: 24),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: _SidebarVideo(),
-                      ),
-                      const Spacer(),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: _ThemeToggle(),
-                      ),
-                      const SizedBox(height: 16),
-                      // Logout
-                      const Divider(),
-                      _buildNavItem(sideCtx, -1, 'Déconnexion', Icons.logout,
-                          color: Colors.grey),
-                      const SizedBox(height: 20),
-                    ],
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark
+                        ? Colors.black.withOpacity(0.15)
+                        : Colors.black.withOpacity(0.05),
+                    blurRadius: isDark ? 30 : 15,
+                    spreadRadius: -5,
+                    offset: const Offset(10, 0),
                   ),
-                )));
+                ],
+              ),
+              child: VideoBackground(
+                assetPath: 'assets/sidebar-video.mp4',
+                opacity: isDark ? 0.75 : 0.0,
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Container(
+                    color: isDark
+                        ? Colors.black.withOpacity(0.35)
+                        : Colors.white.withOpacity(0.25),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 30),
+                        // Logo
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Row(
+                            children: [
+                              if (imageBase64.isNotEmpty)
+                                CircleAvatar(
+                                  radius: 18,
+                                  backgroundImage:
+                                      MemoryImage(base64Decode(imageBase64)),
+                                )
+                              else
+                                const Icon(Icons.hub,
+                                    color: Color(0xFFE9652B), size: 30),
+                              const SizedBox(width: 12),
+                              Text(
+                                'SkillSpace',
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white : Colors.blue[900],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+                        // Nav Items
+                        _buildNavItem(sideCtx, 0, 'Tableau de bord',
+                            Icons.grid_view_outlined),
+                        _buildNavItem(
+                            sideCtx, 1, 'Mon profil', Icons.person_outline),
+                        _buildNavItem(
+                            sideCtx, 2, 'Mes formations', Icons.school_outlined),
+                        const Spacer(),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: _ThemeToggle(),
+                        ),
+                        const SizedBox(height: 16),
+                        // Logout
+                        const Divider(),
+                        _buildNavItem(sideCtx, -1, 'Déconnexion', Icons.logout,
+                            color: Colors.grey),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
           },
         );
       },
@@ -417,75 +437,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-class _SidebarVideo extends StatefulWidget {
-  const _SidebarVideo();
 
-  @override
-  State<_SidebarVideo> createState() => _SidebarVideoState();
-}
-
-class _SidebarVideoState extends State<_SidebarVideo> {
-  late VideoPlayerController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = VideoPlayerController.asset('assets/sidebar-video.mp4')
-      ..initialize().then((_) {
-        _controller.setLooping(true);
-        _controller.setVolume(0);
-        _controller.play();
-        if (mounted) setState(() {});
-      });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!_controller.value.isInitialized) {
-      return Container(
-        height: 120,
-        decoration: BoxDecoration(
-          color: Colors.grey.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Center(
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-                strokeWidth: 2, color: Color(0xFFE9652B)),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: AspectRatio(
-          aspectRatio: _controller.value.aspectRatio,
-          child: VideoPlayer(_controller),
-        ),
-      ),
-    );
-  }
-}
 
 class _ThemeToggle extends StatelessWidget {
   const _ThemeToggle();

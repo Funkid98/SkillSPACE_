@@ -271,6 +271,7 @@ class _NotificationBellState extends State<NotificationBell> {
   }
 
   void _showNotificationMenu() {
+    final isDarkGlobal = ReactiveMode.isDarkMode(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -278,7 +279,7 @@ class _NotificationBellState extends State<NotificationBell> {
       builder: (sheetCtx) {
         return StatefulBuilder(
           builder: (ctx, setSheetState) {
-            final isDark = ReactiveMode.isDarkMode(ctx) || Theme.of(ctx).brightness == Brightness.dark;
+            final isDark = isDarkGlobal;
             return Container(
               height: MediaQuery.of(ctx).size.height * 0.6,
               decoration: BoxDecoration(

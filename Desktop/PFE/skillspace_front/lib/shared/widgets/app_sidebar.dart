@@ -75,25 +75,25 @@ class AppSidebar extends StatelessWidget {
               ? BorderSide.none
               : BorderSide(
                   color: isDark
-                      ? Colors.white.withValues(alpha: 0.15)
-                      : Colors.black.withValues(alpha: 0.08),
-                  width: 1.5),
+                      ? Colors.white.withValues(alpha: 0.12)
+                      : Colors.black.withValues(alpha: 0.06),
+                  width: 1),
           left: isRtl
               ? BorderSide(
                   color: isDark
-                      ? Colors.white.withValues(alpha: 0.15)
-                      : Colors.black.withValues(alpha: 0.08),
-                  width: 1.5)
+                      ? Colors.white.withValues(alpha: 0.12)
+                      : Colors.black.withValues(alpha: 0.06),
+                  width: 1)
               : BorderSide.none,
         ),
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withValues(alpha: 0.15)
-                : Colors.black.withValues(alpha: 0.05),
-            blurRadius: isDark ? 30 : 15,
-            spreadRadius: -5,
-            offset: Offset(isRtl ? -10 : 10, 0),
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.06),
+            blurRadius: 24,
+            spreadRadius: -4,
+            offset: Offset(isRtl ? -8 : 8, 0),
           ),
         ],
       ),
@@ -101,20 +101,61 @@ class AppSidebar extends StatelessWidget {
         assetPath: 'assets/sidebar-video.mp4',
         opacity: isDark ? 0.75 : 0.0,
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
           child: Container(
             color: isDark
-                ? Colors.black.withValues(alpha: 0.35)
-                : Colors.white.withValues(alpha: 0.25),
+                ? Colors.black.withValues(alpha: 0.4)
+                : Colors.white.withValues(alpha: 0.92),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 16, 40),
+                // ── Brand header ──────────────────────────────────────────
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 16, 20),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.black.withValues(alpha: 0.05),
+                      ),
+                    ),
+                  ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('SkillSpace', style: AppTextStyles.navBrand),
+                      // Logo pill
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [AppColors.navy, AppColors.orange],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.orange.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.bolt_rounded,
+                            color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'SkillSpace',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                          color: isDark ? Colors.white : AppColors.navy,
+                        ),
+                      ),
+                      const Spacer(),
                       Builder(
                         builder: (ctx) {
                           final role = ctx.watch<AuthCubit>().state.role;
@@ -125,6 +166,24 @@ class AppSidebar extends StatelessWidget {
                     ],
                   ),
                 ),
+                const SizedBox(height: 12),
+                // ── Nav section label ─────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                  child: Text(
+                    'NAVIGATION',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.4,
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.3)
+                          : AppColors.textGray.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                // ── Nav items ─────────────────────────────────────────────
                 ...DashboardTab.values.where((tab) {
                   final role = context.read<AuthCubit>().state.role;
                   if (role == UserRole.recruteur) {
@@ -145,27 +204,51 @@ class AppSidebar extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: _ThemeToggle(),
-                ),
-                const SizedBox(height: 16),
+                // ── Bottom: theme toggle ──────────────────────────────────
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                  child: TextButton.icon(
-                    onPressed: () => _showLogoutConfirmation(context, onLogout),
-                    icon: const Icon(Icons.logout_rounded,
-                        size: 18, color: AppColors.textGray),
-                    label: Text(
-                      l10n.logout,
-                      style: const TextStyle(
-                          color: AppColors.textGray, fontSize: 14),
-                    ),
-                    style: TextButton.styleFrom(
-                      alignment:
-                          isRtl ? Alignment.centerRight : Alignment.centerLeft,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: const _ThemeToggle(),
+                ),
+                const SizedBox(height: 8),
+                // ── Logout button ─────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      onTap: () => _showLogoutConfirmation(context, onLogout),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isDark
+                                ? AppColors.error.withValues(alpha: 0.2)
+                                : AppColors.error.withValues(alpha: 0.15),
+                          ),
+                          color: AppColors.error.withValues(alpha: 0.05),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.logout_rounded,
+                                size: 17,
+                                color: AppColors.error.withValues(alpha: 0.8)),
+                            const SizedBox(width: 10),
+                            Text(
+                              l10n.logout,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color:
+                                    AppColors.error.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -282,7 +365,7 @@ class _ThemeBtn extends StatelessWidget {
   }
 }
 
-// ─── Mobile Top Bar ───────────────────────────────────────────────────────────
+// ─── Mobile Top Bar ─────────────────────────────────────────────────────
 class MobileTopBar extends StatelessWidget {
   final DashboardTab activeTab;
   final ValueChanged<DashboardTab> onTabSelected;
@@ -317,37 +400,84 @@ class MobileTopBar extends StatelessWidget {
     final isRecruiter = role == UserRole.recruteur;
     final isDark = ReactiveMode.isDarkMode(context);
     return Container(
-      height: 70,
+      height: 68,
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : Colors.white,
+        color: isDark
+            ? AppColors.bgDark.withValues(alpha: 0.95)
+            : Colors.white,
         border: Border(
-            bottom: BorderSide(
-                color: isDark ? AppColors.borderDark : AppColors.border,
-                width: 1)),
+          bottom: BorderSide(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.07)
+                : Colors.black.withValues(alpha: 0.06),
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text('SkillSpace', style: AppTextStyles.navBrand),
-          Row(
-            children: [
-              NotificationBell(isRecruiter: isRecruiter),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () => _openDrawer(context),
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color:
-                        isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(Icons.menu_rounded,
-                      color: isDark ? Colors.white : AppColors.navy, size: 24),
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.navy, AppColors.orange],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(9),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.orange.withValues(alpha: 0.25),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            'SkillSpace',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              color: isDark ? Colors.white : AppColors.navy,
+            ),
+          ),
+          const Spacer(),
+          NotificationBell(isRecruiter: isRecruiter),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => _openDrawer(context),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.07)
+                    : AppColors.orange.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : AppColors.orange.withValues(alpha: 0.15),
                 ),
               ),
-            ],
+              child: Icon(
+                Icons.menu_rounded,
+                color: isDark ? Colors.white : AppColors.navy,
+                size: 20,
+              ),
+            ),
           ),
         ],
       ),
@@ -371,75 +501,155 @@ class _MobileDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isDark = ReactiveMode.isDarkMode(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.surfaceDark.withValues(alpha: 0.8)
-            : Colors.white.withValues(alpha: 0.8),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-      ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        child: VideoBackground(
-          assetPath: 'assets/sidebar-video.mp4',
-          opacity: isDark ? 0.8 : 0.0,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(2),
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF0F172A).withValues(alpha: 0.85)
+                : Colors.white.withValues(alpha: 0.95),
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(
+              top: BorderSide(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.black.withValues(alpha: 0.06),
+              ),
+            ),
+          ),
+          child: VideoBackground(
+            assetPath: 'assets/sidebar-video.mp4',
+            opacity: isDark ? 0.6 : 0.0,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Handle pill
+                  Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.2)
+                          : Colors.black.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 32),
-                const Row(
-                  children: [
-                    Text('SkillSpace', style: AppTextStyles.navBrand),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                ...DashboardTab.values.where((tab) {
-                  final role = context.read<AuthCubit>().state.role;
-                  if (role == UserRole.recruteur) {
-                    return tab == DashboardTab.tableau ||
-                        tab == DashboardTab.profil;
-                  }
-                  if (role == UserRole.formateur) {
-                    return tab == DashboardTab.tableau ||
-                        tab == DashboardTab.profil ||
-                        tab == DashboardTab.formations;
-                  }
-                  return true;
-                }).map(
-                  (tab) => _DrawerItem(
-                    tab: tab,
-                    isActive: tab == activeTab,
-                    onTap: () => onTabSelected(tab),
+                  const SizedBox(height: 20),
+                  // Header row
+                  Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [AppColors.navy, AppColors.orange],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: const Icon(Icons.bolt_rounded,
+                            color: Colors.white, size: 18),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'SkillSpace',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                          color: isDark ? Colors.white : AppColors.navy,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const Divider(height: 40),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.logout_rounded,
-                      color: AppColors.error, size: 22),
-                  title: Text(
-                    l10n.logout,
-                    style: const TextStyle(
-                        color: AppColors.error,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600),
+                  const SizedBox(height: 20),
+                  Divider(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.06),
+                    height: 1,
                   ),
-                  onTap: () {
-                    Navigator.pop(context); // Close drawer
-                    _showLogoutConfirmation(context, onLogout);
-                  },
-                ),
-              ],
+                  const SizedBox(height: 10),
+                  // Nav items
+                  ...DashboardTab.values.where((tab) {
+                    final role = context.read<AuthCubit>().state.role;
+                    if (role == UserRole.recruteur) {
+                      return tab == DashboardTab.tableau ||
+                          tab == DashboardTab.profil;
+                    }
+                    if (role == UserRole.formateur) {
+                      return tab == DashboardTab.tableau ||
+                          tab == DashboardTab.profil ||
+                          tab == DashboardTab.formations;
+                    }
+                    return true;
+                  }).map(
+                    (tab) => _DrawerItem(
+                      tab: tab,
+                      isActive: tab == activeTab,
+                      onTap: () => onTabSelected(tab),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Divider(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.06),
+                    height: 1,
+                  ),
+                  const SizedBox(height: 8),
+                  // Logout row
+                  InkWell(
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showLogoutConfirmation(context, onLogout);
+                    },
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: AppColors.error.withValues(alpha: 0.15),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(Icons.logout_rounded,
+                                color: AppColors.error.withValues(alpha: 0.85),
+                                size: 18),
+                          ),
+                          const SizedBox(width: 14),
+                          Text(
+                            l10n.logout,
+                            style: TextStyle(
+                              color: AppColors.error.withValues(alpha: 0.85),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -463,62 +673,101 @@ class _DrawerItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = ReactiveMode.isDarkMode(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 4),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: isActive
                 ? (isDark
-                    ? Colors.white.withValues(alpha: 0.12)
-                    : Colors.white.withValues(alpha: 0.7))
+                    ? AppColors.orange.withValues(alpha: 0.12)
+                    : AppColors.orange.withValues(alpha: 0.07))
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
-            border: isActive
-                ? Border.all(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.15)
-                        : Colors.white.withValues(alpha: 0.5),
-                    width: 1.5)
-                : null,
-            boxShadow: isActive
-                ? [
-                    BoxShadow(
-                      color: AppColors.orange.withValues(alpha: 0.15),
-                      blurRadius: 15,
-                      spreadRadius: -2,
-                    )
-                  ]
-                : null,
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
             children: [
-              Icon(
-                tab.icon,
-                size: 22,
-                color: isActive
-                    ? AppColors.orange
-                    : (isDark ? Colors.white60 : AppColors.textGray),
+              // Left accent bar
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 3,
+                height: isActive ? 22 : 0,
+                decoration: BoxDecoration(
+                  color: AppColors.orange,
+                  borderRadius: BorderRadius.circular(2),
+                  boxShadow: isActive
+                      ? [
+                          BoxShadow(
+                            color: AppColors.orange.withValues(alpha: 0.45),
+                            blurRadius: 8,
+                          )
+                        ]
+                      : null,
+                ),
               ),
-              const SizedBox(width: 16),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: isActive ? 10 : 6,
+              ),
+              // Icon pill
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? (isDark
+                          ? AppColors.orange.withValues(alpha: 0.2)
+                          : AppColors.orange.withValues(alpha: 0.1))
+                      : (isDark
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : Colors.black.withValues(alpha: 0.04)),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(
+                  tab.icon,
+                  size: 20,
+                  color: isActive
+                      ? AppColors.orange
+                      : (isDark
+                          ? Colors.white.withValues(alpha: 0.45)
+                          : AppColors.textGray),
+                ),
+              ),
+              const SizedBox(width: 14),
               Expanded(
                 child: Text(
                   tab.label(context),
                   style: TextStyle(
                     fontSize: 15,
-                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight:
+                        isActive ? FontWeight.w700 : FontWeight.w500,
                     color: isActive
                         ? (isDark ? Colors.white : AppColors.textDark)
-                        : (isDark ? Colors.white60 : AppColors.textGray),
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.5)
+                            : AppColors.textGray),
                   ),
                 ),
               ),
               if (isActive)
-                const Icon(Icons.chevron_right_rounded,
-                    color: AppColors.orange, size: 20),
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: AppColors.orange,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.orange.withValues(alpha: 0.5),
+                        blurRadius: 6,
+                      )
+                    ],
+                  ),
+                ),
             ],
           ),
         ),
@@ -528,7 +777,7 @@ class _DrawerItem extends StatelessWidget {
 }
 
 // ─── Nav Item (Desktop) ───────────────────────────────────────────────────────
-class _NavItem extends StatelessWidget {
+class _NavItem extends StatefulWidget {
   final DashboardTab tab;
   final bool isActive;
   final VoidCallback onTap;
@@ -540,59 +789,108 @@ class _NavItem extends StatelessWidget {
   });
 
   @override
+  State<_NavItem> createState() => _NavItemState();
+}
+
+class _NavItemState extends State<_NavItem> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final isDark = ReactiveMode.isDarkMode(context);
+    final bool highlighted = widget.isActive || _hovered;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
         child: GestureDetector(
-          onTap: onTap,
+          onTap: widget.onTap,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: isActive
+              color: widget.isActive
                   ? (isDark
-                      ? Colors.white.withValues(alpha: 0.12)
-                      : Colors.white.withValues(alpha: 0.6))
-                  : Colors.transparent,
+                      ? AppColors.orange.withValues(alpha: 0.12)
+                      : AppColors.orange.withValues(alpha: 0.07))
+                  : _hovered
+                      ? (isDark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.black.withValues(alpha: 0.03))
+                      : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
-              border: isActive
-                  ? Border.all(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.15)
-                          : Colors.white.withValues(alpha: 0.4),
-                      width: 1)
-                  : null,
-              boxShadow: isActive
-                  ? [
-                      BoxShadow(
-                        color: AppColors.orange.withValues(alpha: 0.1),
-                        blurRadius: 10,
-                        spreadRadius: -2,
-                      )
-                    ]
-                  : null,
             ),
             child: Row(
               children: [
-                Icon(
-                  tab.icon,
-                  size: 20,
-                  color: isActive
-                      ? AppColors.orange
-                      : (isDark ? Colors.white60 : AppColors.textGray),
+                // Left accent bar
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 3,
+                  height: widget.isActive ? 20 : 0,
+                  decoration: BoxDecoration(
+                    color: AppColors.orange,
+                    borderRadius: BorderRadius.circular(2),
+                    boxShadow: widget.isActive
+                        ? [
+                            BoxShadow(
+                              color: AppColors.orange.withValues(alpha: 0.5),
+                              blurRadius: 8,
+                              spreadRadius: 0,
+                            )
+                          ]
+                        : null,
+                  ),
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  tab.label(context),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                    color: isActive
-                        ? (isDark ? Colors.white : AppColors.textDark)
-                        : (isDark ? Colors.white60 : AppColors.textGray),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: widget.isActive ? 10 : 6,
+                ),
+                // Icon container
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: highlighted
+                        ? (isDark
+                            ? AppColors.orange.withValues(alpha: 0.18)
+                            : AppColors.orange.withValues(alpha: 0.1))
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.black.withValues(alpha: 0.04)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    widget.tab.icon,
+                    size: 18,
+                    color: highlighted
+                        ? AppColors.orange
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.45)
+                            : AppColors.textGray),
+                  ),
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Text(
+                    widget.tab.label(context),
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: widget.isActive
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: widget.isActive
+                          ? (isDark ? Colors.white : AppColors.textDark)
+                          : _hovered
+                              ? (isDark ? Colors.white70 : AppColors.textDark)
+                              : (isDark
+                                  ? Colors.white.withValues(alpha: 0.45)
+                                  : AppColors.textGray),
+                    ),
                   ),
                 ),
               ],

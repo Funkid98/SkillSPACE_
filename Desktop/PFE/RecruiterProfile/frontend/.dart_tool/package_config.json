@@ -86,6 +86,12 @@
       "languageVersion": "3.4"
     },
     {
+      "name": "csslib",
+      "rootUri": "file:///C:/Users/yotub/AppData/Local/Pub/Cache/hosted/pub.dev/csslib-1.0.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.1"
+    },
+    {
       "name": "cupertino_icons",
       "rootUri": "file:///C:/Users/yotub/AppData/Local/Pub/Cache/hosted/pub.dev/cupertino_icons-1.0.8",
       "packageUri": "lib/",
@@ -252,6 +258,12 @@
       "rootUri": "file:///C:/Users/yotub/AppData/Local/Pub/Cache/hosted/pub.dev/graphs-2.3.2",
       "packageUri": "lib/",
       "languageVersion": "3.4"
+    },
+    {
+      "name": "html",
+      "rootUri": "file:///C:/Users/yotub/AppData/Local/Pub/Cache/hosted/pub.dev/html-0.15.6",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
     },
     {
       "name": "http",
@@ -626,6 +638,36 @@
       "languageVersion": "2.14"
     },
     {
+      "name": "video_player",
+      "rootUri": "file:///C:/Users/yotub/AppData/Local/Pub/Cache/hosted/pub.dev/video_player-2.10.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "video_player_android",
+      "rootUri": "file:///C:/Users/yotub/AppData/Local/Pub/Cache/hosted/pub.dev/video_player_android-2.8.4",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "video_player_avfoundation",
+      "rootUri": "file:///C:/Users/yotub/AppData/Local/Pub/Cache/hosted/pub.dev/video_player_avfoundation-2.8.4",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "video_player_platform_interface",
+      "rootUri": "file:///C:/Users/yotub/AppData/Local/Pub/Cache/hosted/pub.dev/video_player_platform_interface-6.4.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "video_player_web",
+      "rootUri": "file:///C:/Users/yotub/AppData/Local/Pub/Cache/hosted/pub.dev/video_player_web-2.4.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
       "name": "visibility_detector",
       "rootUri": "file:///C:/Users/yotub/AppData/Local/Pub/Cache/hosted/pub.dev/visibility_detector-0.4.0+2",
       "packageUri": "lib/",
@@ -668,7 +710,7 @@
       "languageVersion": "3.6"
     }
   ],
-  "generated": "2026-05-11T13:59:11.594357Z",
+  "generated": "2026-05-14T18:17:55.741216Z",
   "generator": "pub",
   "generatorVersion": "3.6.1",
   "flutterRoot": "file:///C:/DEV/flutter",

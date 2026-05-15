@@ -260,14 +260,7 @@ class _RecruiterMobileDrawer extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 32),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: LanguageSelector(
-              currentLocale: currentLocale ?? Localizations.localeOf(context),
-              onLocaleChanged: onLocaleChanged,
-            ),
-          ),
-          const SizedBox(height: 16),
+
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: ThemeToggle(),
