@@ -186,6 +186,7 @@ class RecruiterLocalizations {
       'contact_candidate': 'Contacter',
       'match': 'match',
       'post': 'Poste',
+      'required_field': 'Ce champ est obligatoire',
     },
     'en': {
       'dashboard': 'Dashboard',
@@ -359,6 +360,7 @@ class RecruiterLocalizations {
       'contact_candidate': 'Contact',
       'match': 'match',
       'post': 'Position',
+      'required_field': 'This field is required',
     },
     'ar': {
       'dashboard': 'لوحة القيادة',
@@ -527,6 +529,7 @@ class RecruiterLocalizations {
       'contact_candidate': 'اتصال',
       'match': 'مطابقة',
       'post': 'المنصب',
+      'required_field': 'هذا الحقل مطلوب',
     },
     'contract_cdi': {
       'fr': 'CDI',
@@ -755,6 +758,7 @@ class RecruiterLocalizations {
   String get contactCandidate => translate('contact_candidate');
   String get matchLabel => translate('match');
   String get post => translate('post');
+  String get requiredField => translate('required_field');
 }
 
 class RecruiterLocalizationsDelegate extends LocalizationsDelegate<RecruiterLocalizations> {

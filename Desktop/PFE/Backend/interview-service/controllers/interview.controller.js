@@ -20,6 +20,9 @@ exports.transcribeAudio = async (req, res) => {
       model: "whisper-large-v3",
       language: language || 'fr',
       response_format: "json",
+      prompt: language === 'en' 
+        ? "Umm, mmm, hmm, uh, like, you know..." 
+        : "Euh, mmm, hmm, donc, alors, c'est-à-dire, d'accord...",
     });
 
     // Clean up temporary file
@@ -199,7 +202,7 @@ function analyzeSpeechFluency(history) {
   let pauseCount = 0;
 
   // Common French filler words and sounds
-  const fillers = ['euh', 'hmm', 'ben', 'bah', 'en fait', 'genre', 'tu vois', 'fin', 'donc', 'alors'];
+  const fillers = ['euh', 'hmm', 'mmm', 'ben', 'bah', 'en fait', 'genre', 'tu vois', 'fin', 'donc', 'alors'];
   const pauses = ['...', '…'];
 
   candidateMessages.forEach(msg => {
@@ -262,7 +265,7 @@ exports.finishSimulation = async (req, res) => {
     }
 
     const candidateMessages = history.filter(msg => msg.isUser);
-    const candidateWordCount = candidateMessages.reduce((count, msg) => count + (msg.text ? msg.text.trim().split(/\\s+/).length : 0), 0);
+    const candidateWordCount = candidateMessages.reduce((count, msg) => count + (msg.text ? msg.text.trim().split(/\s+/).length : 0), 0);
 
     if (candidateMessages.length === 0 || candidateWordCount < 5) {
       return res.status(200).json({
@@ -317,6 +320,7 @@ exports.finishSimulation = async (req, res) => {
 Review the following job interview transcript for a ${roleTitle} position.
 You also have the following speech fluency metrics analyzed from the candidate's audio responses (where hesitationScore 0=fluent, 100=highly hesitant):
 ${JSON.stringify(speechMetrics, null, 2)}
+IMPORTANT: Perform a "Voice Analysis" by interpreting the filler words (mmm, hmm, donc, euh, etc.) and pauses in the transcript. These are direct indicators of the candidate's "Vocal Stress" and "Confidence". Use these metrics to provide a more accurate evaluation of their emotional state.
 
 Based on the candidate's answers and speech metrics, provide a detailed psychometric and professional evaluation in JSON format exactly matching this structure:
 {

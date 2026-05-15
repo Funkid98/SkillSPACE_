@@ -905,7 +905,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                   Container(
                     constraints: const BoxConstraints(maxWidth: 800),
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.surfaceDark : Colors.white,
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                           color: _isMicOn
@@ -936,8 +936,8 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                         Expanded(
                           child: TextField(
                             controller: _textController,
-                            style: TextStyle(
-                                color: isDark ? Colors.white : AppColors.navy),
+                            maxLines: null,
+                            style: const TextStyle(color: Colors.black),
                             decoration: InputDecoration(
                               hintText: _isMicOn
                                   ? 'Enregistrement en cours (Whisper)...'
@@ -946,7 +946,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                                       : 'Tapez votre réponse ou utilisez le micro...'),
                               hintStyle: TextStyle(
                                   color: isDark
-                                      ? Colors.white38
+                                      ? Colors.black.withOpacity(0.4)
                                       : AppColors.textGray),
                               border: InputBorder.none,
                               contentPadding: const EdgeInsets.symmetric(

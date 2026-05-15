@@ -257,7 +257,8 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                   _buildField(
                       label: "Nom de l'entreprise",
                       controller: _entrepriseController,
-                      icon: Icons.store),
+                      icon: Icons.store,
+                      validator: (v) => v == null || v.isEmpty ? l10n.requiredField : null),
                   const SizedBox(height: 20),
                   Row(
                     children: [
@@ -267,7 +268,8 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                               value: _selectedSize,
                               items: _sizes,
                               onChanged: (v) =>
-                                  setState(() => _selectedSize = v))),
+                                  setState(() => _selectedSize = v),
+                              validator: (v) => v == null || v.isEmpty ? l10n.requiredField : null)),
                       const SizedBox(width: 16),
                       Expanded(
                           child: _buildDropdown(
@@ -275,7 +277,8 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                               value: _selectedSector,
                               items: _sectors,
                               onChanged: (v) =>
-                                  setState(() => _selectedSector = v))),
+                                  setState(() => _selectedSector = v),
+                              validator: (v) => v == null || v.isEmpty ? l10n.requiredField : null)),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -287,13 +290,15 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                               value: _selectedYear,
                               items: _years,
                               onChanged: (v) =>
-                                  setState(() => _selectedYear = v))),
+                                  setState(() => _selectedYear = v),
+                              validator: (v) => v == null || v.isEmpty ? l10n.requiredField : null)),
                       const SizedBox(width: 16),
                       Expanded(
                           child: _buildField(
                               label: l10n.website,
                               controller: _websiteController,
-                              icon: Icons.link)),
+                              icon: Icons.link,
+                              validator: (v) => v == null || v.isEmpty ? l10n.requiredField : null)),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -304,101 +309,111 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                   Row(
                     children: [
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Pays",
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark
-                                        ? Colors.white
-                                        : AppColors.textDark)),
-                            const SizedBox(height: 8),
-                            InkWell(
-                              onTap: () {
-                                showCountryPicker(
-                                  context: context,
-                                  showPhoneCode: false,
-                                  customFlagBuilder: (country) =>
-                                      CountryFlag.fromCountryCode(
-                                    country.countryCode,
-                                    height: 18,
-                                    width: 24,
-                                  ),
-                                  countryListTheme: CountryListThemeData(
-                                    borderRadius: BorderRadius.circular(20),
-                                    inputDecoration: InputDecoration(
-                                      prefixIcon: const Icon(Icons.search),
-                                      hintText: 'Rechercher un pays...',
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                  ),
-                                  onSelect: (Country country) {
-                                    setState(() {
-                                      _selectedCountry = country.name;
-                                      _selectedCountryCode =
-                                          country.countryCode;
-                                    });
-                                  },
-                                );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? Colors.white.withOpacity(0.05)
-                                      : AppColors.bg,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
+                        child: FormField<String>(
+                          initialValue: _selectedCountry,
+                          validator: (v) => (_selectedCountry == null || _selectedCountry!.isEmpty) ? l10n.requiredField : null,
+                          builder: (state) => Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Pays",
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
                                       color: isDark
-                                          ? AppColors.borderDark
-                                          : Colors.transparent),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Row(
-                                        children: [
-                                          if (_selectedCountryCode != null) ...[
-                                            CountryFlag.fromCountryCode(
-                                                _selectedCountryCode!,
-                                                height: 16,
-                                                width: 24),
-                                            const SizedBox(width: 12),
-                                          ],
-                                          Expanded(
-                                            child: Text(
-                                                _selectedCountry ??
-                                                    "Choisir un pays...",
-                                                style: TextStyle(
-                                                    color:
-                                                        _selectedCountry != null
-                                                            ? (isDark
-                                                                ? Colors.white
-                                                                : AppColors
-                                                                    .textDark)
-                                                            : (isDark
-                                                                ? Colors.white38
-                                                                : AppColors
-                                                                    .textGray)),
-                                                overflow:
-                                                    TextOverflow.ellipsis),
-                                          ),
-                                        ],
+                                          ? Colors.white
+                                          : AppColors.textDark)),
+                              const SizedBox(height: 8),
+                              InkWell(
+                                onTap: () {
+                                  showCountryPicker(
+                                    context: context,
+                                    showPhoneCode: false,
+                                    customFlagBuilder: (country) =>
+                                        CountryFlag.fromCountryCode(
+                                      country.countryCode,
+                                      height: 18,
+                                      width: 24,
+                                    ),
+                                    countryListTheme: CountryListThemeData(
+                                      borderRadius: BorderRadius.circular(20),
+                                      inputDecoration: InputDecoration(
+                                        prefixIcon: const Icon(Icons.search),
+                                        hintText: 'Rechercher un pays...',
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
                                       ),
                                     ),
-                                    const Icon(Icons.arrow_drop_down,
-                                        color: AppColors.textGray),
-                                  ],
+                                    onSelect: (Country country) {
+                                      setState(() {
+                                        _selectedCountry = country.name;
+                                        _selectedCountryCode =
+                                            country.countryCode;
+                                        state.didChange(country.name);
+                                      });
+                                    },
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? Colors.white.withOpacity(0.05)
+                                        : AppColors.bg,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                        color: state.hasError 
+                                            ? Colors.red 
+                                            : (isDark ? AppColors.borderDark : Colors.transparent)),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Row(
+                                          children: [
+                                            if (_selectedCountryCode != null) ...[
+                                              CountryFlag.fromCountryCode(
+                                                  _selectedCountryCode!,
+                                                  height: 16,
+                                                  width: 24),
+                                              const SizedBox(width: 12),
+                                            ],
+                                            Expanded(
+                                              child: Text(
+                                                  _selectedCountry ??
+                                                      "Choisir un pays...",
+                                                  style: TextStyle(
+                                                      color:
+                                                          _selectedCountry != null
+                                                              ? (isDark
+                                                                  ? Colors.white
+                                                                  : AppColors
+                                                                      .textDark)
+                                                              : (isDark
+                                                                  ? Colors.white38
+                                                                  : AppColors
+                                                                      .textGray)),
+                                                  overflow:
+                                                      TextOverflow.ellipsis),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const Icon(Icons.arrow_drop_down,
+                                          color: AppColors.textGray),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                              if (state.hasError)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8, left: 12),
+                                  child: Text(state.errorText!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -406,7 +421,8 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                           child: _buildField(
                               label: "Ville",
                               controller: _cityController,
-                              icon: Icons.location_city)),
+                              icon: Icons.location_city,
+                              validator: (v) => v == null || v.isEmpty ? l10n.requiredField : null)),
                     ],
                   ),
                 ],
@@ -418,7 +434,19 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
             _buildSectionCard(
               title: l10n.companyLogo,
               icon: Icons.image_outlined,
-              child: _buildLogoUpload(l10n, profile.logoUrl),
+              child: FormField<bool>(
+                validator: (v) => (_logoBytes == null && profile.logoUrl.isEmpty) ? l10n.requiredField : null,
+                builder: (state) => Column(
+                  children: [
+                    _buildLogoUpload(l10n, profile.logoUrl),
+                    if (state.hasError)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(state.errorText!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+                      ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 40),
 
@@ -494,7 +522,8 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
   Widget _buildField(
       {required String label,
       required TextEditingController controller,
-      required IconData icon}) {
+      required IconData icon,
+      String? Function(String?)? validator}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -519,6 +548,7 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                     : BorderSide.none),
             contentPadding: const EdgeInsets.all(16),
           ),
+          validator: validator,
         ),
       ],
     );
@@ -528,7 +558,8 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
       {required String label,
       required String? value,
       required List<String> items,
-      required Function(String?) onChanged}) {
+      required Function(String?) onChanged,
+      String? Function(String?)? validator}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -555,6 +586,7 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                     : BorderSide.none),
             contentPadding: const EdgeInsets.all(16),
           ),
+          validator: validator,
         ),
       ],
     );

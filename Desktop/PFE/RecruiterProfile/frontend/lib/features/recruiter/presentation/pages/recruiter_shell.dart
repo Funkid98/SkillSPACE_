@@ -35,21 +35,44 @@ class RecruiterShell extends StatefulWidget {
 
 class _RecruiterShellState extends State<RecruiterShell> {
   late RecruiterTab _activeTab;
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
     _activeTab = widget.initialTab;
+    _restoreTab();
+  }
+
+  Future<void> _restoreTab() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedIndex = prefs.getInt('recruiter_active_tab');
+    if (savedIndex != null &&
+        savedIndex >= 0 &&
+        savedIndex < RecruiterTab.values.length) {
+      if (mounted) {
+        setState(() {
+          _activeTab = RecruiterTab.values[savedIndex];
+          _loading = false;
+        });
+        return;
+      }
+    }
+    if (mounted) setState(() => _loading = false);
   }
 
   Future<void> _onTabChanged(RecruiterTab tab, BuildContext context) async {
     setState(() => _activeTab = tab);
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('active_tab_index', tab.index);
+    await prefs.setInt('recruiter_active_tab', tab.index);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(backgroundColor: Colors.transparent);
+    }
+
     final isMobile = MediaQuery.of(context).size.width < 800;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
