@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_theme/reactive_theme.dart';
+import '../../../profile/presentation/pages/candidate_formation_details_page.dart';
 import '../../cubit/job_offers_cubit.dart';
 import '../../data/models/job_offer_model.dart';
 import '../../../../core/app_colors.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../shared/widgets/animated_reveal.dart';
 import '../../../../core/utils/responsive.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class JobOffersPage extends StatelessWidget {
   const JobOffersPage({super.key});
@@ -263,6 +266,49 @@ class _JobCard extends StatefulWidget {
 class _JobCardState extends State<_JobCard> {
   bool _expanded = false;
   bool _viewTracked = false;
+  bool _isLoadingFormation = false;
+
+  Future<void> _navigateToFormation(String formationId) async {
+    setState(() => _isLoadingFormation = true);
+    try {
+      final response = await http.get(
+        Uri.parse(
+            'http://127.0.0.1:5004/api/formateur/formations/item/$formationId'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CandidateFormationDetailsPage(
+                formation: data,
+                aiReason: widget.offer.recommendation,
+              ),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content:
+                    Text('Impossible de charger les détails de la formation.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Erreur de connexion au service de formation.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingFormation = false);
+    }
+  }
 
   Color get _compatColor {
     if (widget.offer.compatibilityPercent >= 85) return AppColors.orange;
@@ -601,6 +647,40 @@ class _JobCardState extends State<_JobCard> {
                             ),
                           ),
                           const SizedBox(height: 12),
+                          if (offer.internalFormationId != null) ...[
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: _isLoadingFormation
+                                    ? null
+                                    : () => _navigateToFormation(
+                                        offer.internalFormationId!),
+                                icon: _isLoadingFormation
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white))
+                                    : const Icon(Icons.play_circle_outline,
+                                        size: 18),
+                                label:
+                                    const Text('Voir la formation recommandée'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.orange,
+                                  foregroundColor: Colors.white,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                  elevation: 0,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Divider(height: 1, color: AppColors.border),
+                            const SizedBox(height: 16),
+                          ],
                           if (offer.missingSkills.isNotEmpty)
                             ...offer.missingSkills.map(
                               (skill) => Padding(

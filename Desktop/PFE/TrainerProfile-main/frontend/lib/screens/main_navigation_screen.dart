@@ -5,7 +5,6 @@ import 'package:reactive_theme/reactive_theme.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:video_player/video_player.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import 'dashboard_screen.dart';
 import 'formateur_profile_screen.dart';
@@ -15,6 +14,7 @@ import '../cubits/trainer_cubit.dart';
 import '../cubits/trainer_state.dart';
 import '../widgets/mesh_gradient_background.dart';
 import '../widgets/video_background.dart';
+
 class MainNavigationScreen extends StatefulWidget {
   final VoidCallback? onLogout;
   const MainNavigationScreen({super.key, this.onLogout});
@@ -78,10 +78,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     Container(
                       height: 70,
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.black.withOpacity(0.4) : Colors.white.withOpacity(0.7),
+                        color: isDark
+                            ? Colors.black.withOpacity(0.4)
+                            : Colors.white.withOpacity(0.7),
                         border: Border(
-                            bottom:
-                                BorderSide(color: isDark ? Colors.white10 : const Color(0xFFEAE8E3), width: 1)),
+                            bottom: BorderSide(
+                                color: isDark
+                                    ? Colors.white10
+                                    : const Color(0xFFEAE8E3),
+                                width: 1)),
                       ),
                       child: ClipRRect(
                         child: BackdropFilter(
@@ -97,7 +102,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                       style: TextStyle(
                                           fontSize: 22,
                                           fontWeight: FontWeight.bold,
-                                          color: isDark ? Colors.white : const Color(0xFF1E3A8A))),
+                                          color: isDark
+                                              ? Colors.white
+                                              : const Color(0xFF1E3A8A))),
                                   Row(
                                     children: [
                                       ReactiveThemeBtn.fromScratch(
@@ -105,7 +112,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                         child: Padding(
                                           padding: const EdgeInsets.all(8.0),
                                           child: Icon(
-                                            isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                                            isDark
+                                                ? Icons.light_mode_rounded
+                                                : Icons.dark_mode_rounded,
                                             color: const Color(0xFFE9652B),
                                           ),
                                         ),
@@ -161,7 +170,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   showUnselectedLabels: true,
                   type: BottomNavigationBarType.fixed,
                   elevation: 0,
-                  backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  backgroundColor:
+                      isDark ? const Color(0xFF1E293B) : Colors.white,
                   items: const [
                     BottomNavigationBarItem(
                       icon: Icon(Icons.dashboard_rounded),
@@ -253,7 +263,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                 style: TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,
-                                  color: isDark ? Colors.white : Colors.blue[900],
+                                  color:
+                                      isDark ? Colors.white : Colors.blue[900],
                                 ),
                               ),
                             ],
@@ -265,8 +276,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             Icons.grid_view_outlined),
                         _buildNavItem(
                             sideCtx, 1, 'Mon profil', Icons.person_outline),
-                        _buildNavItem(
-                            sideCtx, 2, 'Mes formations', Icons.school_outlined),
+                        _buildNavItem(sideCtx, 2, 'Mes formations',
+                            Icons.school_outlined),
                         const Spacer(),
                         const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 16),
@@ -364,7 +375,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.red.withOpacity(0.1) : const Color(0xFFFEF2F2),
+                  color: isDark
+                      ? Colors.red.withOpacity(0.1)
+                      : const Color(0xFFFEF2F2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.logout_rounded,
@@ -437,8 +450,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-
-
 class _ThemeToggle extends StatelessWidget {
   const _ThemeToggle();
 
@@ -449,7 +460,8 @@ class _ThemeToggle extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF8FAFC),
+        color:
+            isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
             color: (isDark ? Colors.white : Colors.grey).withOpacity(0.1)),

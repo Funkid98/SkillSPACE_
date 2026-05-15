@@ -42,6 +42,7 @@ class JobOffer {
   final String status;
   final String? applicationStatus;
   final bool isSaved;
+  final String? internalFormationId;
   final DateTime? createdAt;
 
   const JobOffer({
@@ -64,6 +65,7 @@ class JobOffer {
     this.status = 'COMPLETED',
     this.applicationStatus,
     this.isSaved = false,
+    this.internalFormationId,
     this.createdAt,
   });
 
@@ -88,6 +90,7 @@ class JobOffer {
       status: status,
       applicationStatus: applicationStatus ?? this.applicationStatus,
       isSaved: isSaved ?? this.isSaved,
+      internalFormationId: internalFormationId,
       createdAt: createdAt,
     );
   }
@@ -136,6 +139,7 @@ class JobOffer {
             missingSkills: List<String>.from(json['missingSkills'] ?? []),
             status: json['status'] ?? 'COMPLETED',
             applicationStatus: json['applicationStatus'],
+            internalFormationId: json['internalFormationId']?.toString(),
             createdAt: createdAt,
           );
         }).toList();

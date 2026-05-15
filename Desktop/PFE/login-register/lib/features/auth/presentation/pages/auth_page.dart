@@ -1620,8 +1620,9 @@ class _StepHeader extends StatelessWidget {
                               offset: const Offset(0, 2))
                         ],
                 ),
-                child: const Icon(Icons.arrow_back_rounded,
-                    size: 18, color: AppTheme.textDark),
+                child: Icon(Icons.arrow_back_rounded,
+                    size: 18,
+                    color: isDark ? Colors.white : AppTheme.textDark),
               ),
             ),
             const Spacer(),
@@ -1647,15 +1648,17 @@ class _StepHeader extends StatelessWidget {
         Text(emoji, style: const TextStyle(fontSize: 36)),
         const SizedBox(height: 12),
         Text(title,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
-                color: AppTheme.textDark,
+                color: isDark ? Colors.white : AppTheme.textDark,
                 height: 1.3,
                 letterSpacing: -0.5)),
         const SizedBox(height: 4),
         Text(subtitle,
-            style: const TextStyle(fontSize: 13.5, color: AppTheme.textGrey)),
+            style: TextStyle(
+                fontSize: 13.5,
+                color: isDark ? Colors.white70 : AppTheme.textGrey)),
         const SizedBox(height: 26),
       ],
     );
@@ -1920,7 +1923,7 @@ class _StaggeredReveal extends StatefulWidget {
   const _StaggeredReveal({
     required this.child,
     this.index = 0,
-    this.delayMs = 150,
+    this.delayMs = 100,
   });
 
   @override
@@ -2116,12 +2119,12 @@ class _WideHeroContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 80),
-        Row(
+        Wrap(
+          spacing: 20,
+          runSpacing: 20,
           children: [
             _StatChipWide(value: '15k+', label: 'Talents', isDark: isDark),
-            const SizedBox(width: 20),
             _StatChipWide(value: '150+', label: 'Entreprises', isDark: isDark),
-            const SizedBox(width: 20),
             _StatChipWide(value: '98%', label: 'Satisfaction', isDark: isDark),
           ],
         ),

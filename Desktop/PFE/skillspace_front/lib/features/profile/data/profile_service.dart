@@ -60,4 +60,20 @@ class ProfileService {
       throw Exception('Failed to update profile');
     }
   }
+  
+  static Future<void> removeCv(String token) async {
+    // 1. Clear the fields in the profile first
+    // 2. The backend should ideally also delete the physical file
+    final response = await http.delete(
+      Uri.parse('$_candidatBaseUrl/cv'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to remove CV');
+    }
+  }
 }

@@ -40,5 +40,6 @@ router.post('/leave/:formationId', auth, leaveFormation)
 router.post('/internal/complete/:candidateId/:formationId', completeFormation)
 router.get('/internal/enrolled/:formationId', getEnrolledCandidatesByFormation)
 router.get('/formations', auth, getEnrolledFormations)
+router.post('/review/:formationId', auth, submitReview)
 
 module.exports = router

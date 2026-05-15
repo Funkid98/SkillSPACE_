@@ -167,4 +167,37 @@ class TrainerCubit extends Cubit<TrainerState> {
   Future<Map<String, dynamic>?> generateFormationContent(String title) async {
     return await _dashboardService.enhanceFormation(title);
   }
+
+  Future<void> terminateFormation(String id) async {
+    final updated = await _dashboardService.terminateFormation(id);
+    if (updated != null && state.dashboardData != null) {
+      final updatedList = state.dashboardData!.formations.map((f) {
+        return f.id == id ? updated : f;
+      }).toList();
+
+      final updatedDashboard = DashboardData(
+        formateur: state.dashboardData!.formateur,
+        formations: updatedList,
+        stats: state.dashboardData!.stats,
+      );
+      emit(state.copyWith(dashboardData: updatedDashboard));
+      Fluttertoast.showToast(msg: "Formation terminée !");
+    }
+  }
+
+  Future<void> rateStudent(String formationId, String studentId, double rating) async {
+    final updated = await _dashboardService.rateStudent(formationId, studentId, rating);
+    if (updated != null && state.dashboardData != null) {
+      final updatedList = state.dashboardData!.formations.map((f) {
+        return f.id == formationId ? updated : f;
+      }).toList();
+
+      final updatedDashboard = DashboardData(
+        formateur: state.dashboardData!.formateur,
+        formations: updatedList,
+        stats: state.dashboardData!.stats,
+      );
+      emit(state.copyWith(dashboardData: updatedDashboard));
+    }
+  }
 }

@@ -64,8 +64,8 @@ const matchCvWithJob = async (cvText, jobDescription, candidateSkills = []) => {
         - A missing skill earns 0%.
 
         Reply ONLY with JSON (no text before or after, no markdown) with these fields:
-        1. matching_analysis: A 2-3 sentence narrative explaining the candidate's fit based on their skills AND proficiency levels. Do NOT use bullet lists.
-        2. recommendation: Specific training recommendations for missing or insufficient skills.
+        1. matching_analysis: (MUST be in French) A 2-3 sentence narrative explaining the candidate's fit based on their skills AND proficiency levels. Do NOT use bullet lists.
+        2. recommendation: (MUST be in French) Specific training recommendations for missing or insufficient skills.
         3. score: Compatibility score (0-100) based EXCLUSIVELY on the Skills_Required and the candidate's proficiency levels.
         4. matched_skills: List of skill names from the candidate that match the job's Skills_Required.
         5. missing_skills: EXACT list of skills the candidate is missing or underqualified in, based EXCLUSIVELY on the Skills_Required.`
@@ -258,7 +258,7 @@ Return ONLY valid JSON, no markdown:
       "_id": "exact id from list",
       "title": "exact title",
       "trainerName": "trainer name",
-      "reason": "Specific 1-sentence explanation referencing their score (${score}%) AND their weak topics"
+      "reason": "(MUST be in French) Specific 1-sentence explanation referencing their score (${score}%) AND their weak topics"
     }
   ],
   "external": [
@@ -267,7 +267,7 @@ Return ONLY valid JSON, no markdown:
       "platform": "Coursera | Udemy | YouTube | edX | LinkedIn Learning",
       "url": "MUST be a valid, real-world URL (e.g., https://www.udemy.com/course/name-of-course/). NO placeholder links.",
       "type": "Course | Workshop | Tutorial | Bootcamp",
-      "why": "1-sentence explanation of why this targets their specific gap"
+      "why": "(MUST be in French) 1-sentence explanation of why this targets their specific gap"
     }
   ]
 }

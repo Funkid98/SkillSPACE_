@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const router = express.Router();
 const auth = require('../middleware/auth-middleware');
-const { uploadCv } = require('../controllers/cv-controller');
+const { uploadCv, removeCv } = require('../controllers/cv-controller');
 
 const fs = require('fs');
 const path = require('path');
@@ -26,5 +26,6 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 router.post('/upload', auth, upload.single('cv'), uploadCv);
+router.delete('/', auth, removeCv);
 
 module.exports = router;

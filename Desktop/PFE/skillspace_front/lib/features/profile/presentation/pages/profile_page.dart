@@ -906,11 +906,16 @@ class _CvCard extends StatelessWidget {
                   ),
                 )
               else if (cvState is CvExtractionSuccess)
-                _CvSuccessView(data: cvState.data, l10n: l10n)
+                _CvSuccessView(
+                  data: cvState.data,
+                  l10n: l10n,
+                  onRemove: () => context.read<ProfileCubit>().removeCv(),
+                )
               else if (hasCv)
                 _CvUploadedView(
                   l10n: l10n,
                   onReplace: () => _triggerUpload(context),
+                  onRemove: () => context.read<ProfileCubit>().removeCv(),
                 )
               else
                 _CvUploadArea(
@@ -989,7 +994,9 @@ class _CvUploadArea extends StatelessWidget {
 class _CvUploadedView extends StatelessWidget {
   final AppLocalizations l10n;
   final VoidCallback onReplace;
-  const _CvUploadedView({required this.l10n, required this.onReplace});
+  final VoidCallback onRemove;
+  const _CvUploadedView(
+      {required this.l10n, required this.onReplace, required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
@@ -1032,6 +1039,23 @@ class _CvUploadedView extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
+            onPressed: onRemove,
+            child: const Text(
+              'Supprimer',
+              style: TextStyle(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          TextButton(
+            style: TextButton.styleFrom(
+              minimumSize: Size.zero,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
             onPressed: onReplace,
             child: Text(
               l10n.replace,
@@ -1051,7 +1075,9 @@ class _CvUploadedView extends StatelessWidget {
 class _CvSuccessView extends StatelessWidget {
   final Map<String, dynamic> data;
   final AppLocalizations l10n;
-  const _CvSuccessView({required this.data, required this.l10n});
+  final VoidCallback onRemove;
+  const _CvSuccessView(
+      {required this.data, required this.l10n, required this.onRemove});
   @override
   Widget build(BuildContext context) {
     final isDark = ReactiveMode.isDarkMode(context);
@@ -1081,6 +1107,22 @@ class _CvSuccessView extends StatelessWidget {
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: isDark ? Colors.white : AppColors.textDark,
+                  ),
+                ),
+              ),
+              TextButton(
+                style: TextButton.styleFrom(
+                  minimumSize: Size.zero,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: onRemove,
+                child: const Text(
+                  'Supprimer',
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
                   ),
                 ),
               ),

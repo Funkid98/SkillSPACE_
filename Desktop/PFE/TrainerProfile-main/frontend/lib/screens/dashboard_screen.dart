@@ -559,6 +559,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   width: 380,
                   onEdit: () => _showFormationDialog(f),
                   onDelete: () => _confirmDelete(f),
+                  onTerminate: () => _confirmTerminate(f),
+                  onRateStudent: (studentId, rating) => context.read<TrainerCubit>().rateStudent(f.id, studentId, rating),
                 )),
             _buildNewFormationCard(),
           ],
@@ -1334,6 +1336,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
               }
             },
             child: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmTerminate(FormationModel formation) {
+    final trainerCubit = context.read<TrainerCubit>();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Clôturer la formation ?'),
+        content: Text(
+            'Voulez-vous marquer "${formation.title}" comme terminée ? Vous pourrez ensuite évaluer les participants.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Annuler')),
+          TextButton(
+            onPressed: () async {
+              await trainerCubit.terminateFormation(formation.id);
+              if (!dialogContext.mounted) return;
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Confirmer', style: TextStyle(color: Colors.green)),
           ),
         ],
       ),

@@ -9,13 +9,29 @@ const taskQueue = [];
 const processingTasks = new Set(); // Track tasks currently being processed to prevent loops
 let isProcessing = false;
 
+// Helpers to compute strict snapshots of skills for comparison
+const computeCandidateSkillsSnapshot = (skills) => {
+    if (!skills || !Array.isArray(skills)) return '[]';
+    const normalized = skills.map(s => {
+        if (typeof s === 'string') return `${s.toLowerCase()}:33`; // default assumed level
+        return `${(s.name || '').toLowerCase()}:${s.percent || 33}`;
+    });
+    return JSON.stringify(normalized.sort());
+};
+
+const computeOfferRequirementsSnapshot = (requirements) => {
+    if (!requirements || !Array.isArray(requirements)) return '[]';
+    const normalized = requirements.map(r => r.toLowerCase());
+    return JSON.stringify(normalized.sort());
+};
+
 /**
  * Adds a candidate-centric match task to the queue (Match 1 candidate against ALL offers)
  */
 const runBackgroundMatchForCandidate = async (candidateId) => {
     const taskId = `CANDIDATE_${candidateId.toString()}`;
     const inQueue = taskQueue.some(t => t.type === 'CANDIDATE' && t.id.toString() === candidateId.toString());
-    
+
     if (inQueue || processingTasks.has(taskId)) {
         return; // Already queued or being processed
     }
@@ -34,7 +50,7 @@ const runBackgroundMatchForCandidate = async (candidateId) => {
 const runBackgroundMatchForOffer = async (offerId, offerData = null) => {
     const taskId = `OFFER_${offerId.toString()}`;
     const inQueue = taskQueue.some(t => t.type === 'OFFER' && t.id.toString() === offerId.toString());
-    
+
     if (inQueue || processingTasks.has(taskId)) {
         return;
     }
@@ -110,37 +126,33 @@ const handleCandidateTask = async (candidateId) => {
                 { candidateId: candidate._id, offerId: offer._id, status: 'ANALYSING' },
                 { $set: { status: 'COMPLETED', score: 0, analysis: "Le profil ne correspond pas assez aux pré-requis de l'offre." } }
             );
-            continue; 
+            continue;
         }
 
         const existingMatch = await Match.findOne({ candidateId: candidate._id, offerId: offer._id }).lean();
 
-        if (existingMatch && existingMatch.status === 'COMPLETED') {
-            // Check if match is stale (Job Offer OR Candidate was updated after the Match was completed)
-            // Use a 2-second buffer to prevent millisecond rounding issues
-            const BUFFER_MS = 2000;
-            const offerDate = new Date(offer.updatedAt || offer.date || 0);
-            const candidateDate = new Date(candidate.updatedAt || 0);
-            const matchDate = new Date(existingMatch.updatedAt || 0);
+        const currentCandidateSnapshot = computeCandidateSkillsSnapshot(candidate.skills);
+        const currentOfferSnapshot = computeOfferRequirementsSnapshot(offer.requirements);
 
-            const isOfferStale = offerDate.getTime() > matchDate.getTime() + BUFFER_MS;
-            const isCandidateStale = candidateDate.getTime() > matchDate.getTime() + BUFFER_MS;
+        if (existingMatch && existingMatch.status === 'COMPLETED') {
+            const isCandidateSkillsChanged = existingMatch.candidateSkillsSnapshot !== currentCandidateSnapshot;
+            const isOfferRequirementsChanged = existingMatch.offerRequirementsSnapshot !== currentOfferSnapshot;
             const isPoorQuality = (existingMatch.analysis || "").includes(',') && (existingMatch.analysis || "").length < 150;
 
-            if (!isOfferStale && !isCandidateStale && !isPoorQuality) {
-                // Match is still up to date and high quality
+            if (!isCandidateSkillsChanged && !isOfferRequirementsChanged && !isPoorQuality) {
+                // Skills haven't changed and quality is fine -> Skip analysis
                 continue;
             }
 
-            if (isPoorQuality && !isOfferStale && !isCandidateStale) {
+            if (isPoorQuality && !isCandidateSkillsChanged && !isOfferRequirementsChanged) {
                 console.log(`[Background AI Matcher] Refreshing low-quality analysis for ${candidate.prenom} -> ${offer.title}`);
-            } else if (isOfferStale) {
-                console.log(`[Background AI Matcher] Offer ${offer.title} was updated (after buffer). Re-analyzing...`);
-            } else if (isCandidateStale) {
-                console.log(`[Background AI Matcher] Candidate ${candidate.prenom} profile was updated (after buffer). Re-analyzing...`);
+            } else if (isOfferRequirementsChanged) {
+                console.log(`[Background AI Matcher] Offer ${offer.title} skills were modified. Re-analyzing...`);
+            } else if (isCandidateSkillsChanged) {
+                console.log(`[Background AI Matcher] Candidate ${candidate.prenom} updated their skill levels. Re-analyzing...`);
             }
         }
-        await processSingleAiMatch(candidate, offer, cvText);
+        await processSingleAiMatch(candidate, offer, cvText, currentCandidateSnapshot, currentOfferSnapshot);
     }
     console.log(`[Background AI Matcher] Finished candidate (${candidateId})`);
 };
@@ -183,23 +195,20 @@ const handleOfferTask = async (offerId, offerData) => {
 
         const existingMatch = await Match.findOne({ candidateId: candidate._id, offerId: offer._id }).lean();
 
+        const currentCandidateSnapshot = computeCandidateSkillsSnapshot(candidate.skills);
+        const currentOfferSnapshot = computeOfferRequirementsSnapshot(offer.requirements);
+
         if (existingMatch && existingMatch.status === 'COMPLETED') {
-            // Check if match is stale (Job Offer OR Candidate was updated after the Match was completed)
-            const BUFFER_MS = 2000;
-            const offerDate = new Date(offer.updatedAt || offer.date || 0);
-            const candidateDate = new Date(candidate.updatedAt || 0);
-            const matchDate = new Date(existingMatch.updatedAt || 0);
+            const isCandidateSkillsChanged = existingMatch.candidateSkillsSnapshot !== currentCandidateSnapshot;
+            const isOfferRequirementsChanged = existingMatch.offerRequirementsSnapshot !== currentOfferSnapshot;
 
-            const isOfferStale = offerDate.getTime() > matchDate.getTime() + BUFFER_MS;
-            const isCandidateStale = candidateDate.getTime() > matchDate.getTime() + BUFFER_MS;
-
-            if (!isOfferStale && !isCandidateStale) {
-                continue; // Skip: Match is still up to date within buffer
+            if (!isCandidateSkillsChanged && !isOfferRequirementsChanged) {
+                continue; // Skip: No skills were added/removed/upgraded
             }
-            console.log(`[Background AI Matcher] Re-analyzing stale match (Buffered): ${candidate.prenom} -> ${offer.title}`);
+            console.log(`[Background AI Matcher] Re-analyzing match due to skill changes: ${candidate.prenom} -> ${offer.title}`);
         }
         const cvText = await getCvText(candidate);
-        await processSingleAiMatch(candidate, offer, cvText);
+        await processSingleAiMatch(candidate, offer, cvText, currentCandidateSnapshot, currentOfferSnapshot);
     }
     console.log(`[Background AI Matcher] Finished offer (${offerId})`);
 };
@@ -222,9 +231,9 @@ const getCvText = async (candidate) => {
         const level = s.percent >= 80 ? 'Advanced' : s.percent >= 40 ? 'Intermediate' : 'Beginner';
         return `${s.name} (${level})`;
     }).join(', ');
-    
+
     let finalCvText = `Job Title: ${candidate.jobtitle || 'N/A'}\nBio: ${candidate.bio || 'N/A'}\nExplicit Profile Skills (with level): ${cvSkills}\n`;
-    
+
     if (extractedText) {
         finalCvText += `\n--- Extracted CV File Content ---\n${extractedText}`;
     }
@@ -232,54 +241,47 @@ const getCvText = async (candidate) => {
     return finalCvText;
 };
 
-const processSingleAiMatch = async (candidate, offer, cvText) => {
-
-    // EXCLUDE description text to force AI to evaluate ONLY against the explicitly required skills
+const processSingleAiMatch = async (candidate, offer, cvText, currentCandidateSnapshot = '', currentOfferSnapshot = '') => {
+    // Only fetch minimal required data for matching
     const jobDescriptionText = `Title: ${offer.title}\nSkills_Required: ${(offer.requirements || []).join(', ')}`;
 
     try {
-        console.log(`[Background AI Matcher] Querying AI via Groq API for ${candidate.prenom} -> ${offer.title}`);
+        console.log(`[Background AI Matcher] Analyzing: ${candidate.prenom} -> ${offer.title}`);
 
+        // Signature restored to: cvText, jobDescription, candidateSkills
         const aiResData = await matchCvWithJob(cvText, jobDescriptionText, candidate.skills || []);
 
         if (aiResData && aiResData.status === 'COMPLETED') {
             const matchedSkills = aiResData.matched_skills || [];
             const missingSkills = aiResData.missing_skills || [];
 
-            // USE THE AI'S HOLISTIC SCORE
-            // Instead of manual math (matched/total), we trust the AI's internal assessment
-            // but we still keep matchedCount/totalRequirementsCount for metadata display.
-            const matchedCount = matchedSkills.length;
-            const totalRequirementsCount = (offer.requirements || []).length || 1;
-
             let finalScore = aiResData.score || 0;
             if (finalScore > 100) finalScore = 100;
             if (finalScore < 0) finalScore = 0;
 
-            console.log(`[Background AI Matcher] Holistic AI Score: ${finalScore}%`);
-            console.log(`[Background AI Matcher] AI Analysis: ${aiResData.matching_analysis}`);
-            console.log(`[Background AI Matcher] AI Recommendation: ${aiResData.recommendation}`);
+            console.log(`[Background AI Matcher] Result: ${finalScore}% for ${offer.title}`);
 
             await Match.findOneAndUpdate(
                 { candidateId: candidate._id, offerId: offer._id },
                 {
                     $set: {
                         score: finalScore,
-                        matchingSkills: matchedCount,
-                        totalSkills: totalRequirementsCount,
-                        analysis: aiResData.matching_analysis || "Analyse complétée par l'IA",
+                        matchingSkills: matchedSkills.length,
+                        totalSkills: (offer.requirements || []).length || 1,
+                        analysis: aiResData.matching_analysis || "Analyse complétée",
                         recommendation: aiResData.recommendation || "",
                         matchedSkills: matchedSkills,
                         missingSkills: missingSkills,
+                        candidateSkillsSnapshot: currentCandidateSnapshot,
+                        offerRequirementsSnapshot: currentOfferSnapshot,
                         status: 'COMPLETED'
                     }
                 },
                 { upsert: true, returnDocument: 'after' }
             );
-            console.log(`[Background AI Matcher] Logic Corrected result (${finalScore}%) for ${candidate.prenom} -> ${offer.title}`);
         }
     } catch (aiErr) {
-        console.error(`[Background AI Matcher] AI Error for ${candidate.prenom} -> ${offer.title}:`, aiErr.message);
+        console.error(`[Background AI Matcher] AI Error for ${offer.title}:`, aiErr.message);
         try {
             await Match.findOneAndUpdate(
                 { candidateId: candidate._id, offerId: offer._id },
@@ -287,13 +289,13 @@ const processSingleAiMatch = async (candidate, offer, cvText) => {
                     $set: {
                         score: 0,
                         status: 'FAILED',
-                        analysis: 'Erreur lors de la communication avec l\'IA.',
+                        analysis: 'Erreur technique lors de l\'analyse.',
                         recommendation: ''
                     }
                 }
-            )
+            );
         } catch (dbErr) {
-            console.error(`[Background AI Matcher] DB FAILED status update error`, dbErr.message);
+            console.error(`[Background AI Matcher] DB Error:`, dbErr.message);
         }
     }
 };

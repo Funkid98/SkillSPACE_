@@ -116,4 +116,38 @@ class DashboardService {
       return null;
     }
   }
+
+  Future<FormationModel?> terminateFormation(String id) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/formations/item/$id/terminate'),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return FormationModel.fromJson(data['formation']);
+      }
+      return null;
+    } catch (e) {
+      print('Error terminating formation: $e');
+      return null;
+    }
+  }
+
+  Future<FormationModel?> rateStudent(String formationId, String studentId, double rating) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/formations/item/$formationId/student/$studentId/rate'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'rating': rating}),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return FormationModel.fromJson(data['formation']);
+      }
+      return null;
+    } catch (e) {
+      print('Error rating student: $e');
+      return null;
+    }
+  }
 }

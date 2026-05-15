@@ -1,3 +1,26 @@
+class StudentRating {
+  final String id;
+  final String name;
+  final double rating;
+  final String review;
+
+  StudentRating({
+    required this.id,
+    required this.name,
+    this.rating = 0.0,
+    this.review = '',
+  });
+
+  factory StudentRating.fromJson(Map<String, dynamic> json) {
+    return StudentRating(
+      id: json['_id'] ?? '',
+      name: json['name'] ?? '',
+      rating: (json['rating'] ?? 0.0).toDouble(),
+      review: json['review'] ?? '',
+    );
+  }
+}
+
 class FormationModel {
   final String id;
   final String trainerId;
@@ -15,6 +38,8 @@ class FormationModel {
   final String? meetLink;
   final DateTime? date;
   final String? time;
+  final String status;
+  final List<StudentRating> students;
 
   FormationModel({
     required this.id,
@@ -33,6 +58,8 @@ class FormationModel {
     this.meetLink,
     this.date,
     this.time,
+    this.status = 'active',
+    this.students = const [],
   });
 
   factory FormationModel.fromJson(Map<String, dynamic> json) {
@@ -53,6 +80,12 @@ class FormationModel {
       meetLink: json['meetLink'],
       date: json['date'] != null ? DateTime.tryParse(json['date']) : null,
       time: json['time'],
+      status: json['status'] ?? 'active',
+      students: json['students'] != null
+          ? (json['students'] as List)
+              .map((s) => StudentRating.fromJson(s))
+              .toList()
+          : [],
     );
   }
 
@@ -73,6 +106,7 @@ class FormationModel {
       'meetLink': meetLink,
       'date': date?.toIso8601String(),
       'time': time,
+      'status': status,
     };
   }
 }

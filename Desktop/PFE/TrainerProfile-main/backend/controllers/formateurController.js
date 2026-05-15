@@ -823,61 +823,120 @@ const leaveFormation = async (req, res) => {
 const updateFormationRating = async (req, res) => {
   try {
     const { id } = req.params;
-    const { rating } = req.body;
+    const { rating, review, studentName } = req.body;
+    console.log(`[RatingUpdate] ID: ${id}, Rating: ${rating}, Student: ${studentName}`);
 
     const formation = await Formation.findById(id);
     if (!formation) {
       return res.status(404).json({ message: 'Formation non trouvée' });
     }
 
-    // Recalculate average rating for formation
-    const currentTotal = formation.rating * formation.reviewCount;
-    const newCount = formation.reviewCount + 1;
-    const newAvg = (currentTotal + rating) / newCount;
+    // 1. Update the student's individual rating and review if name provided
+    if (studentName) {
+      const student = formation.students.find(s => s.name === studentName);
+      if (student) {
+        student.rating = rating;
+        if (review) student.review = review;
+      } else {
+        // If student not found by name (e.g. sync issue), add them
+        formation.students.push({ name: studentName, rating, review: review || '' });
+      }
+    }
 
-    formation.rating = parseFloat(newAvg.toFixed(1));
-    formation.reviewCount = newCount;
+    // 2. Recalculate average rating for formation
+    // We calculate based on students who have actually rated (> 0)
+    const ratedStudents = formation.students.filter(s => s.rating > 0);
+    const totalRating = ratedStudents.reduce((acc, curr) => acc + curr.rating, 0);
+    const newCount = ratedStudents.length;
+    
+    if (newCount > 0) {
+      formation.rating = parseFloat((totalRating / newCount).toFixed(1));
+      formation.reviewCount = newCount;
+    }
+
     await formation.save();
 
-    // Update the trainer's global average rating
+    // 3. Update the trainer's global average rating
     const trainer = await Formateur.findById(formation.trainerId);
     if (trainer) {
-      const currentGlobalTotal = (trainer.averageRating || 0) * (trainer.totalReviews || 0);
-      const newGlobalCount = (trainer.totalReviews || 0) + 1;
-      const newGlobalAvg = (currentGlobalTotal + rating) / newGlobalCount;
+      // Fetch all formations for this trainer to get a true average
+      const trainerFormations = await Formation.find({ trainerId: trainer._id });
+      const formationsWithRatings = trainerFormations.filter(f => f.reviewCount > 0);
       
-      trainer.averageRating = parseFloat(newGlobalAvg.toFixed(1));
-      trainer.totalReviews = newGlobalCount;
+      if (formationsWithRatings.length > 0) {
+        const globalTotalRating = formationsWithRatings.reduce((acc, curr) => acc + curr.rating, 0);
+        trainer.averageRating = parseFloat((globalTotalRating / formationsWithRatings.length).toFixed(1));
+        trainer.totalReviews = formationsWithRatings.reduce((acc, curr) => acc + curr.reviewCount, 0);
+      } else {
+        trainer.averageRating = rating;
+        trainer.totalReviews = 1;
+      }
       await trainer.save();
     }
 
-    res.status(200).json({ message: 'Note mise à jour', rating: formation.rating, count: formation.reviewCount });
+    res.status(200).json({ 
+      message: 'Note mise à jour', 
+      rating: formation.rating, 
+      count: formation.reviewCount,
+      trainerRating: trainer ? trainer.averageRating : null
+    });
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la mise à jour de la note', error: error.message });
   }
 };
 
+// @desc    Terminate a formation (mark as completed)
+// @route   POST /api/formateur/formations/item/:id/terminate
+const terminateFormation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updated = await Formation.findByIdAndUpdate(
+      id,
+      { status: 'terminé' },
+      { returnDocument: 'after' }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Formation non trouvée' });
+    }
+
+    res.status(200).json({ message: 'Formation terminée avec succès', formation: updated });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la clôture de la formation', error: error.message });
+  }
+};
+
+// @desc    Rate a student in a formation
+// @route   POST /api/formateur/formations/item/:id/student/:studentId/rate
+const rateStudent = async (req, res) => {
+  try {
+    const { id, studentId } = req.params;
+    const { rating } = req.body;
+
+    if (rating < 0 || rating > 5) {
+      return res.status(400).json({ message: 'La note doit être comprise entre 0 et 5' });
+    }
+
+    const updated = await Formation.findOneAndUpdate(
+      { _id: id, 'students._id': studentId },
+      { $set: { 'students.$.rating': rating } },
+      { returnDocument: 'after' }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Formation ou étudiant introuvable' });
+    }
+
+    res.status(200).json({ message: 'Note enregistrée avec succès', formation: updated });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de l\'enregistrement de la note', error: error.message });
+  }
+};
+
 module.exports = {
-  getProfile,
-  updateProfile,
-  getDashboardData,
-  getFormations,
-  getAllFormations,
-  seedDummyData,
-  suggestExpertise,
-  generateBio,
-  validateUrl,
-  createFormation,
-  updateFormation,
-  deleteFormation,
-  enhanceFormation,
-  register,
-  login,
-  verifySignupOtp,
-  checkEmailExists,
-  patchProfile,
-  enrollFormation,
-  leaveFormation,
-  getFormationById,
-  updateFormationRating
+  getProfile, updateProfile, patchProfile, getDashboardData, getFormations,
+  getAllFormations, seedDummyData, suggestExpertise, generateBio, validateUrl,
+  createFormation, updateFormation, deleteFormation, enhanceFormation,
+  register, login, verifySignupOtp, checkEmailExists, enrollFormation, leaveFormation, 
+  getFormationById, updateFormationRating, terminateFormation, rateStudent
 };

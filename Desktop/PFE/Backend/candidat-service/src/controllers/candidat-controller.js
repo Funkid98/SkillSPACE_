@@ -304,10 +304,10 @@ const getMatchingOffersForCandidate = async (req, res) => {
             const application = await Application.findOne({ candidateId: candidate._id, offerId: offer._id }).lean();
 
             // 2. Strict Filter: At least 2 matching skills required (unless title matches exactly)
-            const effectiveMatchCount = (existingMatch && existingMatch.status === 'COMPLETED') 
-                ? existingMatch.matchingSkills 
+            const effectiveMatchCount = (existingMatch && existingMatch.status === 'COMPLETED')
+                ? existingMatch.matchingSkills
                 : matchCount;
-                
+
             const isTitleMatch = candidate.jobtitle && (offer.title || '').toLowerCase() === candidate.jobtitle.toLowerCase();
             if (!isTitleMatch && effectiveMatchCount < 2) {
                 return null; // Skip this offer entirely (less than 2 skills mapped)
@@ -516,7 +516,7 @@ const getMatchingCandidatesGroupedByOffer = async (req, res) => {
                         ).length;
                     }
                     if (isStale) {
-                         // We don't skip if we are updating a stale match that already existed
+                        // We don't skip if we are updating a stale match that already existed
                     } else {
                         const isTitleMatch = c.jobtitle && (offer.title || '').toLowerCase().includes(c.jobtitle.toLowerCase());
                         if (!isTitleMatch && matchCount < 3) {
@@ -607,14 +607,14 @@ const getMatchingCandidatesGroupedByOffer = async (req, res) => {
                     ).length;
 
                     const isTitleMatch = candidate.jobtitle && (
-                        (offer.title || '').toLowerCase().includes(candidate.jobtitle.toLowerCase()) || 
+                        (offer.title || '').toLowerCase().includes(candidate.jobtitle.toLowerCase()) ||
                         candidate.jobtitle.toLowerCase().includes((offer.title || '').toLowerCase())
                     );
 
                     // Skip if neither title matches nor enough keywords (2+ required for analyzed, 3+ for new)
-                    const threshold = currentStatus === 'COMPLETED' ? 2 : 3; 
+                    const threshold = currentStatus === 'COMPLETED' ? 2 : 3;
                     if (!isTitleMatch && matchCount < threshold) {
-                        continue; 
+                        continue;
                     }
 
                     // Collect candidates that need analysis for background triggering
@@ -780,8 +780,8 @@ const receiveNotification = async (req, res) => {
 
             await Application.findOneAndUpdate(
                 { candidateId, offerId },
-                { 
-                    $set: { 
+                {
+                    $set: {
                         status: appStatus,
                         interviewDate,
                         interviewTime,
@@ -849,14 +849,14 @@ const internalUpdateApplication = async (req, res) => {
 
         const application = await Application.findOneAndUpdate(
             { candidateId, offerId },
-            { 
-                $set: { 
-                    status, 
-                    interviewDate, 
-                    interviewTime, 
-                    meetingLink, 
-                    rejectionReason 
-                } 
+            {
+                $set: {
+                    status,
+                    interviewDate,
+                    interviewTime,
+                    meetingLink,
+                    rejectionReason
+                }
             },
             { new: true }
         );
@@ -953,6 +953,7 @@ const getEnrolledFormations = async (req, res) => {
         if (enrolled.length === 0) return res.json([]);
 
         // Fetch full formation details from trainer service for each enrolled formation
+        let orphanedIds = [];
         const formations = await Promise.all(enrolled.map(async (enrollment) => {
             try {
                 const response = await axios.get(`http://127.0.0.1:5004/api/formateur/formations/item/${enrollment.formationId}`);
@@ -961,16 +962,27 @@ const getEnrolledFormations = async (req, res) => {
                         ...response.data,
                         aiReason: enrollment.aiReason || '',
                         enrolledAt: enrollment.enrolledAt,
-                        status: enrollment.status || 'ENROLLED',
+                        status: (response.data.status === 'terminé') ? 'COMPLETED' : (enrollment.status || 'ENROLLED'),
                         rating: enrollment.rating || 0,
                         review: enrollment.review || ''
                     };
                 }
             } catch (e) {
+                if (e.response && e.response.status === 404) {
+                    orphanedIds.push(enrollment.formationId);
+                }
                 console.error(`Failed to fetch formation ${enrollment.formationId}:`, e.message);
             }
             return null;
         }));
+
+        // Clean up orphaned enrollments if found
+        if (orphanedIds.length > 0) {
+            console.log(`Cleaning up ${orphanedIds.length} orphaned enrollments for candidate ${candidateId}`);
+            await User.findByIdAndUpdate(candidateId, {
+                $pull: { enrolledFormations: { formationId: { $in: orphanedIds } } }
+            });
+        }
 
         res.json(formations.filter(Boolean));
     } catch (err) {
@@ -1049,13 +1061,18 @@ const submitReview = async (req, res) => {
         enrollment.review = review || '';
         await user.save();
 
-        // Forward rating to trainer service to update average
+        console.log(`[SubmitReview] Forwarding to Trainer Service. ID: ${formationId}, Rating: ${rating}`);
+
+        // Forward rating and review to trainer service to update average and save feedback
         try {
-            await axios.post(`http://127.0.0.1:5004/api/formateur/formations/item/${formationId}/review`, {
-                rating: rating
+            const response = await axios.post(`http://127.0.0.1:5004/api/formateur/formations/item/${formationId}/review`, {
+                rating: rating,
+                review: review || '',
+                studentName: `${user.prenom} ${user.nom}`
             });
+            console.log(`[SubmitReview] Trainer Service Success:`, response.data);
         } catch (e) {
-            console.error('Failed to update rating on trainer service:', e.message);
+            console.error('[SubmitReview] Failed to update trainer service:', e.message);
         }
 
         res.status(200).json({ message: 'Avis enregistré avec succès !' });
@@ -1095,7 +1112,7 @@ const getEnrolledCandidatesByFormation = async (req, res) => {
 const getAcceptedOffers = async (req, res) => {
     try {
         const candidateId = req.userId;
-        
+
         // Find accepted or interview planned applications
         const applications = await Application.find({
             candidateId,
@@ -1191,5 +1208,5 @@ module.exports = {
     applyToOffer, receiveNotification, getNotifications, markNotificationRead,
     internalUpdateApplication, deleteNotification, clearAllNotifications,
     enrollFormation, leaveFormation, getEnrolledFormations, completeFormation,
-    getEnrolledCandidatesByFormation, getAcceptedOffers, getCoachAdvice
+    getEnrolledCandidatesByFormation, getAcceptedOffers, getCoachAdvice, submitReview
 };

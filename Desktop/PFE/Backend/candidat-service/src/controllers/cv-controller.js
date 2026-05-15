@@ -40,4 +40,39 @@ const uploadCv = async (req, res) => {
   }
 };
 
-module.exports = { uploadCv };
+const removeCv = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // 1. Delete physical file if it exists
+    if (user.cv_path && fs.existsSync(user.cv_path)) {
+      try {
+        fs.unlinkSync(user.cv_path);
+      } catch (err) {
+        console.error('Error deleting file:', err.message);
+      }
+    }
+
+    // 2. Clear fields in DB
+    const updates = {
+      cv_path: '',
+      raw_cv_text: '',
+      skills: [],
+      bio: '',
+      jobtitle: '',
+      prenom: '',
+      nom: '',
+      telephone: '',
+      localisation: ''
+    };
+
+    await User.findByIdAndUpdate(req.userId, { $set: updates });
+
+    res.json({ success: true, message: 'CV and associated data removed' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { uploadCv, removeCv };

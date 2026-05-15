@@ -10,6 +10,9 @@ const matchSchema = new mongoose.Schema({
     recommendation: { type: String, default: '' },
     matchedSkills: { type: [String], default: [] },
     missingSkills: { type: [String], default: [] },
+    internalFormationId: { type: String, default: null },
+    candidateSkillsSnapshot: { type: String, default: '' },
+    offerRequirementsSnapshot: { type: String, default: '' },
     status: { 
         type: String, 
         enum: ['PRELIMINARY', 'ANALYSING', 'COMPLETED', 'FAILED'], 

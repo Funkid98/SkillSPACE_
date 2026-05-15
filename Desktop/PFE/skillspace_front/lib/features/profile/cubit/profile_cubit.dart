@@ -158,4 +158,25 @@ class ProfileCubit extends Cubit<ProfileState> {
       emit(ProfileLoaded(_calculateCompletion(updated), isSaved: false));
     }
   }
+
+  Future<void> removeCv() async {
+    if (state is! ProfileLoaded) return;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('jwt_token') ?? '';
+
+      if (token.isEmpty) {
+        throw Exception('No authentication token found');
+      }
+
+      await ProfileService.removeCv(token);
+
+      // After removing from backend, we refresh local profile to get cleared fields
+      await loadProfile();
+    } catch (e) {
+      if (kDebugMode) print('Error removing CV: $e');
+      emit(ProfileError('Erreur lors de la suppression du CV'));
+    }
+  }
 }

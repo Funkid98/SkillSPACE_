@@ -216,105 +216,214 @@ class RecruiterSidebar extends StatelessWidget {
 
   void _showLogoutConfirmation(BuildContext context, [VoidCallback? onLogout]) {
     final l10n = RecruiterLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    AwesomeDialog(
+    final isDark = ReactiveMode.isDarkMode(context);
+
+    showGeneralDialog(
       context: context,
-      width: 380,
-      padding: EdgeInsets.zero,
-      dialogType: DialogType.noHeader,
-      customHeader: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-        ),
-        child:
-            const Icon(Icons.logout_rounded, size: 40, color: AppColors.orange),
-      ),
-      animType: AnimType.scale,
-      body: Column(
-        children: [
-          const SizedBox(height: 10),
-          Text(
-            l10n.logout,
-            style: TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: 16,
-                color: isDark ? Colors.white : Colors.black87),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Voulez-vous vraiment vous déconnecter ?',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: SizedBox(
-                    height: 42,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.grey.shade300),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text(
-                        l10n.cancel.toUpperCase(),
-                        style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12),
+      barrierDismissible: true,
+      barrierLabel: '',
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, anim1, anim2) => const SizedBox(),
+      transitionBuilder: (dialogCtx, anim1, anim2, child) {
+        final curve = Curves.easeOutBack.transform(anim1.value);
+        return Transform.scale(
+          scale: curve,
+          child: Opacity(
+            opacity: anim1.value.clamp(0.0, 1.0),
+            child: AlertDialog(
+              backgroundColor: Colors.transparent,
+              contentPadding: EdgeInsets.zero,
+              content: Container(
+                width: 380,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF1E293B).withOpacity(0.9)
+                      : Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.white.withOpacity(0.12)
+                        : Colors.black.withOpacity(0.05),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.25),
+                      blurRadius: 40,
+                      offset: const Offset(0, 15),
+                    )
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(32),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(32, 40, 32, 32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Floating Icon with glow
+                          Container(
+                            width: 76,
+                            height: 76,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.orange.withOpacity(0.2),
+                                  AppColors.orange.withOpacity(0.05),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              border: Border.all(
+                                color: AppColors.orange.withOpacity(0.2),
+                                width: 1,
+                              ),
+                            ),
+                            child: Center(
+                              child: Container(
+                                width: 54,
+                                height: 54,
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black12,
+                                      blurRadius: 10,
+                                      offset: Offset(0, 4),
+                                    )
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.logout_rounded,
+                                  color: AppColors.orange,
+                                  size: 28,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 28),
+                          Text(
+                            l10n.logout,
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              color: isDark ? Colors.white : AppColors.navy,
+                              letterSpacing: -0.8,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Voulez-vous vraiment vous déconnecter de SkillSpace ?',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 15,
+                              height: 1.6,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 36),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _LogoutButton(
+                                  label: l10n.cancel.toUpperCase(),
+                                  isPrimary: false,
+                                  isDark: isDark,
+                                  onTap: () => Navigator.of(dialogCtx).pop(),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: _LogoutButton(
+                                  label: l10n.logout.toUpperCase(),
+                                  isPrimary: true,
+                                  isDark: isDark,
+                                  onTap: () async {
+                                    Navigator.of(dialogCtx).pop();
+                                    await context.read<AuthCubit>().logout();
+                                    if (context.mounted) {
+                                      if (onLogout != null) {
+                                        onLogout();
+                                      }
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 3,
-                  child: SizedBox(
-                    height: 42,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.orange,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onPressed: () async {
-                        await context.read<AuthCubit>().logout();
-                        if (context.mounted) {
-                          if (onLogout != null) {
-                            onLogout();
-                          }
-                        }
-                      },
-                      child: Text(
-                        l10n.logout.toUpperCase(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 11),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(height: 20),
-        ],
+        );
+      },
+    );
+  }
+}
+
+class _LogoutButton extends StatelessWidget {
+  final String label;
+  final bool isPrimary;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _LogoutButton({
+    required this.label,
+    required this.isPrimary,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        height: 54,
+        decoration: BoxDecoration(
+          color: isPrimary ? AppColors.orange : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: isPrimary
+              ? null
+              : Border.all(
+                  color: isDark ? Colors.white12 : Colors.black.withOpacity(0.08),
+                  width: 1.5,
+                ),
+          boxShadow: isPrimary
+              ? [
+                  BoxShadow(
+                    color: AppColors.orange.withOpacity(0.3),
+                    blurRadius: 15,
+                    offset: const Offset(0, 6),
+                  )
+                ]
+              : null,
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isPrimary
+                  ? Colors.white
+                  : (isDark ? Colors.white70 : AppColors.textDark),
+              fontWeight: FontWeight.w900,
+              fontSize: 13,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
       ),
-    ).show();
+    );
   }
 }
 

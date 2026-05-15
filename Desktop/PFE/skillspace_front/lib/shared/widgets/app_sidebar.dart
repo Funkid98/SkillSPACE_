@@ -169,7 +169,8 @@ class AppSidebar extends StatelessWidget {
                 const SizedBox(height: 12),
                 // ── Nav section label ─────────────────────────────────────
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                   child: Text(
                     'NAVIGATION',
                     style: TextStyle(
@@ -205,9 +206,9 @@ class AppSidebar extends StatelessWidget {
                 ),
                 const Spacer(),
                 // ── Bottom: theme toggle ──────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: const _ThemeToggle(),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: _ThemeToggle(),
                 ),
                 const SizedBox(height: 8),
                 // ── Logout button ─────────────────────────────────────────
@@ -242,8 +243,7 @@ class AppSidebar extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color:
-                                    AppColors.error.withValues(alpha: 0.8),
+                                color: AppColors.error.withValues(alpha: 0.8),
                               ),
                             ),
                           ],
@@ -260,8 +260,6 @@ class AppSidebar extends StatelessWidget {
     );
   }
 }
-
-
 
 class _ThemeToggle extends StatelessWidget {
   const _ThemeToggle();
@@ -402,9 +400,7 @@ class MobileTopBar extends StatelessWidget {
     return Container(
       height: 68,
       decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.bgDark.withValues(alpha: 0.95)
-            : Colors.white,
+        color: isDark ? AppColors.bgDark.withValues(alpha: 0.95) : Colors.white,
         border: Border(
           bottom: BorderSide(
             color: isDark
@@ -441,7 +437,8 @@ class MobileTopBar extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 18),
+            child:
+                const Icon(Icons.bolt_rounded, color: Colors.white, size: 18),
           ),
           const SizedBox(width: 10),
           Text(
@@ -510,8 +507,7 @@ class _MobileDrawer extends StatelessWidget {
             color: isDark
                 ? const Color(0xFF0F172A).withValues(alpha: 0.85)
                 : Colors.white.withValues(alpha: 0.95),
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(28)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border(
               top: BorderSide(
                 color: isDark
@@ -743,8 +739,7 @@ class _DrawerItem extends StatelessWidget {
                   tab.label(context),
                   style: TextStyle(
                     fontSize: 15,
-                    fontWeight:
-                        isActive ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                     color: isActive
                         ? (isDark ? Colors.white : AppColors.textDark)
                         : (isDark
@@ -880,9 +875,8 @@ class _NavItemState extends State<_NavItem> {
                     widget.tab.label(context),
                     style: TextStyle(
                       fontSize: 13.5,
-                      fontWeight: widget.isActive
-                          ? FontWeight.w700
-                          : FontWeight.w500,
+                      fontWeight:
+                          widget.isActive ? FontWeight.w700 : FontWeight.w500,
                       color: widget.isActive
                           ? (isDark ? Colors.white : AppColors.textDark)
                           : _hovered
@@ -905,102 +899,217 @@ class _NavItemState extends State<_NavItem> {
 void _showLogoutConfirmation(BuildContext context, [VoidCallback? onLogout]) {
   final l10n = AppLocalizations.of(context);
   final isDark = ReactiveMode.isDarkMode(context);
-  showDialog(
+
+  showGeneralDialog(
     context: context,
-    builder: (dialogCtx) => Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
-      child: Container(
-        width: 400,
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
+    barrierDismissible: true,
+    barrierLabel: '',
+    transitionDuration: const Duration(milliseconds: 300),
+    pageBuilder: (context, anim1, anim2) => const SizedBox(),
+    transitionBuilder: (dialogCtx, anim1, anim2, child) {
+      final curve = Curves.easeOutBack.transform(anim1.value);
+      return Transform.scale(
+        scale: curve,
+        child: Opacity(
+          opacity: anim1.value.clamp(0.0, 1.0),
+          child: AlertDialog(
+            backgroundColor: Colors.transparent,
+            contentPadding: EdgeInsets.zero,
+            content: Container(
+              width: 380,
               decoration: BoxDecoration(
                 color: isDark
-                    ? AppColors.error.withValues(alpha: 0.1)
-                    : const Color(0xFFFEF2F2),
-                shape: BoxShape.circle,
+                    ? const Color(0xFF1E293B).withOpacity(0.9)
+                    : Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withOpacity(0.12)
+                      : Colors.black.withOpacity(0.05),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.25),
+                    blurRadius: 40,
+                    offset: const Offset(0, 15),
+                  )
+                ],
               ),
-              child: Icon(Icons.logout_rounded,
-                  color: isDark ? AppColors.error : const Color(0xFFEF4444),
-                  size: 36),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              l10n.logout,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : AppColors.navy,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Voulez-vous vraiment vous déconnecter de SkillSpace ?',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: isDark ? Colors.white70 : AppColors.textGray,
-                fontSize: 15,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 32),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.of(dialogCtx).pop(),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(32),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(32, 40, 32, 32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Floating Icon with glow
+                        Container(
+                          width: 76,
+                          height: 76,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.orange.withOpacity(0.2),
+                                AppColors.orange.withOpacity(0.05),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            border: Border.all(
+                              color: AppColors.orange.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Center(
+                            child: Container(
+                              width: 54,
+                              height: 54,
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 10,
+                                    offset: Offset(0, 4),
+                                  )
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.logout_rounded,
+                                color: AppColors.orange,
+                                size: 28,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        Text(
+                          l10n.logout,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            color: isDark ? Colors.white : AppColors.navy,
+                            letterSpacing: -0.8,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Voulez-vous vraiment vous déconnecter de SkillSpace ?',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: isDark ? Colors.white70 : AppColors.textGray,
+                            fontSize: 15,
+                            height: 1.6,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 36),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _LogoutButton(
+                                label: l10n.cancel.toUpperCase(),
+                                isPrimary: false,
+                                isDark: isDark,
+                                onTap: () => Navigator.of(dialogCtx).pop(),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _LogoutButton(
+                                label: l10n.logout.toUpperCase(),
+                                isPrimary: true,
+                                isDark: isDark,
+                                onTap: () async {
+                                  Navigator.of(dialogCtx).pop();
+                                  await context.read<AuthCubit>().logout();
+                                  if (context.mounted) {
+                                    if (onLogout != null) {
+                                      onLogout();
+                                    } else {
+                                      Navigator.of(context).pushAndRemoveUntil(
+                                        MaterialPageRoute(
+                                            builder: (_) => const LandingPage()),
+                                        (route) => false,
+                                      );
+                                    }
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    child: Text(l10n.cancel,
-                        style: TextStyle(
-                            color: isDark
-                                ? Colors.white60
-                                : const Color(0xFF64748B),
-                            fontWeight: FontWeight.bold)),
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      Navigator.of(dialogCtx).pop();
-                      await context.read<AuthCubit>().logout();
-                      if (context.mounted) {
-                        if (onLogout != null) {
-                          onLogout();
-                        } else {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(
-                                builder: (_) => const LandingPage()),
-                            (route) => false,
-                          );
-                        }
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.orange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                    ),
-                    child: Text(l10n.logout,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _LogoutButton extends StatelessWidget {
+  final String label;
+  final bool isPrimary;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _LogoutButton({
+    required this.label,
+    required this.isPrimary,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        height: 54,
+        decoration: BoxDecoration(
+          color: isPrimary ? AppColors.orange : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: isPrimary
+              ? null
+              : Border.all(
+                  color: isDark ? Colors.white12 : Colors.black.withOpacity(0.08),
+                  width: 1.5,
+                ),
+          boxShadow: isPrimary
+              ? [
+                  BoxShadow(
+                    color: AppColors.orange.withOpacity(0.3),
+                    blurRadius: 15,
+                    offset: const Offset(0, 6),
+                  )
+                ]
+              : null,
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isPrimary
+                  ? Colors.white
+                  : (isDark ? Colors.white70 : AppColors.textDark),
+              fontWeight: FontWeight.w900,
+              fontSize: 13,
+              letterSpacing: 1.2,
+            ),
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
