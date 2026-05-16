@@ -9,9 +9,21 @@ class RecruiterJobRepository {
 
   Future<List<RecruiterJobOffer>> getJobs() async {
     final response = await apiClient.get('/api/offers');
+    final statsResponse = await apiClient.get('/candidat/applications/stats');
+
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
-      return data.map((item) => RecruiterJobOffer.fromJson(item)).toList();
+      Map<String, dynamic> stats = {};
+      if (statsResponse.statusCode == 200) {
+        stats = jsonDecode(statsResponse.body);
+      }
+
+      return data.map((item) {
+        final offer = RecruiterJobOffer.fromJson(item);
+        final id = item['_id'] ?? item['id'];
+        final count = stats[id] ?? 0;
+        return offer.copyWith(candidateCount: count as int);
+      }).toList();
     } else {
       throw Exception('Failed to load job offers: ${response.statusCode}');
     }

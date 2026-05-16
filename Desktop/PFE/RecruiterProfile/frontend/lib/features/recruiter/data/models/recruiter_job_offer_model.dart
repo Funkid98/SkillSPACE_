@@ -29,7 +29,7 @@ class RecruiterJobOffer {
       recruiter: json['recruiter'] ?? '',
       title: json['title'] ?? '',
       location: json['location'] ?? '',
-      type: json['type'] ?? 'Full-time',
+      type: (json['type'] == 'Full-time' ? 'CDI' : (json['type'] == 'Part-time' || json['type'] == 'Contract' ? 'CDD' : (json['type'] ?? 'CDI'))),
       status: 'Active',
       description: json['description'] ?? '',
       requirements: List<String>.from(json['requirements'] ?? []),
@@ -46,6 +46,31 @@ class RecruiterJobOffer {
       'type': type,
       'requirements': requirements,
     };
+  }
+  RecruiterJobOffer copyWith({
+    String? id,
+    String? title,
+    String? location,
+    String? type,
+    String? status,
+    String? description,
+    List<String>? requirements,
+    String? recruiter,
+    int? candidateCount,
+    int? viewCount,
+  }) {
+    return RecruiterJobOffer(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      location: location ?? this.location,
+      type: type ?? this.type,
+      status: status ?? this.status,
+      description: description ?? this.description,
+      requirements: requirements ?? this.requirements,
+      recruiter: recruiter ?? this.recruiter,
+      candidateCount: candidateCount ?? this.candidateCount,
+      viewCount: viewCount ?? this.viewCount,
+    );
   }
 }
 

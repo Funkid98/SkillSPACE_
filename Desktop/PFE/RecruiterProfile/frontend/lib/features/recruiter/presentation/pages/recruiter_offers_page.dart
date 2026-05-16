@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_theme/reactive_theme.dart';
+import '../../data/recruiter_service.dart';
 import '../cubits/recruiter_extra_cubits.dart';
 import '../../data/models/recruiter_job_offer_model.dart';
 import '../../../../core/app_colors.dart';
@@ -127,270 +128,336 @@ class RecruiterOffersPage extends StatelessWidget {
         TextEditingController(text: existingOffer?.description);
     final skillsController =
         TextEditingController(text: existingOffer?.requirements.join(', '));
-    String selectedType = existingOffer?.type ?? 'Full-time';
+    String initialType = existingOffer?.type ?? 'CDI';
+    // Map legacy values to new ones to avoid dropdown assertion error
+    if (initialType == 'Full-time') initialType = 'CDI';
+    if (initialType == 'Part-time' || initialType == 'Contract')
+      initialType = 'CDD';
+
+    String selectedType = initialType;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final cubit = context.read<RecruiterOffersCubit>();
+    bool isGenerating = false;
 
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.5),
-      builder: (dialogContext) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        child: Container(
-          width: 600,
-          constraints: const BoxConstraints(maxHeight: 800),
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.surfaceDark : Colors.white,
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-                color: isDark ? AppColors.borderDark : Colors.transparent),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.fromLTRB(32, 28, 24, 20),
-                decoration: BoxDecoration(
-                  border: Border(
-                      bottom: BorderSide(
-                          color:
-                              isDark ? AppColors.borderDark : AppColors.border,
-                          width: 1)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.orange.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Icon(Icons.business_center_rounded,
-                          color: AppColors.orange, size: 24),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            existingOffer == null
-                                ? l10n.newOffer
-                                : "Modifier l'offre",
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
-                              color: isDark ? Colors.white : AppColors.textDark,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            existingOffer == null
-                                ? "Remplissez les détails pour publier une nouvelle opportunité"
-                                : "Mettez à jour les informations de votre offre",
-                            style: TextStyle(
-                                fontSize: 13,
-                                color: isDark
-                                    ? Colors.white60
-                                    : AppColors.textGray),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(dialogContext),
-                      icon: const Icon(Icons.close_rounded,
-                          color: AppColors.textGray),
-                    ),
-                  ],
-                ),
-              ),
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          child: Container(
+            width: 600,
+            constraints: const BoxConstraints(maxHeight: 800),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surfaceDark : Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                  color: isDark ? AppColors.borderDark : Colors.transparent),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.fromLTRB(32, 28, 24, 20),
+                  decoration: BoxDecoration(
+                    border: Border(
+                        bottom: BorderSide(
+                            color: isDark
+                                ? AppColors.borderDark
+                                : AppColors.border,
+                            width: 1)),
+                  ),
+                  child: Row(
                     children: [
-                      _buildSectionTitle("Détails de base", isDark),
-                      const SizedBox(height: 16),
-                      _buildTextField(
-                        context: context,
-                        controller: titleController,
-                        label: "Titre du poste",
-                        hint: "ex: Développeur Fullstack Senior",
-                        icon: Icons.title_rounded,
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.orange.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(Icons.business_center_rounded,
+                            color: AppColors.orange, size: 24),
                       ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildTextField(
-                              context: context,
-                              controller: locationController,
-                              label: "Localisation",
-                              hint: "ex: Paris, Remote...",
-                              icon: Icons.location_on_rounded,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              existingOffer == null
+                                  ? l10n.newOffer
+                                  : "Modifier l'offre",
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                color:
+                                    isDark ? Colors.white : AppColors.textDark,
+                                letterSpacing: -0.5,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 20),
-                          Expanded(
-                            child: _buildDropdown(
-                              context: context,
-                              value: selectedType,
-                              label: "Type de contrat",
-                              items: [
-                                'Full-time',
-                                'Part-time',
-                                'Contract',
-                                'Freelance'
-                              ],
-                              onChanged: (v) => selectedType = v!,
-                              icon: Icons.assignment_rounded,
+                            const SizedBox(height: 4),
+                            Text(
+                              existingOffer == null
+                                  ? "Remplissez les détails pour publier une nouvelle opportunité"
+                                  : "Mettez à jour les informations de votre offre",
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: isDark
+                                      ? Colors.white60
+                                      : AppColors.textGray),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 32),
-                      _buildSectionTitle("Description & Missions", isDark),
-                      const SizedBox(height: 16),
-                      _buildTextField(
-                        context: context,
-                        controller: descController,
-                        label: "Description du poste",
-                        hint: "Décrivez les missions et le profil recherché...",
-                        icon: Icons.description_rounded,
-                        maxLines: 5,
-                      ),
-                      const SizedBox(height: 32),
-                      _buildSectionTitle("Compétences requises", isDark),
-                      const SizedBox(height: 6),
-                      const Text(
-                        "Séparez les compétences par des virgules pour un meilleur affichage",
-                        style:
-                            TextStyle(fontSize: 12, color: AppColors.textGray),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildTextField(
-                        context: context,
-                        controller: skillsController,
-                        label: "Compétences clés",
-                        hint: "ex: React, Flutter, Python, Docker...",
-                        icon: Icons.psychology_rounded,
+                      IconButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        icon: const Icon(Icons.close_rounded,
+                            color: AppColors.textGray),
                       ),
                     ],
                   ),
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.fromLTRB(32, 20, 32, 28),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.white.withOpacity(0.02)
-                      : const Color(0xFFFAFAFA),
-                  borderRadius:
-                      const BorderRadius.vertical(bottom: Radius.circular(28)),
-                  border: Border(
-                      top: BorderSide(
-                          color:
-                              isDark ? AppColors.borderDark : AppColors.border,
-                          width: 1)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogContext),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 16),
-                        foregroundColor: AppColors.textGray,
-                      ),
-                      child: const Text("Annuler",
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionTitle("Détails de base", isDark),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          context: context,
+                          controller: titleController,
+                          label: "Titre du poste",
+                          hint: "ex: Développeur Fullstack Senior",
+                          icon: Icons.title_rounded,
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildTextField(
+                                context: context,
+                                controller: locationController,
+                                label: "Localisation",
+                                hint: "ex: Paris, Remote...",
+                                icon: Icons.location_on_rounded,
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              child: _buildDropdown(
+                                context: context,
+                                value: selectedType,
+                                label: "Type de contrat",
+                                items: ['CDI', 'CDD', 'Freelance', 'Stage'],
+                                onChanged: (v) => selectedType = v!,
+                                icon: Icons.assignment_rounded,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 32),
+                        _buildSectionTitle(
+                          "Description & Missions",
+                          isDark,
+                          trailing: TextButton.icon(
+                            onPressed: isGenerating
+                                ? null
+                                : () async {
+                                    if (titleController.text.isEmpty) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                            content: Text(
+                                                "Veuillez saisir un titre de poste d'abord")),
+                                      );
+                                      return;
+                                    }
+                                    setDialogState(() => isGenerating = true);
+                                    try {
+                                      final desc = await RecruiterService()
+                                          .generateJobDescription(
+                                        titleController.text,
+                                        locationController.text,
+                                        selectedType,
+                                      );
+                                      if (desc != null) {
+                                        descController.text = desc;
+                                      }
+                                    } finally {
+                                      setDialogState(
+                                          () => isGenerating = false);
+                                    }
+                                  },
+                            icon: isGenerating
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColors.orange))
+                                : const Icon(Icons.auto_awesome, size: 16),
+                            label: Text(
+                              isGenerating
+                                  ? "Génération..."
+                                  : "Générer une description",
+                              style: const TextStyle(
+                                  fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.orange,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          context: context,
+                          controller: descController,
+                          label: "Description du poste",
+                          hint:
+                              "Décrivez les missions et le profil recherché...",
+                          icon: Icons.description_rounded,
+                          maxLines: 5,
+                        ),
+                        const SizedBox(height: 32),
+                        _buildSectionTitle("Compétences requises", isDark),
+                        const SizedBox(height: 6),
+                        const Text(
+                          "Séparez les compétences par des virgules pour un meilleur affichage",
+                          style: TextStyle(
+                              fontSize: 12, color: AppColors.textGray),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          context: context,
+                          controller: skillsController,
+                          label: "Compétences clés",
+                          hint: "ex: React, Flutter, Python, Docker...",
+                          icon: Icons.psychology_rounded,
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        if (titleController.text.isEmpty ||
-                            locationController.text.isEmpty ||
-                            descController.text.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text(
-                                    "Veuillez remplir tous les champs obligatoires")),
-                          );
-                          return;
-                        }
-
-                        final requirements = skillsController.text
-                            .split(',')
-                            .map((e) => e.trim())
-                            .where((e) => e.isNotEmpty)
-                            .toList();
-
-                        final jobPayload = RecruiterJobOffer(
-                          id: existingOffer?.id ?? '',
-                          recruiter: existingOffer?.recruiter ?? '',
-                          title: titleController.text,
-                          location: locationController.text,
-                          type: selectedType,
-                          status: 'Active',
-                          description: descController.text,
-                          requirements: requirements,
-                          candidateCount: existingOffer?.candidateCount ?? 0,
-                          viewCount: existingOffer?.viewCount ?? 0,
-                        );
-
-                        if (existingOffer == null) {
-                          context
-                              .read<RecruiterOffersCubit>()
-                              .createOffer(jobPayload);
-                        } else {
-                          context
-                              .read<RecruiterOffersCubit>()
-                              .updateOffer(existingOffer.id, jobPayload);
-                        }
-                        Navigator.pop(dialogContext);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.orange,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 32, vertical: 16),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                        elevation: 0,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(32, 20, 32, 28),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withOpacity(0.02)
+                        : const Color(0xFFFAFAFA),
+                    borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(28)),
+                    border: Border(
+                        top: BorderSide(
+                            color: isDark
+                                ? AppColors.borderDark
+                                : AppColors.border,
+                            width: 1)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 16),
+                          foregroundColor: AppColors.textGray,
+                        ),
+                        child: const Text("Annuler",
+                            style: TextStyle(fontWeight: FontWeight.bold)),
                       ),
-                      child: Text(
-                        existingOffer == null
-                            ? "Publier l'offre"
-                            : "Enregistrer les modifications",
-                        style: TextStyle(
-                          color: isDark ? Colors.white : AppColors.navy,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      const SizedBox(width: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          if (titleController.text.isEmpty ||
+                              locationController.text.isEmpty ||
+                              descController.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text(
+                                      "Veuillez remplir tous les champs obligatoires")),
+                            );
+                            return;
+                          }
+
+                          final requirements = skillsController.text
+                              .split(',')
+                              .map((e) => e.trim())
+                              .where((e) => e.isNotEmpty)
+                              .toList();
+
+                          final jobPayload = RecruiterJobOffer(
+                            id: existingOffer?.id ?? '',
+                            recruiter: existingOffer?.recruiter ?? '',
+                            title: titleController.text,
+                            location: locationController.text,
+                            type: selectedType,
+                            status: 'Active',
+                            description: descController.text,
+                            requirements: requirements,
+                            candidateCount: existingOffer?.candidateCount ?? 0,
+                            viewCount: existingOffer?.viewCount ?? 0,
+                          );
+
+                          if (existingOffer == null) {
+                            cubit.createOffer(jobPayload);
+                          } else {
+                            cubit.updateOffer(existingOffer.id, jobPayload);
+                          }
+                          Navigator.pop(dialogContext);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.orange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 32, vertical: 16),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          existingOffer == null
+                              ? "Publier l'offre"
+                              : "Enregistrer les modifications",
+                          style: TextStyle(
+                            color: isDark ? Colors.white : AppColors.navy,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title, bool isDark) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w800,
-        color: isDark ? Colors.white : AppColors.navy,
-        letterSpacing: 0.5,
-      ),
+  Widget _buildSectionTitle(String title, bool isDark, {Widget? trailing}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            color: isDark ? Colors.white : AppColors.navy,
+            letterSpacing: 0.5,
+          ),
+        ),
+        if (trailing != null) trailing,
+      ],
     );
   }
 
@@ -617,13 +684,13 @@ class _OfferCard extends StatelessWidget {
                   .toList(),
             ),
           const SizedBox(height: 20),
-            isCompact
+          isCompact
               ? Column(
                   children: [
                     Row(
                       children: [
-                        _buildStat(Icons.visibility_rounded,
-                            '${offer.viewCount}', isDark),
+                        _buildStat(Icons.people_alt_rounded,
+                            '${offer.candidateCount} candidatures', isDark),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -635,8 +702,8 @@ class _OfferCard extends StatelessWidget {
                 )
               : Row(
                   children: [
-                    _buildStat(
-                        Icons.visibility_rounded, '${offer.viewCount}', isDark),
+                    _buildStat(Icons.people_alt_rounded,
+                        '${offer.candidateCount} candidatures', isDark),
                     const Spacer(),
                     ..._buildActions(context),
                   ],

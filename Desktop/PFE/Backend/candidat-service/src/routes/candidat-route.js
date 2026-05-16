@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { register, login, getProfile, updateProfile, getRecentCandidatesBySector, getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer, applyToOffer, receiveNotification, getNotifications, markNotificationRead, internalUpdateApplication, deleteNotification, clearAllNotifications, enrollFormation, getEnrolledFormations, completeFormation, getEnrolledCandidatesByFormation, getAcceptedOffers, getCoachAdvice, leaveFormation, submitReview } = require('../controllers/candidat-controller')
+const { register, login, getProfile, updateProfile, getRecentCandidatesBySector, getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer, applyToOffer, getApplicationStats, receiveNotification, getNotifications, markNotificationRead, internalUpdateApplication, deleteNotification, clearAllNotifications, enrollFormation, getEnrolledFormations, completeFormation, getEnrolledCandidatesByFormation, getAcceptedOffers, getCoachAdvice, leaveFormation, submitReview } = require('../controllers/candidat-controller')
 const auth = require('../middleware/auth-middleware')
 
 
@@ -20,6 +20,7 @@ router.get('/coach-advice', auth, getCoachAdvice)
 router.post('/trigger-match/offer/:id', reMatchOffer)
 
 // Application & Notifications
+router.get('/applications/stats', getApplicationStats)
 router.post('/apply', auth, applyToOffer)
 router.post('/internal/application/update', internalUpdateApplication)
 router.post('/internal/notify', receiveNotification) // Called by recruter-service

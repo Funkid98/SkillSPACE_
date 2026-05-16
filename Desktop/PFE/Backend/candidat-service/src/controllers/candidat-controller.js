@@ -1198,15 +1198,37 @@ const leaveFormation = async (req, res) => {
 
         res.status(200).json({ message: 'Désinscrit avec succès' });
     } catch (err) {
-        console.error('leaveFormation error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+const getApplicationStats = async (req, res) => {
+    try {
+        const stats = await Application.aggregate([
+            {
+                $group: {
+                    _id: "$offerId",
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        const result = {};
+        stats.forEach(s => {
+            if (s._id) result[s._id] = s.count;
+        });
+
+        res.json(result);
+    } catch (err) {
+        console.error('getApplicationStats error:', err.message);
         res.status(500).json({ error: err.message });
     }
 };
 
+
 module.exports = {
     register, login, getProfile, updateProfile, getRecentCandidatesBySector,
     getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer,
-    applyToOffer, receiveNotification, getNotifications, markNotificationRead,
+    applyToOffer, getApplicationStats, receiveNotification, getNotifications, markNotificationRead,
     internalUpdateApplication, deleteNotification, clearAllNotifications,
     enrollFormation, leaveFormation, getEnrolledFormations, completeFormation,
     getEnrolledCandidatesByFormation, getAcceptedOffers, getCoachAdvice, submitReview

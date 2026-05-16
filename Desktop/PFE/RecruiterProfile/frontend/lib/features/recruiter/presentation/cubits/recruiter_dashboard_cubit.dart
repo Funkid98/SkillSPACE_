@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/recruiter_dashboard_model.dart';
 import '../../data/recruiter_service.dart';
@@ -20,22 +22,46 @@ class RecruiterDashboardError extends RecruiterDashboardState {
 
 class RecruiterDashboardCubit extends Cubit<RecruiterDashboardState> {
   final RecruiterService _recruiterService;
+  Timer? _pollingTimer;
 
   RecruiterDashboardCubit({RecruiterService? recruiterService})
       : _recruiterService = recruiterService ?? RecruiterService(),
         super(RecruiterDashboardInitial());
 
-  void loadDashboard() async {
+  void loadDashboard({bool isBackground = false}) async {
     if (isClosed) return;
-    emit(RecruiterDashboardLoading());
+    if (!isBackground) emit(RecruiterDashboardLoading());
     try {
       final data = await _recruiterService.getDashboardData();
       if (isClosed) return;
       emit(RecruiterDashboardLoaded(data));
+      _startPolling();
     } catch (e) {
       if (isClosed) return;
-      emit(
-          RecruiterDashboardError('Failed to load dashboard: ${e.toString()}'));
+      if (!isBackground) {
+        emit(RecruiterDashboardError(
+            'Failed to load dashboard: ${e.toString()}'));
+      }
     }
+  }
+
+  void _startPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
+      if (isClosed) {
+        timer.cancel();
+        return;
+      }
+      try {
+        final data = await _recruiterService.getDashboardData();
+        if (!isClosed) emit(RecruiterDashboardLoaded(data));
+      } catch (_) {}
+    });
+  }
+
+  @override
+  Future<void> close() {
+    _pollingTimer?.cancel();
+    return super.close();
   }
 }

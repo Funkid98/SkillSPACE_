@@ -9,15 +9,34 @@ class RecruiterService {
   RecruiterService({ApiClient? apiClient})
       : _apiClient = apiClient ?? ApiClient();
 
+  Future<String?> generateJobDescription(
+      String title, String location, String type) async {
+    final response = await _apiClient.post('/api/offers/generate-description', {
+      'title': title,
+      'location': location,
+      'type': type,
+    });
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['description'];
+    }
+    return null;
+  }
+
   Future<RecruiterDashboardData> getDashboardData() async {
-    // In a real app, these would be multiple calls or a single aggregated endpoint
-    // For now, we'll fetch profile and jobs to populate the dashboard
     final profileResponse = await _apiClient.get('/recruiter/profile');
     final jobsResponse = await _apiClient.get('/api/offers');
+    final statsResponse = await _apiClient.get('/candidat/applications/stats');
 
     if (profileResponse.statusCode == 200 && jobsResponse.statusCode == 200) {
       final profileData = jsonDecode(profileResponse.body);
       final List jobsData = jsonDecode(jobsResponse.body);
+      Map applicationStats = {};
+
+      if (statsResponse.statusCode == 200) {
+        applicationStats = jsonDecode(statsResponse.body);
+      }
 
       // Get candidates by recruiter sector
       final recruiterSector = profileData['secteur'] ?? 'all';
@@ -28,35 +47,30 @@ class RecruiterService {
         recentCandidatesData = jsonDecode(candidatesResponse.body);
       }
 
-      // Ensure recruiterId is correctly extracted
       final String recruiterId = profileData['_id'] ?? profileData['id'] ?? '';
-
-      // Filter active offers to only the recruiter's own
       final myJobs =
           jobsData.where((job) => job['recruiter'] == recruiterId).toList();
 
-      // Calculate total views from the real db counts
-      int totalViews = 0;
+      int totalApplications = 0;
+      List<RecruiterActiveOffer> activeOffers = [];
+
       for (var job in myJobs) {
-        final viewCount = job['viewCount'] ?? 0;
-        if (viewCount is int) {
-          totalViews += viewCount;
-        } else if (viewCount is String) {
-          totalViews += int.tryParse(viewCount) ?? 0;
-        }
+        final id = job['_id'] ?? job['id'];
+        final count = applicationStats[id] ?? 0;
+        totalApplications += (count as int);
+
+        activeOffers.add(RecruiterActiveOffer(
+          title: job['title'] ?? 'Sans titre',
+          applicationCount: count,
+          viewCount: job['viewCount'] is int
+              ? job['viewCount']
+              : (int.tryParse(job['viewCount']?.toString() ?? '0') ?? 0),
+          daysAgo: 'Récemment',
+        ));
       }
 
       int activeOffersCount = myJobs.length;
       int candidatesCount = recentCandidatesData.length;
-
-      String conversionRate = '0%';
-      if (totalViews > 0) {
-        final rate = (candidatesCount / totalViews) * 100;
-        conversionRate = '${rate.toStringAsFixed(1)}%';
-        if (conversionRate.endsWith('.0%')) {
-          conversionRate = '${rate.toInt()}%';
-        }
-      }
 
       // Map to RecruiterDashboardData
       return RecruiterDashboardData(
@@ -77,15 +91,15 @@ class RecruiterService {
             iconKey: 'candidatures',
           ),
           RecruiterStat(
-            label: 'Vues des offres',
-            value: totalViews.toString(),
+            label: 'Candidats postulés',
+            value: totalApplications.toString(),
             change: '+0 cette semaine',
             isPositive: true,
-            iconKey: 'vues',
+            iconKey: 'vues', // Keeping 'vues' icon for continuity but changing label
           ),
           RecruiterStat(
             label: 'Taux de conversion',
-            value: conversionRate,
+            value: totalApplications > 0 ? '${((totalApplications / activeOffersCount) * 10).toStringAsFixed(1)}%' : '0%',
             change: '+0% ce mois',
             isPositive: true,
             iconKey: 'conversion',
@@ -102,17 +116,7 @@ class RecruiterService {
                   initials: c['initials'] ?? '??',
                 ))
             .toList(),
-        activeOffers: myJobs
-            .map((job) => RecruiterActiveOffer(
-                  title: job['title'] ?? 'Sans titre',
-                  applicationCount: 0,
-                  viewCount: job['viewCount'] is int
-                      ? job['viewCount']
-                      : (int.tryParse(job['viewCount']?.toString() ?? '0') ??
-                          0),
-                  daysAgo: 'Récemment',
-                ))
-            .toList(),
+        activeOffers: activeOffers,
       );
     } else {
       throw Exception('Failed to load dashboard data');

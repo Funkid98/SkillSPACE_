@@ -7,9 +7,12 @@ const {
     getRecruiterOffers, 
     getMatchingOffers, 
     getOffers,
-    incrementView
+    incrementView,
+    generateDescription
 } = require('../controllers/offer.controller');
 const { protect } = require('../middleware/auth-middleware');
+
+router.post('/generate-description', protect, generateDescription);
 
 router.route('/')
     .get(getOffers)

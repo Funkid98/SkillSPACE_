@@ -538,7 +538,7 @@ class _OfferItem extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  '${offer.viewCount} ${l10n.offerViews.toLowerCase()}',
+                  '${offer.applicationCount} candidatures',
                   style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : AppColors.textGray),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
