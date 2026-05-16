@@ -33,8 +33,8 @@ class RecruiterJobOffer {
       status: 'Active',
       description: json['description'] ?? '',
       requirements: List<String>.from(json['requirements'] ?? []),
-      candidateCount: 0,
-      viewCount: 0,
+      candidateCount: json['candidateCount'] ?? 0,
+      viewCount: json['viewCount'] ?? 0,
     );
   }
 

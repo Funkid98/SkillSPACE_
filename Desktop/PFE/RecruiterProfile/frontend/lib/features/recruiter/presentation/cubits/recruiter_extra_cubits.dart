@@ -23,18 +23,38 @@ class RecruiterOffersError extends RecruiterOffersState {
 class RecruiterOffersCubit extends Cubit<RecruiterOffersState> {
   final RecruiterJobRepository repository;
   final String userId;
+  Timer? _pollingTimer;
 
-  RecruiterOffersCubit({required this.repository, required this.userId}) : super(RecruiterOffersInitial());
+  RecruiterOffersCubit({required this.repository, required this.userId})
+      : super(RecruiterOffersInitial());
 
-  Future<void> loadOffers() async {
-    emit(RecruiterOffersLoading());
+  Future<void> loadOffers({bool isBackground = false}) async {
+    if (!isBackground) emit(RecruiterOffersLoading());
     try {
       final offers = await repository.getJobs();
-      final myOffers = offers.where((offer) => offer.recruiter == userId).toList();
+      final myOffers =
+          offers.where((offer) => offer.recruiter == userId).toList();
       emit(RecruiterOffersLoaded(myOffers));
+      _startPolling();
     } catch (e) {
-      emit(RecruiterOffersError(e.toString()));
+      if (!isBackground) emit(RecruiterOffersError(e.toString()));
     }
+  }
+
+  void _startPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
+      if (isClosed) {
+        timer.cancel();
+        return;
+      }
+      try {
+        final offers = await repository.getJobs();
+        final myOffers =
+            offers.where((offer) => offer.recruiter == userId).toList();
+        if (!isClosed) emit(RecruiterOffersLoaded(myOffers));
+      } catch (_) {}
+    });
   }
 
   Future<void> createOffer(RecruiterJobOffer job) async {
@@ -62,6 +82,12 @@ class RecruiterOffersCubit extends Cubit<RecruiterOffersState> {
     } catch (e) {
       emit(RecruiterOffersError(e.toString()));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _pollingTimer?.cancel();
+    return super.close();
   }
 }
 

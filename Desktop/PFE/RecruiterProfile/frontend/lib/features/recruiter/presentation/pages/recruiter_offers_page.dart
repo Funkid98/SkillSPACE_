@@ -617,14 +617,11 @@ class _OfferCard extends StatelessWidget {
                   .toList(),
             ),
           const SizedBox(height: 20),
-          isCompact
+            isCompact
               ? Column(
                   children: [
                     Row(
                       children: [
-                        _buildStat(Icons.people_rounded,
-                            '${offer.candidateCount}', isDark),
-                        const SizedBox(width: 16),
                         _buildStat(Icons.visibility_rounded,
                             '${offer.viewCount}', isDark),
                       ],
@@ -638,9 +635,6 @@ class _OfferCard extends StatelessWidget {
                 )
               : Row(
                   children: [
-                    _buildStat(Icons.people_rounded, '${offer.candidateCount}',
-                        isDark),
-                    const SizedBox(width: 24),
                     _buildStat(
                         Icons.visibility_rounded, '${offer.viewCount}', isDark),
                     const Spacer(),
