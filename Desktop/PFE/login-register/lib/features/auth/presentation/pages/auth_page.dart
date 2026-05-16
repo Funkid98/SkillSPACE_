@@ -1621,8 +1621,7 @@ class _StepHeader extends StatelessWidget {
                         ],
                 ),
                 child: Icon(Icons.arrow_back_rounded,
-                    size: 18,
-                    color: isDark ? Colors.white : AppTheme.textDark),
+                    size: 18, color: isDark ? Colors.white : AppTheme.textDark),
               ),
             ),
             const Spacer(),
@@ -1923,7 +1922,7 @@ class _StaggeredReveal extends StatefulWidget {
   const _StaggeredReveal({
     required this.child,
     this.index = 0,
-    this.delayMs = 100,
+    this.delayMs = 150,
   });
 
   @override

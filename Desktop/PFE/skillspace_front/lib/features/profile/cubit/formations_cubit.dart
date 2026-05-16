@@ -81,6 +81,42 @@ class FormationsCubit extends Cubit<FormationsState> {
 
   Future<bool> submitReview(
       String formationId, int rating, String review) async {
+    // Optimistic Update: Update local state immediately
+    List<dynamic> previousFormations = [];
+    if (state is FormationsLoaded) {
+      previousFormations = (state as FormationsLoaded).formations;
+      final updatedFormations = previousFormations.map((f) {
+        if ((f['_id'] ?? f['id']).toString() == formationId) {
+          final updatedF = Map<String, dynamic>.from(f);
+          
+          final int oldRating = (f['rating'] ?? 0).toInt();
+          final int newRating = rating;
+          
+          int reviewCount = (f['reviewCount'] ?? 0).toInt();
+          double globalRating = (f['globalRating'] ?? 0.0).toDouble();
+
+          if (oldRating == 0) {
+            // First time rating: increment count and add to average
+            double totalPoints = globalRating * reviewCount;
+            reviewCount++;
+            globalRating = (totalPoints + newRating) / reviewCount;
+          } else {
+            // Updating existing rating: swap old points with new points
+            double totalPoints = globalRating * reviewCount;
+            globalRating = (totalPoints - oldRating + newRating) / reviewCount;
+          }
+
+          updatedF['rating'] = newRating;
+          updatedF['review'] = review;
+          updatedF['reviewCount'] = reviewCount;
+          updatedF['globalRating'] = globalRating;
+          return updatedF;
+        }
+        return f;
+      }).toList();
+      emit(FormationsLoaded(updatedFormations));
+    }
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('jwt_token') ?? '';
@@ -98,11 +134,17 @@ class FormationsCubit extends Cubit<FormationsState> {
       );
 
       if (response.statusCode == 200) {
-        await fetchFormations();
+        // Optionally fetch again to ensure sync with server-side calculations
+        // await fetchFormations(); 
         return true;
+      } else {
+        // Rollback on failure
+        if (previousFormations.isNotEmpty) emit(FormationsLoaded(previousFormations));
+        return false;
       }
-      return false;
     } catch (e) {
+      // Rollback on error
+      if (previousFormations.isNotEmpty) emit(FormationsLoaded(previousFormations));
       return false;
     }
   }

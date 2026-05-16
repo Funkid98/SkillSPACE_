@@ -8,7 +8,6 @@ import '../../../../shared/widgets/animated_reveal.dart';
 import '../../../../shared/widgets/video_background.dart';
 import '../cubits/recruiter_profile_cubit.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
-import 'package:awesome_dialog/awesome_dialog.dart';
 import '../../../../shared/widgets/notification_bell.dart';
 import 'package:reactive_theme/reactive_theme.dart';
 
@@ -109,109 +108,111 @@ class RecruiterSidebar extends StatelessWidget {
                 : Colors.white.withOpacity(0.25),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 12, 40),
-            child: BlocBuilder<RecruiterProfileCubit, RecruiterProfileState>(
-              builder: (context, state) {
-                Widget nameWidget;
-                if (state is RecruiterProfileLoaded) {
-                  final profile = state.profile;
-                  nameWidget = Row(
-                    children: [
-                      if (profile.logoUrl.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 12),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              profile.logoUrl,
-                              width: 32,
-                              height: 32,
-                              fit: BoxFit.cover,
-                              errorBuilder: (ctx, _, __) => const Icon(
-                                  Icons.business,
-                                  size: 32,
-                                  color: AppColors.textGray),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 12, 40),
+                  child:
+                      BlocBuilder<RecruiterProfileCubit, RecruiterProfileState>(
+                    builder: (context, state) {
+                      Widget nameWidget;
+                      if (state is RecruiterProfileLoaded) {
+                        final profile = state.profile;
+                        nameWidget = Row(
+                          children: [
+                            if (profile.logoUrl.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 12),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    profile.logoUrl,
+                                    width: 32,
+                                    height: 32,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (ctx, _, __) => const Icon(
+                                        Icons.business,
+                                        size: 32,
+                                        color: AppColors.textGray),
+                                  ),
+                                ),
+                              ),
+                            Expanded(
+                              child: Text(
+                                profile.entreprise.isNotEmpty
+                                    ? profile.entreprise
+                                    : 'SkillSpace',
+                                style: AppTextStyles.navBrand.copyWith(
+                                  fontSize: 18,
+                                  color: isDark ? Colors.white : AppColors.navy,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                        ),
-                      Expanded(
-                        child: Text(
-                          profile.entreprise.isNotEmpty
-                              ? profile.entreprise
-                              : 'SkillSpace',
-                          style: AppTextStyles.navBrand.copyWith(
-                            fontSize: 18,
-                            color: isDark ? Colors.white : AppColors.navy,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  );
-                } else {
-                  nameWidget = Text('SkillSpace',
-                      style: AppTextStyles.navBrand.copyWith(
-                        color: isDark ? Colors.white : AppColors.navy,
-                      ));
-                }
-                return Row(
-                  children: [
-                    Expanded(child: nameWidget),
-                    const NotificationBell(isRecruiter: true),
-                  ],
-                );
-              },
-            ),
-          ),
-          ...RecruiterTab.values.asMap().entries.map(
-            (entry) {
-              final index = entry.key;
-              final tab = entry.value;
-              return AnimatedReveal(
-                delay: Duration(milliseconds: 100 + (index * 100)),
-                direction: RevealDirection.fromLeft,
-                child: _NavItem(
-                  tab: tab,
-                  isActive: tab == activeTab,
-                  onTap: () => onTabSelected(tab),
+                          ],
+                        );
+                      } else {
+                        nameWidget = Text('SkillSpace',
+                            style: AppTextStyles.navBrand.copyWith(
+                              color: isDark ? Colors.white : AppColors.navy,
+                            ));
+                      }
+                      return Row(
+                        children: [
+                          Expanded(child: nameWidget),
+                          const NotificationBell(isRecruiter: true),
+                        ],
+                      );
+                    },
+                  ),
                 ),
-              );
-            },
-          ),
-          const Spacer(),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: ThemeToggle(),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            child: TextButton.icon(
-              onPressed: () => _showLogoutConfirmation(context, onLogout),
-              icon: Icon(Icons.logout_rounded,
-                  size: 18,
-                  color: isDark ? Colors.white60 : AppColors.textGray),
-              label: Text(
-                l10n.logout,
-                style: TextStyle(
-                    color: isDark ? Colors.white60 : AppColors.textGray,
-                    fontSize: 14),
-              ),
-              style: TextButton.styleFrom(
-                alignment: isRtl ? Alignment.centerRight : Alignment.centerLeft,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              ),
+                ...RecruiterTab.values.asMap().entries.map(
+                  (entry) {
+                    final index = entry.key;
+                    final tab = entry.value;
+                    return AnimatedReveal(
+                      delay: Duration(milliseconds: 100 + (index * 100)),
+                      direction: RevealDirection.fromLeft,
+                      child: _NavItem(
+                        tab: tab,
+                        isActive: tab == activeTab,
+                        onTap: () => onTabSelected(tab),
+                      ),
+                    );
+                  },
+                ),
+                const Spacer(),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: ThemeToggle(),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  child: TextButton.icon(
+                    onPressed: () => _showLogoutConfirmation(context, onLogout),
+                    icon: Icon(Icons.logout_rounded,
+                        size: 18,
+                        color: isDark ? Colors.white60 : AppColors.textGray),
+                    label: Text(
+                      l10n.logout,
+                      style: TextStyle(
+                          color: isDark ? Colors.white60 : AppColors.textGray,
+                          fontSize: 14),
+                    ),
+                    style: TextButton.styleFrom(
+                      alignment:
+                          isRtl ? Alignment.centerRight : Alignment.centerLeft,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 12),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
-    ),
-  ),
-),
-);
+    );
   }
 
   void _showLogoutConfirmation(BuildContext context, [VoidCallback? onLogout]) {
@@ -396,7 +397,8 @@ class _LogoutButton extends StatelessWidget {
           border: isPrimary
               ? null
               : Border.all(
-                  color: isDark ? Colors.white12 : Colors.black.withOpacity(0.08),
+                  color:
+                      isDark ? Colors.white12 : Colors.black.withOpacity(0.08),
                   width: 1.5,
                 ),
           boxShadow: isPrimary
@@ -487,7 +489,6 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-
 class ThemeToggle extends StatelessWidget {
   const ThemeToggle({super.key});
 
@@ -506,41 +507,41 @@ class ThemeToggle extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: isDark 
-              ? ReactiveThemeBtn.fromScratch(
-                  onTap: () {},
-                  child: const ThemeBtn(
+            child: isDark
+                ? ReactiveThemeBtn.fromScratch(
+                    onTap: () {},
+                    child: const ThemeBtn(
+                      icon: Icons.light_mode_rounded,
+                      label: 'Clair',
+                      isActive: false,
+                      onTap: null,
+                    ),
+                  )
+                : const ThemeBtn(
                     icon: Icons.light_mode_rounded,
                     label: 'Clair',
-                    isActive: false,
+                    isActive: true,
                     onTap: null,
                   ),
-                )
-              : const ThemeBtn(
-                  icon: Icons.light_mode_rounded,
-                  label: 'Clair',
-                  isActive: true,
-                  onTap: null,
-                ),
           ),
           const SizedBox(width: 4),
           Expanded(
-            child: !isDark 
-              ? ReactiveThemeBtn.fromScratch(
-                  onTap: () {},
-                  child: const ThemeBtn(
+            child: !isDark
+                ? ReactiveThemeBtn.fromScratch(
+                    onTap: () {},
+                    child: const ThemeBtn(
+                      icon: Icons.dark_mode_rounded,
+                      label: 'Sombre',
+                      isActive: false,
+                      onTap: null,
+                    ),
+                  )
+                : const ThemeBtn(
                     icon: Icons.dark_mode_rounded,
                     label: 'Sombre',
-                    isActive: false,
+                    isActive: true,
                     onTap: null,
                   ),
-                )
-              : const ThemeBtn(
-                  icon: Icons.dark_mode_rounded,
-                  label: 'Sombre',
-                  isActive: true,
-                  onTap: null,
-                ),
           ),
         ],
       ),

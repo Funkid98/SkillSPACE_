@@ -151,12 +151,38 @@ class CandidateFormationsPage extends StatelessWidget {
                                                         ? Colors.white
                                                         : AppColors.textDark)),
                                             const SizedBox(height: 8),
-                                            Text('Par $trainer',
-                                                style: TextStyle(
-                                                    fontSize: 14,
-                                                    color: isDark
-                                                        ? Colors.white60
-                                                        : AppColors.textGray)),
+                                            Row(
+                                              children: [
+                                                Text('Par $trainer',
+                                                    style: TextStyle(
+                                                        fontSize: 14,
+                                                        color: isDark
+                                                            ? Colors.white60
+                                                            : AppColors.textGray)),
+                                                if (f['reviewCount'] != null && f['reviewCount'] > 0) ...[
+                                                  const SizedBox(width: 12),
+                                                  Container(
+                                                    height: 4,
+                                                    width: 4,
+                                                    decoration: BoxDecoration(
+                                                      color: isDark ? Colors.white24 : Colors.black12,
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  const Icon(Icons.star, color: Colors.amber, size: 14),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    '${(f['globalRating'] ?? 0.0).toStringAsFixed(1)} (${f['reviewCount']} avis)',
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: isDark ? Colors.white54 : Colors.grey[600],
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
                                           ],
                                         ),
                                       ),

@@ -6,8 +6,6 @@ import 'package:reactive_theme/reactive_theme.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import '../../features/landing/presentation/pages/landing_page.dart';
 import '../../../../core/app_colors.dart';
-import '../../../../core/app_text_styles.dart';
-import '../../../../core/l10n/l10n_cubit.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import 'notification_bell.dart';
 import 'video_background.dart';
@@ -1034,7 +1032,8 @@ void _showLogoutConfirmation(BuildContext context, [VoidCallback? onLogout]) {
                                     } else {
                                       Navigator.of(context).pushAndRemoveUntil(
                                         MaterialPageRoute(
-                                            builder: (_) => const LandingPage()),
+                                            builder: (_) =>
+                                                const LandingPage()),
                                         (route) => false,
                                       );
                                     }
@@ -1083,7 +1082,8 @@ class _LogoutButton extends StatelessWidget {
           border: isPrimary
               ? null
               : Border.all(
-                  color: isDark ? Colors.white12 : Colors.black.withOpacity(0.08),
+                  color:
+                      isDark ? Colors.white12 : Colors.black.withOpacity(0.08),
                   width: 1.5,
                 ),
           boxShadow: isPrimary

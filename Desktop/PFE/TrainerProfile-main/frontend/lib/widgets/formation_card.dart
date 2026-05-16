@@ -44,8 +44,8 @@ class _FormationCardState extends State<FormationCard> {
           child: Container(
             width: widget.width,
             decoration: BoxDecoration(
-              color: isDark 
-                  ? const Color(0xFF1E293B).withOpacity(_isHovered ? 0.9 : 0.7) 
+              color: isDark
+                  ? const Color(0xFF1E293B).withOpacity(_isHovered ? 0.9 : 0.7)
                   : Colors.white.withOpacity(_isHovered ? 0.9 : 0.7),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
@@ -80,9 +80,15 @@ class _FormationCardState extends State<FormationCard> {
                             topRight: Radius.circular(24),
                           ),
                           gradient: LinearGradient(
-                            colors: isTerminated 
-                                ? [const Color(0xFF64748B), const Color(0xFF94A3B8)]
-                                : [const Color(0xFFF97316), const Color(0xFFFB923C)],
+                            colors: isTerminated
+                                ? [
+                                    const Color(0xFF64748B),
+                                    const Color(0xFF94A3B8)
+                                  ]
+                                : [
+                                    const Color(0xFFF97316),
+                                    const Color(0xFFFB923C)
+                                  ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -96,18 +102,23 @@ class _FormationCardState extends State<FormationCard> {
                             if (isTerminated)
                               Container(
                                 margin: const EdgeInsets.only(right: 8),
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: Colors.green.withOpacity(0.9),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: const Text(
                                   'TERMINÉ',
-                                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold),
                                 ),
                               ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(12),
@@ -130,7 +141,8 @@ class _FormationCardState extends State<FormationCard> {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                            color:
+                                isDark ? const Color(0xFF0F172A) : Colors.white,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -140,10 +152,13 @@ class _FormationCardState extends State<FormationCard> {
                             ],
                           ),
                           child: Icon(
-                            isTerminated ? Icons.check_circle_outline : Icons.school_outlined,
-                            color: isTerminated ? Colors.green : const Color(0xFFF97316), 
-                            size: 28
-                          ),
+                              isTerminated
+                                  ? Icons.check_circle_outline
+                                  : Icons.school_outlined,
+                              color: isTerminated
+                                  ? Colors.green
+                                  : const Color(0xFFF97316),
+                              size: 28),
                         ),
                       ),
                     ],
@@ -159,7 +174,8 @@ class _FormationCardState extends State<FormationCard> {
                           style: GoogleFonts.outfit(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
-                            color: isDark ? Colors.white : const Color(0xFF1E293B),
+                            color:
+                                isDark ? Colors.white : const Color(0xFF1E293B),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -172,7 +188,9 @@ class _FormationCardState extends State<FormationCard> {
                             Text(
                               '${widget.formation.rating}',
                               style: TextStyle(
-                                color: isDark ? Colors.white : const Color(0xFF1A1C1E),
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF1A1C1E),
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -209,13 +227,17 @@ class _FormationCardState extends State<FormationCard> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 10, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: isDark ? Colors.white10 : const Color(0xFFF1F5F9),
+                                      color: isDark
+                                          ? Colors.white10
+                                          : const Color(0xFFF1F5F9),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(t,
                                         style: TextStyle(
                                             fontSize: 11,
-                                            color: isDark ? Colors.white70 : const Color(0xFF64748B))),
+                                            color: isDark
+                                                ? Colors.white70
+                                                : const Color(0xFF64748B))),
                                   ))
                               .toList(),
                         ),
@@ -223,24 +245,32 @@ class _FormationCardState extends State<FormationCard> {
                         Row(
                           children: [
                             if (widget.formation.date != null) ...[
-                              const Icon(Icons.event, size: 16, color: Color(0xFFF97316)),
+                              const Icon(Icons.event,
+                                  size: 16, color: Color(0xFFF97316)),
                               const SizedBox(width: 4),
                               Text(
                                 '${widget.formation.date!.day.toString().padLeft(2, '0')}/${widget.formation.date!.month.toString().padLeft(2, '0')}/${widget.formation.date!.year}',
                                 style: TextStyle(
-                                    color: isDark ? Colors.white70 : Colors.black87,
+                                    color: isDark
+                                        ? Colors.white70
+                                        : Colors.black87,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500),
                               ),
                             ],
                             const Spacer(),
-                            const Icon(Icons.people_outline, size: 16, color: Colors.grey),
+                            const Icon(Icons.people_outline,
+                                size: 16, color: Colors.grey),
                             const SizedBox(width: 4),
                             Text('${widget.formation.studentCount} inscrits',
-                                style: TextStyle(color: isDark ? Colors.white60 : Colors.grey[600], fontSize: 12)),
+                                style: TextStyle(
+                                    color: isDark
+                                        ? Colors.white60
+                                        : Colors.grey[600],
+                                    fontSize: 12)),
                           ],
                         ),
-                        
+
                         const SizedBox(height: 12),
                         const Divider(height: 1),
                         const SizedBox(height: 12),
@@ -248,7 +278,7 @@ class _FormationCardState extends State<FormationCard> {
                         const SizedBox(height: 20),
                         const Divider(height: 1),
                         const SizedBox(height: 20),
-                        
+
                         // Actions
                         if (!isTerminated) ...[
                           Row(
@@ -256,13 +286,22 @@ class _FormationCardState extends State<FormationCard> {
                               Expanded(
                                 child: OutlinedButton.icon(
                                   onPressed: widget.onEdit,
-                                  icon: const Icon(Icons.edit_outlined, size: 16),
+                                  icon:
+                                      const Icon(Icons.edit_outlined, size: 16),
                                   label: const Text('Modifier'),
                                   style: OutlinedButton.styleFrom(
-                                    foregroundColor: isDark ? Colors.white : const Color(0xFF1E293B),
-                                    side: BorderSide(color: isDark ? Colors.white24 : Colors.grey[200]!),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    foregroundColor: isDark
+                                        ? Colors.white
+                                        : const Color(0xFF1E293B),
+                                    side: BorderSide(
+                                        color: isDark
+                                            ? Colors.white24
+                                            : Colors.grey[200]!),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
                                   ),
                                 ),
                               ),
@@ -270,14 +309,18 @@ class _FormationCardState extends State<FormationCard> {
                               Expanded(
                                 child: ElevatedButton.icon(
                                   onPressed: widget.onTerminate,
-                                  icon: const Icon(Icons.check_circle_outline, size: 16),
+                                  icon: const Icon(Icons.check_circle_outline,
+                                      size: 16),
                                   label: const Text('Terminer'),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.green,
                                     foregroundColor: Colors.white,
                                     elevation: 0,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
                                   ),
                                 ),
                               ),
@@ -288,10 +331,13 @@ class _FormationCardState extends State<FormationCard> {
                                 child: Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: isDark ? Colors.red.withOpacity(0.1) : const Color(0xFFFEF2F2),
+                                    color: isDark
+                                        ? Colors.red.withOpacity(0.1)
+                                        : const Color(0xFFFEF2F2),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: const Icon(Icons.delete_outline, color: Color(0xFFEF4444), size: 20),
+                                  child: const Icon(Icons.delete_outline,
+                                      color: Color(0xFFEF4444), size: 20),
                                 ),
                               ),
                             ],
@@ -306,8 +352,10 @@ class _FormationCardState extends State<FormationCard> {
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.grey,
                                 side: const BorderSide(color: Colors.grey),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                               ),
                             ),
                           ),

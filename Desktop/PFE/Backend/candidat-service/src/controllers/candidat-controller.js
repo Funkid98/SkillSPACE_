@@ -960,6 +960,7 @@ const getEnrolledFormations = async (req, res) => {
                 if (response.data) {
                     return {
                         ...response.data,
+                        globalRating: response.data.rating, // Preserve global rating
                         aiReason: enrollment.aiReason || '',
                         enrolledAt: enrollment.enrolledAt,
                         status: (response.data.status === 'terminé') ? 'COMPLETED' : (enrollment.status || 'ENROLLED'),
