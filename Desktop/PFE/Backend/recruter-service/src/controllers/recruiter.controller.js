@@ -10,7 +10,7 @@ const CANDIDAT_SERVICE_URL = 'http://localhost:5001/api/auth';
 
 const generateToken = (id, entreprise) => {
     return jwt.sign({ id, entreprise }, process.env.JWT_SECRET, {
-        expiresIn: '30d'
+        expiresIn: process.env.JWT_EXPIRES_IN || '24h'
     });
 };
 

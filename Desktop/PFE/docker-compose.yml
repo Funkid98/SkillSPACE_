@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # ─── Backend: Login & Register ────
   login-register:
@@ -56,8 +54,18 @@ services:
       - ./TrainerProfile-main/backend/.env
     restart: always
 
-  # ─── Frontend: SkillSpace App ─────
+  # ─── Backend: Interview Service ───
+  interview:
+    image: funkid99/skillspace-interview:latest
+    build:
+      context: ./Backend/interview-service
+    ports:
+      - "5005:5005"
+    env_file:
+      - ./Backend/interview-service/.env
+    restart: always
 
+  # ─── Frontend: SkillSpace App ─────
   frontend:
     image: funkid99/skillspace-frontend:latest
     build:
