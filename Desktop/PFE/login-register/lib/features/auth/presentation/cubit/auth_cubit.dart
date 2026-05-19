@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../data/datasources/google_auth_web.dart';
+import '../../data/datasources/google_auth_web.dart'
+    if (dart.library.io) '../../data/datasources/google_auth_stub.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../data/models/user_model.dart';
 

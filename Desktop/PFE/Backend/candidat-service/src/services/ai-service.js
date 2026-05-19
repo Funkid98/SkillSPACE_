@@ -57,16 +57,21 @@ const matchCvWithJob = async (cvText, jobDescription, candidateSkills = []) => {
         role: 'system',
         content: `You are an expert technical recruiter. Your analysis and compatibility score must be based EXCLUSIVELY on the required skills (Skills_Required) of the job posting, ignoring everything else.
 
-        IMPORTANT: The candidate has precise skill proficiency levels (0% to 100%). You MUST factor these into the score:
-        - A skill at 80%+ (Advanced) earns full credit.
-        - A skill at 40-79% (Intermediate) earns 60% credit.
-        - A skill at 1-39% (Beginner) earns 25% credit.
-        - A missing skill earns 0%.
+        IMPORTANT: The candidate has precise skill proficiency levels (0% to 100%). You MUST calculate the compatibility score exactly as follows:
+        1. Identify all required skills specified in the job posting (let's say there are 'N' required skills in total).
+        2. For each required skill, check the candidate's proficiency and assign a credit factor:
+           - A skill at 80%+ (Advanced) earns full credit (1.0).
+           - A skill at 40%-79% (Intermediate) earns 60% credit (0.6).
+           - A skill at 1%-39% (Beginner) earns 25% credit (0.25).
+           - A missing skill earns no credit (0.0).
+        3. Sum up the credits earned across all N required skills.
+        4. Calculate the compatibility score using the formula: Score = (Sum of Credits / N) * 100.
+        5. Round the resulting score to the nearest integer (between 0 and 100).
 
         Reply ONLY with JSON (no text before or after, no markdown) with these fields:
         1. matching_analysis: (MUST be in French) A 2-3 sentence narrative explaining the candidate's fit based on their skills AND proficiency levels. Do NOT use bullet lists.
         2. recommendation: (MUST be in French) Specific training recommendations for missing or insufficient skills.
-        3. score: Compatibility score (0-100) based EXCLUSIVELY on the Skills_Required and the candidate's proficiency levels.
+        3. score: Compatibility score (0-100) calculated EXCLUSIVELY using the formula described above.
         4. matched_skills: List of skill names from the candidate that match the job's Skills_Required.
         5. missing_skills: EXACT list of skills the candidate is missing or underqualified in, based EXCLUSIVELY on the Skills_Required.`
       },
