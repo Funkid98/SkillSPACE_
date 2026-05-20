@@ -310,6 +310,106 @@ class _JobCardState extends State<_JobCard> {
     }
   }
 
+  Future<void> _navigateToFormationByName(String skillName) async {
+    setState(() => _isLoadingFormation = true);
+    try {
+      final response = await http.get(
+        Uri.parse(
+            'http://127.0.0.1:5004/api/formateur/all-formations?query=${Uri.encodeComponent(skillName)}'),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        if (data.isNotEmpty) {
+          final formation = data.first;
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => CandidateFormationDetailsPage(
+                  formation: formation,
+                  aiReason: 'Formation recommandée pour combler votre lacune en $skillName.',
+                ),
+              ),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                    'Aucune formation pour "$skillName" n\'est disponible actuellement.'),
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: AppColors.orange,
+              ),
+            );
+          }
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Impossible de charger les formations.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur de connexion au service de formation.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingFormation = false);
+    }
+  }
+
+  Future<void> _exploreAllFormations() async {
+    setState(() => _isLoadingFormation = true);
+    try {
+      final response = await http.get(
+        Uri.parse('http://127.0.0.1:5004/api/formateur/all-formations'),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> formations = jsonDecode(response.body);
+        if (mounted) {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => _AllFormationsModalContent(formations: formations),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Impossible de charger les formations.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur de connexion au service de formation.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingFormation = false);
+    }
+  }
+
   Color get _compatColor {
     if (widget.offer.compatibilityPercent >= 85) return AppColors.orange;
     if (widget.offer.compatibilityPercent >= 70) return AppColors.orangeLight;
@@ -740,14 +840,9 @@ class _JobCardState extends State<_JobCard> {
                                         ),
                                       ),
                                       TextButton(
-                                        onPressed: () {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                                content: Text(
-                                                    'La page de formation n\'existe pas encore')),
-                                          );
-                                        },
+                                        onPressed: _isLoadingFormation
+                                            ? null
+                                            : () => _navigateToFormationByName(skill),
                                         style: TextButton.styleFrom(
                                           foregroundColor: AppColors.orange,
                                           padding: const EdgeInsets.symmetric(
@@ -771,13 +866,9 @@ class _JobCardState extends State<_JobCard> {
                             SizedBox(
                               width: double.infinity,
                               child: OutlinedButton.icon(
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text(
-                                            'La page de formation n\'existe pas encore')),
-                                  );
-                                },
+                                onPressed: _isLoadingFormation
+                                    ? null
+                                    : _exploreAllFormations,
                                 icon:
                                     const Icon(Icons.explore_rounded, size: 16),
                                 label: const Text('Explorer les formations',
@@ -1147,6 +1238,280 @@ class _HoverGradientButtonState extends State<_HoverGradientButton> {
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _AllFormationsModalContent extends StatefulWidget {
+  final List<dynamic> formations;
+  const _AllFormationsModalContent({required this.formations});
+
+  @override
+  State<_AllFormationsModalContent> createState() => _AllFormationsModalContentState();
+}
+
+class _AllFormationsModalContentState extends State<_AllFormationsModalContent> {
+  late List<dynamic> _filtered;
+  final _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _filtered = widget.formations;
+  }
+
+  void _onSearch(String val) {
+    setState(() {
+      if (val.trim().isEmpty) {
+        _filtered = widget.formations;
+      } else {
+        final query = val.toLowerCase();
+        _filtered = widget.formations.where((f) {
+          final title = (f['title'] ?? '').toString().toLowerCase();
+          final desc = (f['description'] ?? '').toString().toLowerCase();
+          final category = (f['category'] ?? '').toString().toLowerCase();
+          final List<dynamic> tags = f['tags'] ?? [];
+          final hasTag = tags.any((tag) => tag.toString().toLowerCase().contains(query));
+          return title.contains(query) || desc.contains(query) || category.contains(query) || hasTag;
+        }).toList();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ReactiveMode.isDarkMode(context);
+    return Container(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+        top: 32,
+        left: 28,
+        right: 28,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.border,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  'Explorer les formations',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : AppColors.textDark,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close_rounded),
+                style: IconButton.styleFrom(
+                  backgroundColor: isDark
+                      ? Colors.white.withOpacity(0.05)
+                      : AppColors.bg,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          TextField(
+            controller: _searchController,
+            onChanged: _onSearch,
+            decoration: InputDecoration(
+              hintText: 'Rechercher une formation (ex: Python, React...)',
+              hintStyle: const TextStyle(color: AppColors.textGray, fontSize: 14),
+              prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textGray),
+              filled: true,
+              fillColor: isDark ? Colors.white.withOpacity(0.03) : AppColors.bg,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: isDark ? AppColors.borderDark : AppColors.border,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: isDark ? AppColors.borderDark : AppColors.border,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: AppColors.orange),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.5,
+            ),
+            child: _filtered.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.school_outlined,
+                              size: 48,
+                              color: AppColors.textGray.withOpacity(0.5)),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Aucune formation trouvée.',
+                            style: TextStyle(
+                              color: AppColors.textGray,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _filtered.length,
+                    itemBuilder: (context, index) {
+                      final f = _filtered[index];
+                      final title = f['title'] ?? 'Formation';
+                      final category = f['category'] ?? 'Général';
+                      final level = f['level'] ?? 'Tous niveaux';
+                      final duration = f['duration'] ?? 'N/A';
+                      final rating = (f['rating'] ?? 0.0).toDouble();
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white.withOpacity(0.02) : AppColors.bg,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDark ? AppColors.borderDark : AppColors.border,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.white.withOpacity(0.05)
+                                    : AppColors.orange.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.menu_book_rounded,
+                                color: AppColors.orange,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    title,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      color: isDark ? Colors.white : AppColors.textDark,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.orange.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          category,
+                                          style: const TextStyle(
+                                            color: AppColors.orange,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Icon(Icons.star, color: Colors.amber, size: 12),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        rating.toStringAsFixed(1),
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: isDark ? Colors.white70 : AppColors.textDark,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '$duration',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.textGray,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context); // Close sheet
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => CandidateFormationDetailsPage(
+                                      formation: f,
+                                      aiReason: 'Formation disponible sur la plateforme pour acquérir de nouvelles compétences.',
+                                    ),
+                                  ),
+                                );
+                              },
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.orange,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                              child: const Text(
+                                'Voir →',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          const SizedBox(height: 16),
+        ],
       ),
     );
   }

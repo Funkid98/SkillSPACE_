@@ -396,7 +396,14 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
         final data = jsonDecode(response.body);
         if (mounted) {
           setState(() {
-            _textController.text = data['text'];
+            final newText = data['text']?.toString().trim() ?? '';
+            if (newText.isNotEmpty) {
+              if (_textController.text.isNotEmpty) {
+                _textController.text = '${_textController.text} $newText';
+              } else {
+                _textController.text = newText;
+              }
+            }
             _isTranscribing = false;
           });
           // Auto-send if it's a significant transcription?
@@ -550,15 +557,31 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                                 isDark ? Colors.white38 : AppColors.textGray)),
                   ),
                   const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: _finishSimulation,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.orange,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('Terminer & Voir les résultats',
-                        style: TextStyle(color: Colors.white, fontSize: 12)),
+                  Builder(
+                    builder: (context) {
+                      final int userMessageCount = _chatHistory
+                          .where((msg) => msg['isUser'] == true)
+                          .length;
+                      final bool canFinish = userMessageCount >= 2;
+
+                      return ElevatedButton(
+                        onPressed: canFinish ? _finishSimulation : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.orange,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: isDark
+                              ? Colors.white12
+                              : Colors.black12,
+                          disabledForegroundColor: isDark
+                              ? Colors.white38
+                              : Colors.black38,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Text('Terminer & Voir les résultats',
+                            style: TextStyle(fontSize: 12)),
+                      );
+                    },
                   )
                 ],
               ),

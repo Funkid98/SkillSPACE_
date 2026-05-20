@@ -28,61 +28,95 @@ const evaluateQuizHandler = async (req, res) => {
 
     const result = await evaluateQuiz(skill, claimedLevel, qna);
 
-    // Manually calculate/verify score from answers_analysis to ensure accuracy
-    if (result.answers_analysis && Array.isArray(result.answers_analysis)) {
-      let calculatedScore = 0;
-      result.answers_analysis.forEach((ans, index) => {
-        if (ans.is_correct === true) {
-          if (index < 4) calculatedScore += 15; // Q1-Q4: 15pts each
-          else calculatedScore += 40; // Q5: 40pts
-        }
-      });
-      result.score = calculatedScore;
-    }
-
-    let rawScore = result.score || 0;
+    // ── Deterministic score recalculation (never trust AI math) ──
     let score = 0;
-
-    if (claimedLevel === 'Beginner') {
-      // Beginner range: 0-39. Intermediate starts at 40.
-      if (rawScore === 100) {
-        score = 40; // Entry point for Intermediate
-      } else {
-        // Map 0-99 raw score to 0-39 final score
-        score = Math.floor((rawScore / 100) * 39);
+    if (result.answers_analysis && Array.isArray(result.answers_analysis)) {
+      for (let i = 0; i < Math.min(4, result.answers_analysis.length); i++) {
+        if (result.answers_analysis[i].is_correct === true) score += 15;
       }
-    } else if (claimedLevel === 'Intermediate') {
-      // Intermediate range: 40-79. Advanced starts at 80.
-      if (rawScore === 100) {
-        score = 80; // Entry point for Advanced
-      } else {
-        // Map 0-99 raw score to 40-79 final score
-        score = 40 + Math.floor((rawScore / 100) * 39);
+      if (result.answers_analysis[4] && result.answers_analysis[4].is_correct === true) {
+        score += 40;
       }
     } else {
-      // Advanced range: 80-100.
-      score = 80 + Math.floor((rawScore / 100) * 20);
+      score = result.score || 0;
+    }
+    score = Math.max(0, Math.min(100, score));
+    result.score = score;
+
+    // ── Dreyfus level enforcement (deterministic, overrides AI) ──
+    // Beginner quiz:  only 100/100 promotes to Intermediate
+    // Intermediate quiz: only 100/100 promotes to Advanced
+    // Advanced quiz: 80+ confirms, otherwise demote
+    let determinedLevel = 'Beginner';
+    let levelMatch = 'confirmed';
+
+    if (claimedLevel === 'Beginner') {
+      if (score === 100) {
+        determinedLevel = 'Intermediate';
+        levelMatch = 'underrated';
+      } else {
+        determinedLevel = 'Beginner';
+        levelMatch = 'confirmed';
+      }
+    } else if (claimedLevel === 'Intermediate') {
+      if (score === 100) {
+        determinedLevel = 'Advanced';
+        levelMatch = 'underrated';
+      } else if (score >= 40) {
+        determinedLevel = 'Intermediate';
+        levelMatch = 'confirmed';
+      } else {
+        determinedLevel = 'Beginner';
+        levelMatch = 'overrated';
+      }
+    } else { // Advanced
+      if (score >= 80) {
+        determinedLevel = 'Advanced';
+        levelMatch = 'confirmed';
+      } else if (score >= 40) {
+        determinedLevel = 'Intermediate';
+        levelMatch = 'overrated';
+      } else {
+        determinedLevel = 'Beginner';
+        levelMatch = 'critical_mismatch';
+      }
     }
 
-    score = Math.max(0, Math.min(100, score));
+    result.determined_level = determinedLevel;
+    result.level_match = levelMatch;
+
+    // ── Map raw score to the correct percent range for the determined level ──
+    // Badge system: 0-39 = Débutant, 40-79 = Intermédiaire, 80-100 = Avancé
+    let mappedPercent = 0;
+    if (determinedLevel === 'Beginner') {
+      // Map 0-100 raw → 0-39 percent range
+      mappedPercent = Math.floor((score / 100) * 39);
+    } else if (determinedLevel === 'Intermediate') {
+      // Map 0-100 raw → 40-79 percent range
+      mappedPercent = 40 + Math.floor((score / 100) * 39);
+    } else {
+      // Map 0-100 raw → 80-100 percent range
+      mappedPercent = 80 + Math.floor((score / 100) * 20);
+    }
+    mappedPercent = Math.max(0, Math.min(100, mappedPercent));
 
     // Update user skill in database
     const user = await User.findById(userId);
     if (user) {
       const skillIndex = user.skills.findIndex(s => s.name === skill);
       if (skillIndex > -1) {
-        user.skills[skillIndex].percent = score;
+        user.skills[skillIndex].percent = mappedPercent;
       } else {
-        user.skills.push({ name: skill, percent: score });
+        user.skills.push({ name: skill, percent: mappedPercent });
       }
       await user.save();
 
       // Trigger Re-analysis
-      console.log(`[Quiz] Skill ${skill} updated to ${score}%. Triggering re-analysis for ${user.prenom}`);
+      console.log(`[Quiz] Skill ${skill}: raw=${score}, level=${determinedLevel}, stored=${mappedPercent}%. Triggering re-analysis for ${user.prenom}`);
       runBackgroundMatchForCandidate(user._id).catch(e => console.error("BG match error after quiz:", e));
     }
 
-    res.status(200).json({ ...result, updated_score: score });
+    res.status(200).json({ ...result, updated_score: mappedPercent });
   } catch (error) {
     console.error('Error evaluating quiz:', error);
     res.status(500).json({ message: 'Server error evaluating quiz' });

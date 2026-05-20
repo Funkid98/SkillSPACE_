@@ -109,7 +109,7 @@ class _NotificationBellState extends State<NotificationBell> {
     } catch (_) {}
   }
 
-  void _showMeetLinkDialog(String link) {
+  void _showMeetLinkDialog(String link, bool isDarkGlobal) {
     showDialog(
       context: context,
       builder: (ctx) {
@@ -188,11 +188,12 @@ class _NotificationBellState extends State<NotificationBell> {
     );
   }
 
-  void _showAcceptDialog(String id, String candidateName) {
+  void _showAcceptDialog(String id, String candidateName, bool isDark) {
     showDialog(
       context: context,
       builder: (ctx) => SchedulingDialog(
         candidateName: candidateName,
+        isDark: isDark,
         onConfirm: (date, time, link) {
           _handleDecision(id, 'ACCEPT', date: date, time: time, link: link);
         },
@@ -200,7 +201,7 @@ class _NotificationBellState extends State<NotificationBell> {
     );
   }
 
-  void _showRejectDialog(String id) {
+  void _showRejectDialog(String id, bool isDarkGlobal) {
     final reasonController = TextEditingController();
 
     showDialog(
@@ -344,21 +345,19 @@ class _NotificationBellState extends State<NotificationBell> {
                             final confirm = await showDialog<bool>(
                               context: context,
                               builder: (ctx) {
-                                final isDarkDialog =
-                                    ReactiveMode.isDarkMode(ctx);
                                 return AlertDialog(
-                                  backgroundColor: isDarkDialog
+                                  backgroundColor: isDark
                                       ? AppColors.surfaceDark
                                       : Colors.white,
                                   title: Text('Tout effacer ?',
                                       style: TextStyle(
-                                          color: isDarkDialog
+                                          color: isDark
                                               ? Colors.white
                                               : AppColors.textDark)),
                                   content: Text(
                                       'Voulez-vous vraiment supprimer toutes vos notifications ?',
                                       style: TextStyle(
-                                          color: isDarkDialog
+                                          color: isDark
                                               ? Colors.white70
                                               : AppColors.textGray)),
                                   actions: [
@@ -562,7 +561,6 @@ class _NotificationBellState extends State<NotificationBell> {
                                     ),
                                   ),
                                   if (type == 'INTERVIEW_SCHEDULED' &&
-                                      !widget.isRecruiter &&
                                       n['meetingLink'] != null &&
                                       n['meetingLink']
                                           .toString()
@@ -572,7 +570,7 @@ class _NotificationBellState extends State<NotificationBell> {
                                       width: double.infinity,
                                       child: ElevatedButton.icon(
                                         onPressed: () {
-                                          _showMeetLinkDialog(n['meetingLink']);
+                                          _showMeetLinkDialog(n['meetingLink'], isDark);
                                         },
                                         icon: const Icon(Icons.link_rounded,
                                             size: 18),
@@ -600,7 +598,7 @@ class _NotificationBellState extends State<NotificationBell> {
                                         Expanded(
                                           child: OutlinedButton(
                                             onPressed: () =>
-                                                _showRejectDialog(n['_id']),
+                                                _showRejectDialog(n['_id'], isDark),
                                             style: OutlinedButton.styleFrom(
                                               side: const BorderSide(
                                                   color: AppColors.error),
@@ -618,7 +616,8 @@ class _NotificationBellState extends State<NotificationBell> {
                                           child: ElevatedButton(
                                             onPressed: () => _showAcceptDialog(
                                                 n['_id'],
-                                                n['senderName'] ?? 'Candidat'),
+                                                n['senderName'] ?? 'Candidat',
+                                                isDark),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor:
                                                   AppColors.success,

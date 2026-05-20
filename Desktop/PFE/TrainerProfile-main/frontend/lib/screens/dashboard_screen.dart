@@ -180,10 +180,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(height: 32),
                       FadeInUp(
                           animate: _showBottomSection,
-                          child: _buildReviewAnalytics(dashboardData)),
-                      const SizedBox(height: 32),
-                      FadeInUp(
-                          animate: _showBottomSection,
                           child: _buildTopSkills(dashboardData)),
                     ],
                     const SizedBox(height: 40),
@@ -564,7 +560,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   onEdit: () => _showFormationDialog(f),
                   onDelete: () => _confirmDelete(f),
                   onTerminate: () => _confirmTerminate(f),
-                  onRateStudent: (studentId, rating) => context.read<TrainerCubit>().rateStudent(f.id, studentId, rating),
+                  onRateStudent: (studentId, rating) => context
+                      .read<TrainerCubit>()
+                      .rateStudent(f.id, studentId, rating),
                 )),
             _buildNewFormationCard(),
           ],
@@ -1365,7 +1363,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (!dialogContext.mounted) return;
               Navigator.pop(dialogContext);
             },
-            child: const Text('Confirmer', style: TextStyle(color: Colors.green)),
+            child:
+                const Text('Confirmer', style: TextStyle(color: Colors.green)),
           ),
         ],
       ),
@@ -1463,138 +1462,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ],
                   ),
                 )),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReviewAnalytics(DashboardData dashboardData) {
-    final isDark = ReactiveMode.isDarkMode(context);
-    final formations = dashboardData.formations;
-    
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Analyse des avis',
-                style: GoogleFonts.outfit(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF8E5),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.star, color: Colors.amber, size: 16),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${dashboardData.stats['avgRating'] ?? 0.0} Moyenne',
-                      style: const TextStyle(
-                        color: Colors.amber,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          if (formations.isEmpty)
-            const Center(child: Text('Aucune formation pour le moment.'))
-          else
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columnSpacing: 40,
-                headingRowColor: WidgetStateProperty.all(
-                    isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF8FAFC)),
-                columns: [
-                  DataColumn(
-                      label: Text('Formation',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white : Colors.black))),
-                  DataColumn(
-                      label: Text('Étudiants',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white : Colors.black))),
-                  DataColumn(
-                      label: Text('Avis soumis',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white : Colors.black))),
-                  DataColumn(
-                      label: Text('Note moy.',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white : Colors.black))),
-                ],
-                rows: formations.map((f) {
-                  return DataRow(cells: [
-                    DataCell(Text(f.title,
-                        style: TextStyle(
-                            color: isDark ? Colors.white70 : Colors.black87))),
-                    DataCell(Text('${f.studentCount}',
-                        style: TextStyle(
-                            color: isDark ? Colors.white70 : Colors.black87))),
-                    DataCell(
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: f.reviewCount > 0 
-                            ? Colors.green.withOpacity(0.1) 
-                            : Colors.grey.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${f.reviewCount} avis',
-                          style: TextStyle(
-                            color: f.reviewCount > 0 ? Colors.green : Colors.grey,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ),
-                    DataCell(Row(
-                      children: [
-                        const Icon(Icons.star, color: Colors.amber, size: 14),
-                        const SizedBox(width: 4),
-                        Text('${f.rating}',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : Colors.black)),
-                      ],
-                    )),
-                  ]);
-                }).toList(),
-              ),
-            ),
         ],
       ),
     );

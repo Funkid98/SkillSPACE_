@@ -72,7 +72,7 @@ exports.checkEmailExists = async (req, res) => {
 
 // ── Générer un JWT
 const generateToken = (userId) => {
-  const expiresIn = (process.env.JWT_EXPIRES_IN && process.env.JWT_EXPIRES_IN.trim()) || '7d';
+  const expiresIn = (process.env.JWT_EXPIRES_IN && process.env.JWT_EXPIRES_IN.trim()) || '24h';
   console.log('Token generation details:', {
     userId,
     secretExists: !!process.env.JWT_SECRET,
@@ -394,7 +394,7 @@ exports.googleSignIn = async (req, res) => {
       // If they exist as a trainer, we will allow them to login/register here as well
       // but ensure we set their role correctly.
       const existsAsTrainer = await checkIfEmailExistsInTrainer(email);
-      
+
       // Créer un utilisateur s'il n'existe pas
       // Générer un mdp aléatoire très fort vu qu'il se connectera via Google
       const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
@@ -473,39 +473,39 @@ exports.forgotPassword = async (req, res) => {
       let foundInRecruiter = false;
       try {
         const recruiterExist = await axios.get(`${RECRUITER_SERVICE_URL}/exists/${email}`);
-        if(recruiterExist.data.exists) {
-            foundInRecruiter = true;
-            // Assuming Recruiter service has /internal/set-otp or similar, 
-            // if not we fail gracefully. But since the user wants it centralized:
-            // The recruiter service must be updated later, but for now we try to proxy.
-            try {
-               await axios.post(`${RECRUITER_SERVICE_URL}/internal/set-otp`, { email, otp, otpExpires });
-            } catch(e) {
-               console.error("Recruiter API set-otp error:", e.message);
-            }
+        if (recruiterExist.data.exists) {
+          foundInRecruiter = true;
+          // Assuming Recruiter service has /internal/set-otp or similar, 
+          // if not we fail gracefully. But since the user wants it centralized:
+          // The recruiter service must be updated later, but for now we try to proxy.
+          try {
+            await axios.post(`${RECRUITER_SERVICE_URL}/internal/set-otp`, { email, otp, otpExpires });
+          } catch (e) {
+            console.error("Recruiter API set-otp error:", e.message);
+          }
         }
-      } catch(e) {}
+      } catch (e) { }
 
       if (!foundInRecruiter) {
-         // Check Trainer
-         try {
-            const trainerExist = await axios.get(`${TRAINER_SERVICE_URL}/exists/${email}`);
-            if(trainerExist.data.exists) {
-               await axios.post(`${TRAINER_SERVICE_URL}/internal/set-otp`, { email, otp, otpExpires });
-            } else {
-               // Security: do not reveal email existence
-               return res.status(200).json({
-                  success: true,
-                  message: 'Si cet email existe, un code a été envoyé.',
-               });
-            }
-         } catch (e) {
-            console.error("Trainer API set-otp error:", e.message);
+        // Check Trainer
+        try {
+          const trainerExist = await axios.get(`${TRAINER_SERVICE_URL}/exists/${email}`);
+          if (trainerExist.data.exists) {
+            await axios.post(`${TRAINER_SERVICE_URL}/internal/set-otp`, { email, otp, otpExpires });
+          } else {
+            // Security: do not reveal email existence
             return res.status(200).json({
-               success: true,
-               message: 'Si cet email existe, un code a été envoyé.',
+              success: true,
+              message: 'Si cet email existe, un code a été envoyé.',
             });
-         }
+          }
+        } catch (e) {
+          console.error("Trainer API set-otp error:", e.message);
+          return res.status(200).json({
+            success: true,
+            message: 'Si cet email existe, un code a été envoyé.',
+          });
+        }
       }
     }
 
@@ -556,24 +556,24 @@ exports.verifyOtp = async (req, res) => {
 
     // 2. Process as Formateur
     try {
-       const trainerExists = await axios.get(`${TRAINER_SERVICE_URL}/exists/${email}`);
-       if (trainerExists.data.exists) {
-           const verifyRes = await axios.post(`${TRAINER_SERVICE_URL}/internal/verify-otp`, { email, otp });
-           return res.status(verifyRes.status).json(verifyRes.data);
-       }
+      const trainerExists = await axios.get(`${TRAINER_SERVICE_URL}/exists/${email}`);
+      if (trainerExists.data.exists) {
+        const verifyRes = await axios.post(`${TRAINER_SERVICE_URL}/internal/verify-otp`, { email, otp });
+        return res.status(verifyRes.status).json(verifyRes.data);
+      }
     } catch (e) {
-       if(e.response) return res.status(e.response.status).json(e.response.data);
+      if (e.response) return res.status(e.response.status).json(e.response.data);
     }
 
     // 3. Process as Recruteur
     try {
-       const recruiterExists = await axios.get(`${RECRUITER_SERVICE_URL}/exists/${email}`);
-       if (recruiterExists.data.exists) {
-           const verifyRes = await axios.post(`${RECRUITER_SERVICE_URL}/internal/verify-otp`, { email, otp });
-           return res.status(verifyRes.status).json(verifyRes.data);
-       }
+      const recruiterExists = await axios.get(`${RECRUITER_SERVICE_URL}/exists/${email}`);
+      if (recruiterExists.data.exists) {
+        const verifyRes = await axios.post(`${RECRUITER_SERVICE_URL}/internal/verify-otp`, { email, otp });
+        return res.status(verifyRes.status).json(verifyRes.data);
+      }
     } catch (e) {
-       if(e.response) return res.status(e.response.status).json(e.response.data);
+      if (e.response) return res.status(e.response.status).json(e.response.data);
     }
 
 
@@ -621,24 +621,24 @@ exports.resetPassword = async (req, res) => {
 
     // 2. Reset for Formateur
     try {
-       const trainerExists = await axios.get(`${TRAINER_SERVICE_URL}/exists/${email}`);
-       if (trainerExists.data.exists) {
-           const resetRes = await axios.post(`${TRAINER_SERVICE_URL}/internal/reset-password`, { email, otp, newPassword });
-           return res.status(resetRes.status).json(resetRes.data);
-       }
+      const trainerExists = await axios.get(`${TRAINER_SERVICE_URL}/exists/${email}`);
+      if (trainerExists.data.exists) {
+        const resetRes = await axios.post(`${TRAINER_SERVICE_URL}/internal/reset-password`, { email, otp, newPassword });
+        return res.status(resetRes.status).json(resetRes.data);
+      }
     } catch (e) {
-       if(e.response) return res.status(e.response.status).json(e.response.data);
+      if (e.response) return res.status(e.response.status).json(e.response.data);
     }
 
     // 3. Reset for Recruteur
     try {
-       const recruiterExists = await axios.get(`${RECRUITER_SERVICE_URL}/exists/${email}`);
-       if (recruiterExists.data.exists) {
-           const resetRes = await axios.post(`${RECRUITER_SERVICE_URL}/internal/reset-password`, { email, otp, newPassword });
-           return res.status(resetRes.status).json(resetRes.data);
-       }
+      const recruiterExists = await axios.get(`${RECRUITER_SERVICE_URL}/exists/${email}`);
+      if (recruiterExists.data.exists) {
+        const resetRes = await axios.post(`${RECRUITER_SERVICE_URL}/internal/reset-password`, { email, otp, newPassword });
+        return res.status(resetRes.status).json(resetRes.data);
+      }
     } catch (e) {
-       if(e.response) return res.status(e.response.status).json(e.response.data);
+      if (e.response) return res.status(e.response.status).json(e.response.data);
     }
 
     return res.status(400).json({ success: false, message: 'OTP invalide ou expiré.' });
@@ -764,12 +764,12 @@ exports.githubSignIn = async (req, res) => {
 
     // Initialiser le profil dans le trainer-service si c'est un formateur
     if (user.role === 'formateur') {
-       await createTrainerProfile(user._id, {
-         firstName: user.prenom,
-         lastName: user.nom,
-         email: user.email,
-         isVerified: true,
-       });
+      await createTrainerProfile(user._id, {
+        firstName: user.prenom,
+        lastName: user.nom,
+        email: user.email,
+        isVerified: true,
+      });
     }
 
     const token = generateToken(user._id);

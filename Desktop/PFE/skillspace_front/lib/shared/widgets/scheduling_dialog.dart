@@ -5,11 +5,13 @@ import '../../core/app_colors.dart';
 
 class SchedulingDialog extends StatefulWidget {
   final String candidateName;
+  final bool isDark;
   final Function(String date, String time, String link) onConfirm;
 
   const SchedulingDialog({
     super.key,
     required this.candidateName,
+    required this.isDark,
     required this.onConfirm,
   });
 
@@ -92,6 +94,8 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
   @override
   Widget build(BuildContext context) {
     final isDark = ReactiveMode.isDarkMode(context);
+    print("is dark is $isDark");
+
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
@@ -150,8 +154,9 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
                 icon: Icons.calendar_today_rounded,
                 onTap: _selectDate,
                 isDark: isDark,
-                validator: (val) =>
-                    val == null || val.isEmpty ? 'Veuillez choisir une date' : null,
+                validator: (val) => val == null || val.isEmpty
+                    ? 'Veuillez choisir une date'
+                    : null,
               ),
               const SizedBox(height: 16),
               _buildPickerField(
@@ -161,8 +166,9 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
                 icon: Icons.access_time_rounded,
                 onTap: _selectTime,
                 isDark: isDark,
-                validator: (val) =>
-                    val == null || val.isEmpty ? 'Veuillez choisir l\'heure' : null,
+                validator: (val) => val == null || val.isEmpty
+                    ? 'Veuillez choisir l\'heure'
+                    : null,
               ),
               const SizedBox(height: 16),
               _buildTextField(

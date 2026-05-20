@@ -101,22 +101,46 @@ const generateQuiz = async (skill, level) => {
     messages: [
       {
         role: 'system',
-        content: `You are an expert technical trainer. Generate a short multiple-choice quiz of 5 questions to assess the skill '${skill}' at the '${level}' level.
-        The first 4 questions should examine theoretical knowledge and practical applications.
-        The 5th (last) question MUST be a problem-solving scenario where the user has to choose the correct approach or solution to a specific issue.
-        Reply ONLY with JSON as an array of 5 objects.
-        Expected format:
-        [
-          {
-            "question": "Question text",
-            "options": ["Option 1", "Option 2", "Option 3", "Option 4"]
-          }
-        ]
-        Do not include the correct answer in the returned JSON. Do not include any text before or after the JSON.`
+        content: `You are a technical quiz generator using the Dreyfus Skill Acquisition Model.
+        
+        Generate questions adapted to the "${level}" Dreyfus stage:
+        
+        IF level = "Beginner":
+          - Q1–Q4: basic rule recall & fundamental knowledge
+          - Q5: slightly complex beginner problem-solving scenario
+        
+        IF level = "Intermediate":
+          - Q1–Q4: pattern recognition & applied knowledge in context
+          - Q5: real-world problem-solving scenario
+        
+        IF level = "Advanced":
+          - Q1–Q4: deep knowledge, edge cases & system design
+          - Q5: complex system-level problem-solving scenario
+        
+        RULES:
+        - Q5 MUST always be a practical problem-solving scenario
+        - Questions must be strictly adapted to the "${level}" level
+        - No overlap between levels
+        
+        RETURN ONLY THIS JSON — NO EXTRA TEXT:
+        {
+          "skill": "string",
+          "level": "Beginner" | "Intermediate" | "Advanced",
+          "questions": [
+            {
+              "id": number,
+              "question": "string",
+              "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+              "correct_answer": "string",
+              "dreyfus_stage_tested": "Beginner" | "Intermediate" | "Advanced"
+            }
+          ]
+        }`
       },
       {
         role: 'user',
-        content: `Generate a 5-question quiz for ${skill} at ${level} level. Remember the 5th question must be a problem solving scenario.`
+        content: `Generate a 5-question quiz for the skill "${skill}" at "${level}" level.
+                  Q5 must be a problem-solving scenario.`
       }
     ],
     temperature: 0.7,
@@ -127,54 +151,111 @@ const generateQuiz = async (skill, level) => {
   try {
     return JSON.parse(clean)
   } catch (err) {
-    console.error('Groq Quiz Gen Parse Error:', err.message, 'Content:', content)
+    console.error('Quiz Gen Error:', err.message)
     throw new Error('Failed to generate quiz')
   }
 }
-
 const evaluateQuiz = async (skill, claimedLevel, qna) => {
+  // The AI already returns a computed score, but we keep a deterministic fallback.
+  // This helper can be used elsewhere to recalculate the score from raw answers if needed.
+  const calculateScore = (qnaResults) => {
+    // qnaResults is an array of 5 objects with { is_correct: boolean }
+    let score = 0;
+    // First four theoretical questions (index 0‑3)
+    for (let i = 0; i < 4; i++) {
+      if (qnaResults[i] && qnaResults[i].is_correct) {
+        score += 15;
+      }
+    }
+    // Fifth problem‑solving scenario (index 4)
+    if (qnaResults[4] && qnaResults[4].is_correct) {
+      score += 40;
+    }
+    return score; // Returns 0‑100
+  };
+
   const qnaText = JSON.stringify(qna, null, 2)
   const response = await groq.chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     messages: [
       {
         role: 'system',
-        content: `You are a technical recruiter. Evaluate the candidate's answers for the skill "${skill}".
-        The candidate claimed to be at the "${claimedLevel}" level.
-        
-        Analyze these 5 questions and answers:
+        content: `You are a technical recruiter evaluating candidates using 
+        the Dreyfus Skill Acquisition Model (Dreyfus & Dreyfus, Berkeley 1980).
+        Applied in a simplified 3-stage framework adapted for technical recruitment.
+
+        Candidate claimed level: "${claimedLevel}"
+        Skill being evaluated: "${skill}"
+
+        Questions and Answers:
         ${qnaText}
 
-        SCORING RULES (weighted system):
-        - Questions 1 to 4 are standard knowledge questions: each correct answer is worth 15 points (max 60 points total).
-        - Question 5 is a PROBLEM-SOLVING scenario and is worth 40 points (max 40 points).
-        - Total maximum score = 100 points.
-        
-        Evaluate each answer strictly. For each question, determine if it is correct (is_correct: true) or incorrect (is_correct: false).
-        Calculate the total "score" as the EXACT sum of points:
-        - Each correct answer in Questions 1-4 = 15 points.
-        - Correct answer in Question 5 = 40 points.
-        - The "score" field in the JSON MUST be the sum of these points (0 to 100).
-        
-        Then determine "determined_level" based on score:
-        - 0-30: Beginner
-        - 40-75: Intermediate
-        - 80-100: Advanced
-        
-        if all the answers are incorrect then the score will be 0 and the determined level will be beginner. 
+        ═══════════════════════════════════════════
+        STEP 1 — SCORING (Dreyfus-Weighted Rubric)
+        ═══════════════════════════════════════════
+        The quiz has 3 levels, each with its own questions.
+        Questions are evaluated based on the level they belong to.
 
-        Provide brief constructive "feedback" explaining the evaluation.
+        CRITICAL: Scoring is strictly binary per question. NO partial or intermediate points allowed.
+        - Correct Q1–Q4 = 15 pts each (0 pts if wrong) -> max 60 pts
+        - Correct Q5    = 40 pts (0 pts if wrong)       -> max 40 pts
+        - Total max     = 100 pts
+        - All wrong     = 0 pts
 
-        Return ONLY a JSON object:
+        ═══════════════════════════════════════════
+        STEP 2 — SCORE BRACKETS (Strict Boundaries)
+        ═══════════════════════════════════════════
+        Regardless of the claimed level, the score dictates the technical capability:
+        - 0–39   → Beginner level capabilities
+        - 40–79  → Intermediate level capabilities
+        - 80–100 → Advanced level capabilities
+
+        ═══════════════════════════════════════════
+        STEP 3 — COHERENCE CHECK & CROSS-EVALUATION
+        ═══════════════════════════════════════════
+        Compare the score achieved against what the candidate claimed:
+
+        IF claimedLevel = "Advanced":
+          - score 80–100 → determined_level: "Advanced"     | level_match: "confirmed"
+          - score 40–79  → determined_level: "Intermediate" | level_match: "overrated"
+          - score 0–39   → determined_level: "Beginner"     | level_match: "critical_mismatch"
+
+        IF claimedLevel = "Intermediate":
+          - score 80–100 → determined_level: "Advanced"     | level_match: "underrated"
+          - score 40–79  → determined_level: "Intermediate" | level_match: "confirmed"
+          - score 0–39   → determined_level: "Beginner"     | level_match: "overrated"
+
+        IF claimedLevel = "Beginner":
+          - score 80–100 → determined_level: "Intermediate" | level_match: "underrated"
+          - score 40–79  → determined_level: "Beginner"     | level_match: "confirmed"
+          - score 0–39   → determined_level: "Beginner"     | level_match: "confirmed"
+
+        ═══════════════════════════════════════════
+        STEP 4 — FEEDBACK RULES (Dreyfus-based)
+        ═══════════════════════════════════════════
+        Write the feedback string in FRENCH. Keep it professional, constructive, and directly mapped to the level_match:
+        - confirmed + Beginner     → encourage to strengthen fundamentals
+        - confirmed + Intermediate → encourage to tackle Advanced challenges  
+        - confirmed + Advanced     → validate expertise, highlight mastery
+        - underrated               → highlight unexpected strengths, encourage to aim higher
+        - overrated                → mention gap kindly, suggest going back to lower level
+        - critical_mismatch        → honest, flag major gap, recommend Beginner level restart
+
+        ═══════════════════════════════════════════
+        RETURN ONLY THIS JSON — NO EXTRA TEXT
+        ═══════════════════════════════════════════
         {
           "score": number,
+          "claimed_level": "Beginner" | "Intermediate" | "Advanced",
           "determined_level": "Beginner" | "Intermediate" | "Advanced",
-          "feedback": "string",
+          "level_match": "confirmed" | "overrated" | "underrated" | "critical_mismatch",
+          "feedback": "string in French",
           "answers_analysis": [
             {
               "question": "string",
               "user_answer": "string",
               "is_correct": boolean,
+              "dreyfus_stage_tested": "Beginner" | "Intermediate" | "Advanced",
               "correct_answer": "string"
             }
           ]
@@ -276,12 +357,13 @@ Return ONLY valid JSON, no markdown:
     }
   ]
 }
-
 CRITICAL URL RULES:
-- Provide REAL, specific links from major platforms.
-- For YouTube: use https://www.youtube.com/results?search_query=[topic]+tutorial if a specific video ID is unknown.
-- For Udemy: use https://www.udemy.com/topic/[topic]/ or a specific course slug.
-- For Coursera: use https://www.coursera.org/learn/[course-slug].
+- NEVER guess specific course slugs or video IDs. They cause 404 errors.
+- For YouTube: use https://www.youtube.com/results?search_query=react+[topic]+tutorial
+- For Udemy: use https://www.udemy.com/courses/search/?q=react+[topic]
+- For Coursera: use https://www.coursera.org/search?query=react+[topic]
+
+Example: If the topic is "Context API", the url MUST be: https://www.udemy.com/courses/search/?q=react+context+api
 - NEVER return "example.com" or "course-link-here". If unsure, use a search results link as shown above.`;
 
   const response = await groq.chat.completions.create({

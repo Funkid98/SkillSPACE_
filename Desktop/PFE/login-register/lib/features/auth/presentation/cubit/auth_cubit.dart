@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../data/datasources/google_auth_web.dart'
-    if (dart.library.io) '../../data/datasources/google_auth_stub.dart';
+import '../../data/datasources/google_auth_web.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../../../core/network/api_client.dart';
 import '../../data/models/user_model.dart';
 
 part 'auth_state.dart';
@@ -12,7 +12,11 @@ part 'auth_state.dart';
 class AuthCubit extends Cubit<AuthState> {
   final AuthRepository authRepository;
 
-  AuthCubit({required this.authRepository}) : super(const AuthState());
+  AuthCubit({required this.authRepository}) : super(const AuthState()) {
+    ApiClient.onUnauthorized = () {
+      logout();
+    };
+  }
 
   void switchTab(AuthTab tab) =>
       emit(state.copyWith(tab: tab, clearError: true));
@@ -349,7 +353,7 @@ class AuthCubit extends Cubit<AuthState> {
       return fullProfile;
     } catch (e) {
       print('Error fetching full profile: $e');
-      return null;
+      rethrow;
     }
   }
 

@@ -97,13 +97,11 @@ class _QuizModalState extends State<QuizModal> {
         final data = jsonDecode(response.body);
 
         // Use the strictly calculated score from the backend
-        int score = (data['updated_score'] ?? 0).toInt();
+        int score = (data['updated_score'] ?? data['score'] ?? 0).toInt();
+        int rawScore = (data['score'] ?? 0).toInt();
 
-        // Sanitize the level for UI display
-        String displayLevel = 'Beginner';
-        if (score >= 80) {
-          displayLevel = 'Advanced';
-        } else if (score >= 40) displayLevel = 'Intermediate';
+        // Use the determined_level from backend (Dreyfus enforcement)
+        String displayLevel = data['determined_level'] ?? 'Beginner';
 
         if (mounted) {
           widget.parentContext
@@ -114,14 +112,15 @@ class _QuizModalState extends State<QuizModal> {
 
         setState(() {
           _finalScore = score;
-          _quizRawScore = (data['score'] ?? 0).toInt();
+          _quizRawScore = rawScore;
           _determinedLevel = displayLevel;
           _evaluationFeedback = data['feedback'] ?? '';
           _answersAnalysis = data['answers_analysis'] ?? [];
 
+          // Only suggest next level on a perfect 100/100 score
           if ((_selectedLevel == 'Beginner' ||
                   _selectedLevel == 'Intermediate') &&
-              (data['score'] ?? 0) >= 95) {
+              rawScore == 100) {
             _step = 5; // Go to "Suggest Next Level" step
           } else {
             _step = 4; // Final Result

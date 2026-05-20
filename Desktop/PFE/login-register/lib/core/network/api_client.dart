@@ -16,6 +16,8 @@ class ApiClient {
 
   final http.Client _client = http.Client();
 
+  static void Function()? onUnauthorized;
+
   Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('jwt_token');
@@ -37,7 +39,7 @@ class ApiClient {
         headers: headers,
         body: jsonEncode(body),
       );
-      return response;
+      return _handleResponse(response);
     } catch (e) {
       throw Exception('Erreur de connexion réseau: $e');
     }
@@ -54,7 +56,7 @@ class ApiClient {
         headers: headers,
         body: jsonEncode(body),
       );
-      return response;
+      return _handleResponse(response);
     } catch (e) {
       throw Exception('Erreur de connexion réseau: $e');
     }
@@ -81,7 +83,8 @@ class ApiClient {
       ));
 
       final streamedResponse = await request.send();
-      return await http.Response.fromStream(streamedResponse);
+      final response = await http.Response.fromStream(streamedResponse);
+      return _handleResponse(response);
     } catch (e) {
       throw Exception('Erreur de téléchargement: $e');
     }
@@ -97,7 +100,7 @@ class ApiClient {
         url,
         headers: headers,
       );
-      return response;
+      return _handleResponse(response);
     } catch (e) {
       throw Exception('Erreur de connexion réseau: $e');
     }
@@ -113,7 +116,7 @@ class ApiClient {
         url,
         headers: headers,
       );
-      return response;
+      return _handleResponse(response);
     } catch (e) {
       throw Exception('Erreur de connexion réseau: $e');
     }
@@ -137,6 +140,22 @@ class ApiClient {
     }
   }
 
+  http.Response _handleResponse(http.Response response) {
+    if (response.statusCode == 401) {
+      onUnauthorized?.call();
+    } else {
+      try {
+        final body = jsonDecode(response.body);
+        if (body is Map && (body['error']?.toString().contains('Invalid token') == true ||
+            body['message']?.toString().contains('Invalid token') == true ||
+            body['error']?.toString().contains('Token invalide') == true)) {
+          onUnauthorized?.call();
+        }
+      } catch (_) {}
+    }
+    return response;
+  }
+
   Future<http.Response> signInWithGoogle(String idToken) async {
     final url = Uri.parse('$baseUrl/api/auth/google');
     final headers = await _getHeaders();
@@ -146,7 +165,7 @@ class ApiClient {
         headers: headers,
         body: jsonEncode({'idToken': idToken}),
       );
-      return response;
+      return _handleResponse(response);
     } catch (e) {
       throw Exception('Erreur de connexion réseau Google: $e');
     }
@@ -161,7 +180,7 @@ class ApiClient {
         headers: headers,
         body: jsonEncode({'code': code}),
       );
-      return response;
+      return _handleResponse(response);
     } catch (e) {
       throw Exception('Erreur de connexion réseau GitHub: $e');
     }
