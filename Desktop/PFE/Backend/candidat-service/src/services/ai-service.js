@@ -30,6 +30,7 @@ const extractSkillsFromText = async (cvText) => {
       }
     ],
     temperature: 0.2,
+    response_format: { type: 'json_object' },
   })
 
   const content = response.choices[0].message.content
@@ -81,6 +82,7 @@ const matchCvWithJob = async (cvText, jobDescription, candidateSkills = []) => {
       }
     ],
     temperature: 0.1,
+    response_format: { type: 'json_object' },
   })
 
   const content = response.choices[0].message.content
@@ -144,6 +146,7 @@ const generateQuiz = async (skill, level) => {
       }
     ],
     temperature: 0.7,
+    response_format: { type: 'json_object' },
   })
 
   const content = response.choices[0].message.content
@@ -151,7 +154,7 @@ const generateQuiz = async (skill, level) => {
   try {
     return JSON.parse(clean)
   } catch (err) {
-    console.error('Quiz Gen Error:', err.message)
+    console.error('Quiz Gen Error:', err.message, '\\nContent:', content)
     throw new Error('Failed to generate quiz')
   }
 }

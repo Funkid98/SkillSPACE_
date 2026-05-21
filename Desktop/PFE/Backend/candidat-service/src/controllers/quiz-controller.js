@@ -88,15 +88,22 @@ const evaluateQuizHandler = async (req, res) => {
     // ── Map raw score to the correct percent range for the determined level ──
     // Badge system: 0-39 = Débutant, 40-79 = Intermédiaire, 80-100 = Avancé
     let mappedPercent = 0;
-    if (determinedLevel === 'Beginner') {
-      // Map 0-100 raw → 0-39 percent range
-      mappedPercent = Math.floor((score / 100) * 39);
-    } else if (determinedLevel === 'Intermediate') {
-      // Map 0-100 raw → 40-79 percent range
-      mappedPercent = 40 + Math.floor((score / 100) * 39);
+    if (levelMatch === 'underrated') {
+      // The candidate just got promoted by scoring 100 in the lower level.
+      // They enter the new level at its minimum threshold.
+      if (determinedLevel === 'Intermediate') mappedPercent = 40;
+      else if (determinedLevel === 'Advanced') mappedPercent = 80;
     } else {
-      // Map 0-100 raw → 80-100 percent range
-      mappedPercent = 80 + Math.floor((score / 100) * 20);
+      if (determinedLevel === 'Beginner') {
+        // Map 0-100 raw → 0-39 percent range
+        mappedPercent = Math.floor((score / 100) * 39);
+      } else if (determinedLevel === 'Intermediate') {
+        // Map 0-100 raw → 40-79 percent range
+        mappedPercent = 40 + Math.floor((score / 100) * 39);
+      } else {
+        // Map 0-100 raw → 80-100 percent range
+        mappedPercent = 80 + Math.floor((score / 100) * 20);
+      }
     }
     mappedPercent = Math.max(0, Math.min(100, mappedPercent));
 

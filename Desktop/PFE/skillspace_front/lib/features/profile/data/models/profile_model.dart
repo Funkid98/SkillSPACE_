@@ -137,19 +137,19 @@ class ProfileSkill {
   const ProfileSkill({required this.name, this.percent = 33});
 
   SkillLevel get level {
-    if (percent <= 33) return SkillLevel.beginner;
-    if (percent <= 66) return SkillLevel.intermediate;
+    if (percent < 40) return SkillLevel.beginner;
+    if (percent < 80) return SkillLevel.intermediate;
     return SkillLevel.advanced;
   }
 
   ProfileSkill copyWithLevel(SkillLevel lvl) {
-    int newPercent = 33;
+    int newPercent = 39; // Default max for beginner
     switch (lvl) {
       case SkillLevel.beginner:
-        newPercent = 33;
+        newPercent = 39;
         break;
       case SkillLevel.intermediate:
-        newPercent = 66;
+        newPercent = 79;
         break;
       case SkillLevel.advanced:
         newPercent = 100;

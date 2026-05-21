@@ -1922,7 +1922,7 @@ class _StaggeredReveal extends StatefulWidget {
   const _StaggeredReveal({
     required this.child,
     this.index = 0,
-    this.delayMs = 50,
+    this.delayMs = 150,
   });
 
   @override
