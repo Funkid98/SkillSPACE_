@@ -40,7 +40,8 @@ void _goToAuth(BuildContext context, AuthTab tab) {
                     onLogout: () {
                       if (navContext.mounted) {
                         Navigator.of(navContext).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (_) => const LandingPage()),
+                          MaterialPageRoute(
+                              builder: (_) => const LandingPage()),
                           (route) => false,
                         );
                       }
@@ -91,7 +92,7 @@ class NavBar extends StatelessWidget {
               child: GlassmorphicContainer(
                 width: MediaQuery.of(context).size.width - 32,
                 height: isMobile ? 64 : 72,
-                borderRadius: 20,
+                borderRadius: 40,
                 blur: 15,
                 alignment: Alignment.center,
                 border: 1.5,
@@ -292,7 +293,9 @@ class NavDrawer extends StatelessWidget {
                           scrollTo(SectionKeys.features);
                         },
                       ),
-                      Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
+                      Divider(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          height: 1),
                       _DrawerLink(
                         label: l10n.howItWorks,
                         onTap: () {
@@ -300,7 +303,9 @@ class NavDrawer extends StatelessWidget {
                           scrollTo(SectionKeys.steps);
                         },
                       ),
-                      Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
+                      Divider(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          height: 1),
                       _DrawerLink(
                         label: l10n.forWhom,
                         onTap: () {
@@ -308,7 +313,9 @@ class NavDrawer extends StatelessWidget {
                           scrollTo(SectionKeys.audience);
                         },
                       ),
-                      Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
+                      Divider(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          height: 1),
                       const Spacer(),
                       SizedBox(
                         width: double.infinity,
@@ -319,15 +326,19 @@ class NavDrawer extends StatelessWidget {
                             _goToAuth(context, AuthTab.login);
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white.withValues(alpha: 0.05),
+                            backgroundColor:
+                                Colors.white.withValues(alpha: 0.05),
                             foregroundColor: Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
-                              side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                              side: BorderSide(
+                                  color: Colors.white.withValues(alpha: 0.1)),
                             ),
                           ),
-                          child: Text(l10n.login, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                          child: Text(l10n.login,
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w600)),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -346,7 +357,9 @@ class NavDrawer extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16)),
                           ),
-                          child: Text(l10n.register, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                          child: Text(l10n.register,
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w600)),
                         ),
                       ),
                       const SizedBox(height: 8),

@@ -100,7 +100,6 @@ Après le calcul du score, le système effectue une **vérification croisée** e
 | **0–39** | Débutant | `critical_mismatch` (écart critique) |
 
 > **Principe clé** : Seul un score **parfait (100/100)** permet de passer au niveau supérieur. Cela garantit que la promotion est méritée et non aléatoire.
-
 ---
 
 ## 5. Mapping du Score vers le Pourcentage de Compétence

@@ -103,6 +103,36 @@ class CandidateMatch {
     required this.initials,
   });
 
+  CandidateMatch copyWith({
+    String? id,
+    String? name,
+    String? role,
+    String? location,
+    String? experience,
+    List<String>? skills,
+    int? matchScore,
+    String? matchingAnalysis,
+    String? recommendation,
+    String? status,
+    bool? isSaved,
+    String? initials,
+  }) {
+    return CandidateMatch(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      role: role ?? this.role,
+      location: location ?? this.location,
+      experience: experience ?? this.experience,
+      skills: skills ?? this.skills,
+      matchScore: matchScore ?? this.matchScore,
+      matchingAnalysis: matchingAnalysis ?? this.matchingAnalysis,
+      recommendation: recommendation ?? this.recommendation,
+      status: status ?? this.status,
+      isSaved: isSaved ?? this.isSaved,
+      initials: initials ?? this.initials,
+    );
+  }
+
   factory CandidateMatch.fromJson(Map<String, dynamic> json) {
     final name = json['name'] ?? 'Candidat';
     final initials = json['initials'] ?? name.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase();

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/recruiter_job_offer_model.dart';
 import '../../data/repositories/recruiter_job_repository.dart';
 import '../../data/repositories/recruiter_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 abstract class RecruiterOffersState {}
 
@@ -112,14 +113,31 @@ class RecruiterCandidatesCubit extends Cubit<RecruiterCandidatesState> {
   final RecruiterRepository repository;
   List<RecruiterOfferWithCandidates> _fullGroups = [];
   String _lastQuery = '';
+  bool _showSavedOnly = false;
   Timer? _refreshTimer;
+
+  List<String> _savedCandidateIds = [];
 
   RecruiterCandidatesCubit({required this.repository}) : super(RecruiterCandidatesInitial());
 
   void loadCandidates({bool isAutoRefresh = false}) async {
     if (!isAutoRefresh) emit(RecruiterCandidatesLoading());
     try {
-      _fullGroups = await repository.getGroupedMatchingCandidates();
+      final prefs = await SharedPreferences.getInstance();
+      _savedCandidateIds = prefs.getStringList('saved_candidates') ?? [];
+
+      var rawGroups = await repository.getGroupedMatchingCandidates();
+      
+      _fullGroups = rawGroups.map((group) {
+        final syncedCandidates = group.candidates.map((c) {
+          if (_savedCandidateIds.contains(c.id)) {
+            return c.copyWith(isSaved: true);
+          }
+          return c;
+        }).toList();
+        return RecruiterOfferWithCandidates(offer: group.offer, candidates: syncedCandidates);
+      }).toList();
+
       filterCandidates(_lastQuery);
       
       // Check if we need to continue polling
@@ -161,13 +179,13 @@ class RecruiterCandidatesCubit extends Cubit<RecruiterCandidatesState> {
     }
     
     final q = query.trim().toLowerCase();
-    if (q.isEmpty) {
-      emit(RecruiterCandidatesLoaded(_fullGroups));
-      return;
-    }
     
     final filtered = _fullGroups.map((group) {
         final filteredCandidates = group.candidates.where((c) {
+          if (_showSavedOnly && !c.isSaved) return false;
+
+          if (q.isEmpty) return true;
+
           final nameMatch = c.name.toLowerCase().contains(q);
           final roleMatch = c.role.toLowerCase().contains(q);
           final skillMatch = c.skills.any((s) => s.toLowerCase().contains(q));
@@ -176,15 +194,58 @@ class RecruiterCandidatesCubit extends Cubit<RecruiterCandidatesState> {
 
         final offerMatch = group.offer.title.toLowerCase().contains(q);
 
-        if (offerMatch || filteredCandidates.isNotEmpty) {
+        // If filtering by saved only, don't show empty groups just because offer matches query.
+        if ((offerMatch && !_showSavedOnly && filteredCandidates.isEmpty) || filteredCandidates.isNotEmpty) {
             return RecruiterOfferWithCandidates(
                 offer: group.offer,
-                candidates: filteredCandidates.isNotEmpty ? filteredCandidates : group.candidates
+                candidates: filteredCandidates.isNotEmpty ? filteredCandidates : (_showSavedOnly ? [] : group.candidates)
             );
         }
         return null;
-    }).whereType<RecruiterOfferWithCandidates>().toList();
+    }).whereType<RecruiterOfferWithCandidates>().where((g) => g.candidates.isNotEmpty || (!_showSavedOnly && q.isEmpty)).toList();
     
     emit(RecruiterCandidatesLoaded(filtered));
+  }
+
+  void toggleSavedFilter() {
+    _showSavedOnly = !_showSavedOnly;
+    filterCandidates(_lastQuery);
+  }
+
+  bool get isShowingSavedOnly => _showSavedOnly;
+
+  int get savedCount {
+    int count = 0;
+    for (var group in _fullGroups) {
+      count += group.candidates.where((c) => c.isSaved).length;
+    }
+    return count;
+  }
+
+  void toggleSaveCandidate(String offerId, String candidateId) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    _fullGroups = _fullGroups.map((group) {
+      if (group.offer.id == offerId) {
+        final newCandidates = group.candidates.map((c) {
+          if (c.id == candidateId) {
+            final newIsSaved = !c.isSaved;
+            if (newIsSaved) {
+              if (!_savedCandidateIds.contains(candidateId)) _savedCandidateIds.add(candidateId);
+            } else {
+              _savedCandidateIds.remove(candidateId);
+            }
+            return c.copyWith(isSaved: newIsSaved);
+          }
+          return c;
+        }).toList();
+        return RecruiterOfferWithCandidates(offer: group.offer, candidates: newCandidates);
+      }
+      return group;
+    }).toList();
+    
+    await prefs.setStringList('saved_candidates', _savedCandidateIds);
+
+    filterCandidates(_lastQuery);
   }
 }

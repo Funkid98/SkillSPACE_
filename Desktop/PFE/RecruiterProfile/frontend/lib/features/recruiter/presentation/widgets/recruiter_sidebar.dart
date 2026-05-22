@@ -187,23 +187,42 @@ class RecruiterSidebar extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                  child: TextButton.icon(
-                    onPressed: () => _showLogoutConfirmation(context, onLogout),
-                    icon: Icon(Icons.logout_rounded,
-                        size: 18,
-                        color: isDark ? Colors.white60 : AppColors.textGray),
-                    label: Text(
-                      l10n.logout,
-                      style: TextStyle(
-                          color: isDark ? Colors.white60 : AppColors.textGray,
-                          fontSize: 14),
-                    ),
-                    style: TextButton.styleFrom(
-                      alignment:
-                          isRtl ? Alignment.centerRight : Alignment.centerLeft,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 12),
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      onTap: () => _showLogoutConfirmation(context, onLogout),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isDark
+                                ? AppColors.error.withOpacity(0.2)
+                                : AppColors.error.withOpacity(0.15),
+                          ),
+                          color: AppColors.error.withOpacity(0.05),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.logout_rounded,
+                                size: 17,
+                                color: AppColors.error.withOpacity(0.8)),
+                            const SizedBox(width: 10),
+                            Text(
+                              l10n.logout,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.error.withOpacity(0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),

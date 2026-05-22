@@ -286,8 +286,40 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         const SizedBox(height: 16),
                         // Logout
                         const Divider(),
-                        _buildNavItem(sideCtx, -1, 'Déconnexion', Icons.logout,
-                            color: Colors.grey),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: InkWell(
+                            onTap: () => _showLogoutConfirmation(sideCtx),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 12),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.red.withOpacity(isDark ? 0.2 : 0.15),
+                                ),
+                                color: Colors.red.withOpacity(0.05),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.logout_rounded,
+                                      size: 17,
+                                      color: Colors.red.withOpacity(0.8)),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    'Déconnexion',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.red.withOpacity(0.8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 20),
                       ],
                     ),

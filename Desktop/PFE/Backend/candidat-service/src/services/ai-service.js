@@ -224,13 +224,13 @@ const evaluateQuiz = async (skill, claimedLevel, qna) => {
           - score 0–39   → determined_level: "Beginner"     | level_match: "critical_mismatch"
 
         IF claimedLevel = "Intermediate":
-          - score 80–100 → determined_level: "Advanced"     | level_match: "underrated"
-          - score 40–79  → determined_level: "Intermediate" | level_match: "confirmed"
+          - score 100 → determined_level: "Advanced"     | level_match: "underrated"
+          - score 40–99  → determined_level: "Intermediate" | level_match: "confirmed"
           - score 0–39   → determined_level: "Beginner"     | level_match: "overrated"
 
         IF claimedLevel = "Beginner":
-          - score 80–100 → determined_level: "Intermediate" | level_match: "underrated"
-          - score 40–79  → determined_level: "Beginner"     | level_match: "confirmed"
+          - score 100 → determined_level: "Intermediate" | level_match: "underrated"
+          - score 40–99  → determined_level: "Beginner"     | level_match: "confirmed"
           - score 0–39   → determined_level: "Beginner"     | level_match: "confirmed"
 
         ═══════════════════════════════════════════

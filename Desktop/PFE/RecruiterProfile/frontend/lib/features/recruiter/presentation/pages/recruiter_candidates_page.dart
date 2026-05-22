@@ -214,29 +214,41 @@ class RecruiterCandidatesPage extends StatelessWidget {
 
   Widget _buildSavedButton(BuildContext context, RecruiterLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      height: 62,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-            color: isDark ? AppColors.borderDark : AppColors.border, width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.star_rounded, size: 22, color: AppColors.textGray),
-          const SizedBox(width: 10),
-          Text(
-            '${l10n.savedLabel} (2)',
-            style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: isDark ? Colors.white : AppColors.textDark),
+    return BlocBuilder<RecruiterCandidatesCubit, RecruiterCandidatesState>(
+      builder: (context, state) {
+        final cubit = context.read<RecruiterCandidatesCubit>();
+        final isSavedFilterActive = cubit.isShowingSavedOnly;
+        final savedCount = cubit.savedCount;
+
+        return InkWell(
+          onTap: () => cubit.toggleSavedFilter(),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            height: 62,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              color: isSavedFilterActive ? AppColors.navy : (isDark ? AppColors.surfaceDark : Colors.white),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                  color: isSavedFilterActive ? AppColors.navy : (isDark ? AppColors.borderDark : AppColors.border), width: 1),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.star_rounded, size: 22, color: isSavedFilterActive ? AppColors.orange : AppColors.textGray),
+                const SizedBox(width: 10),
+                Text(
+                  '${l10n.savedLabel} ($savedCount)',
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: isSavedFilterActive ? Colors.white : (isDark ? Colors.white : AppColors.textDark)),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -338,12 +350,21 @@ class _CandidateMatchCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Icon(
-              candidate.isSaved
-                  ? Icons.star_rounded
-                  : Icons.star_outline_rounded,
-              size: 20,
-              color: candidate.isSaved ? AppColors.orange : AppColors.textGray,
+            InkWell(
+              onTap: () {
+                context.read<RecruiterCandidatesCubit>().toggleSaveCandidate(offerId, candidate.id);
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Icon(
+                  candidate.isSaved
+                      ? Icons.star_rounded
+                      : Icons.star_outline_rounded,
+                  size: 22,
+                  color: candidate.isSaved ? AppColors.orange : AppColors.textGray,
+                ),
+              ),
             ),
             if (!Responsive.isMobile(context)) ...[
               const SizedBox(width: 12),

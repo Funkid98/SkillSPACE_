@@ -318,23 +318,49 @@ class _RecruiterMobileDrawer extends StatelessWidget {
             },
           ),
           const Divider(height: 40),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.logout_rounded,
-                color: AppColors.error, size: 22),
-            title: const Text(
-              'Déconnexion',
-              style: TextStyle(
-                  color: AppColors.error,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600),
-            ),
+          InkWell(
             onTap: () {
               Navigator.pop(context); // Close drawer
               if (onLogout != null) {
                 onLogout!();
               }
             },
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: AppColors.error.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: AppColors.error.withOpacity(0.15),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(Icons.logout_rounded,
+                        color: AppColors.error.withOpacity(0.85),
+                        size: 18),
+                  ),
+                  const SizedBox(width: 14),
+                  const Text(
+                    'Déconnexion',
+                    style: TextStyle(
+                      color: AppColors.error,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
