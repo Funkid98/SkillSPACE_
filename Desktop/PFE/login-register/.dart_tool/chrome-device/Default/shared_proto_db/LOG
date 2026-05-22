@@ -1,4 +1,7 @@
-2026/04/09-23:40:46.315 36c0 Reusing MANIFEST C:\Users\yotub\AppData\Local\Temp\flutter_tools.362f809f\flutter_tools_chrome_device.eeda8b9e\Default\shared_proto_db/MANIFEST-000001
-2026/04/09-23:40:46.315 36c0 Recovering log #4
-2026/04/09-23:40:46.316 36c0 Reusing old log C:\Users\yotub\AppData\Local\Temp\flutter_tools.362f809f\flutter_tools_chrome_device.eeda8b9e\Default\shared_proto_db/000004.log 
-2026/04/09-23:40:46.316 36c0 Delete type=0 #3
+2026/05/23-00:17:43.631 6980 Reusing MANIFEST C:\Users\yotub\AppData\Local\Temp\flutter_tools.82996326\flutter_tools_chrome_device.6663f3b1\Default\shared_proto_db/MANIFEST-000001
+2026/05/23-00:17:43.632 6980 Recovering log #4
+2026/05/23-00:17:43.634 6980 Reusing old log C:\Users\yotub\AppData\Local\Temp\flutter_tools.82996326\flutter_tools_chrome_device.6663f3b1\Default\shared_proto_db/000004.log 
+2026/05/23-00:17:43.635 6980 Delete type=0 #3
+2026/05/23-00:17:59.763 6090 Level-0 table #8: started
+2026/05/23-00:17:59.771 6090 Level-0 table #8: 137869 bytes OK
+2026/05/23-00:17:59.778 6090 Delete type=0 #4

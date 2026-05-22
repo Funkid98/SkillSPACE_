@@ -11,6 +11,8 @@ import '../../../../core/app_colors.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../shared/widgets/animated_reveal.dart';
 import '../../../../core/l10n/app_localizations.dart';
+import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
+import '../widgets/change_password_dialog.dart';
 
 class RecruiterProfilePage extends StatefulWidget {
   const RecruiterProfilePage({super.key});
@@ -463,6 +465,33 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                         borderRadius: BorderRadius.circular(12)),
                   ),
                   child: Text(l10n.cancel),
+                ),
+                const Spacer(),
+                OutlinedButton(
+                  onPressed: () {
+                    final authState = context.read<AuthCubit>().state;
+                    final email = authState.loggedInUser?['email']?.toString() ?? '';
+                    if (email.isNotEmpty) {
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (ctx) => ChangePasswordDialog(email: email),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email non disponible'), backgroundColor: Colors.red));
+                    }
+                  },
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    side: const BorderSide(color: AppColors.orange, width: 2),
+                  ),
+                  child: const Text('Changer mot de passe',
+                      style: TextStyle(
+                          color: AppColors.orange,
+                          fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton(

@@ -17,6 +17,7 @@ import 'package:pdfx/pdfx.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:flutter/foundation.dart';
+import '../widgets/change_password_dialog.dart';
 
 class FormateurProfileScreen extends StatefulWidget {
   const FormateurProfileScreen({super.key});
@@ -716,6 +717,31 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                         child: const Text('Annuler',
                             style: TextStyle(
                                 color: Color(0xFF1E293B),
+                                fontWeight: FontWeight.bold)),
+                      ),
+                      const Spacer(),
+                      OutlinedButton(
+                        onPressed: () {
+                          if (_emailController.text.isNotEmpty) {
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (ctx) => ChangePasswordDialog(email: _emailController.text),
+                            );
+                          } else {
+                            Fluttertoast.showToast(msg: "Email requis pour changer le mot de passe", backgroundColor: Colors.red);
+                          }
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 16),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          side: BorderSide(color: primaryColor, width: 2),
+                        ),
+                        child: Text('Changer mot de passe',
+                            style: TextStyle(
+                                color: primaryColor,
                                 fontWeight: FontWeight.bold)),
                       ),
                       const SizedBox(width: 16),

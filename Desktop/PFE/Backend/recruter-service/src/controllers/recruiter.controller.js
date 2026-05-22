@@ -534,6 +534,65 @@ const clearAllNotifications = async (req, res) => {
     }
 };
 
+// Internal OTP endpoints
+const setOtp = async (req, res) => {
+    try {
+        const { email, otp, otpExpires } = req.body;
+        const recruiter = await Recruiter.findOne({ email });
+        if (recruiter) {
+            recruiter.resetOtp = otp;
+            recruiter.resetOtpExpires = otpExpires;
+            await recruiter.save();
+            return res.status(200).json({ success: true });
+        }
+        res.status(404).json({ message: 'Recruiter not found' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+const verifyOtp = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+        const recruiter = await Recruiter.findOne({ email });
+        if (!recruiter) return res.status(404).json({ success: false, message: 'Recruiter not found' });
+        
+        if (!recruiter.resetOtp) return res.status(400).json({ success: false, message: 'OTP invalide ou expiré.' });
+        if (recruiter.resetOtpExpires < new Date()) {
+            recruiter.resetOtp = null;
+            recruiter.resetOtpExpires = null;
+            await recruiter.save();
+            return res.status(400).json({ success: false, message: 'Le code OTP a expiré.' });
+        }
+        if (recruiter.resetOtp !== otp) return res.status(400).json({ success: false, message: 'Code incorrect.' });
+        
+        return res.status(200).json({ success: true, message: 'Code vérifié.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+const resetPassword = async (req, res) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+        const recruiter = await Recruiter.findOne({ email });
+        if (!recruiter) return res.status(404).json({ success: false, message: 'Recruiter not found' });
+
+        if (!recruiter.resetOtp || recruiter.resetOtp !== otp || recruiter.resetOtpExpires < new Date()) {
+            return res.status(400).json({ success: false, message: 'OTP invalide ou expiré.' });
+        }
+
+        recruiter.password = newPassword;
+        recruiter.resetOtp = null;
+        recruiter.resetOtpExpires = null;
+        await recruiter.save();
+
+        return res.status(200).json({ success: true, message: 'Mot de passe réinitialisé avec succès.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
 module.exports = {
     registerRecruiter,
     authRecruiter,
@@ -549,5 +608,8 @@ module.exports = {
     markNotificationRead,
     handleApplicationDecision,
     deleteNotification,
-    clearAllNotifications
+    clearAllNotifications,
+    setOtp,
+    verifyOtp,
+    resetPassword
 };

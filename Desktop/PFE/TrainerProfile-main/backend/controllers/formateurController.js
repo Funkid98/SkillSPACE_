@@ -933,10 +933,70 @@ const rateStudent = async (req, res) => {
   }
 };
 
+// Internal OTP endpoints
+const setOtp = async (req, res) => {
+  try {
+    const { email, otp, otpExpires } = req.body;
+    const formateur = await Formateur.findOne({ email });
+    if (formateur) {
+      formateur.resetOtp = otp;
+      formateur.resetOtpExpires = otpExpires;
+      await formateur.save();
+      return res.status(200).json({ success: true });
+    }
+    res.status(404).json({ message: 'Formateur non trouvé' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const formateur = await Formateur.findOne({ email });
+    if (!formateur) return res.status(404).json({ success: false, message: 'Formateur non trouvé' });
+    
+    if (!formateur.resetOtp) return res.status(400).json({ success: false, message: 'OTP invalide ou expiré.' });
+    if (formateur.resetOtpExpires < new Date()) {
+      formateur.resetOtp = null;
+      formateur.resetOtpExpires = null;
+      await formateur.save();
+      return res.status(400).json({ success: false, message: 'Le code OTP a expiré.' });
+    }
+    if (formateur.resetOtp !== otp) return res.status(400).json({ success: false, message: 'Code incorrect.' });
+    
+    return res.status(200).json({ success: true, message: 'Code vérifié.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    const formateur = await Formateur.findOne({ email });
+    if (!formateur) return res.status(404).json({ success: false, message: 'Formateur non trouvé' });
+
+    if (!formateur.resetOtp || formateur.resetOtp !== otp || formateur.resetOtpExpires < new Date()) {
+      return res.status(400).json({ success: false, message: 'OTP invalide ou expiré.' });
+    }
+
+    formateur.password = newPassword;
+    formateur.resetOtp = null;
+    formateur.resetOtpExpires = null;
+    await formateur.save();
+
+    return res.status(200).json({ success: true, message: 'Mot de passe réinitialisé avec succès.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   getProfile, updateProfile, patchProfile, getDashboardData, getFormations,
   getAllFormations, seedDummyData, suggestExpertise, generateBio, validateUrl,
   createFormation, updateFormation, deleteFormation, enhanceFormation,
   register, login, verifySignupOtp, checkEmailExists, enrollFormation, leaveFormation, 
-  getFormationById, updateFormationRating, terminateFormation, rateStudent
+  getFormationById, updateFormationRating, terminateFormation, rateStudent,
+  setOtp, verifyOtp, resetPassword
 };

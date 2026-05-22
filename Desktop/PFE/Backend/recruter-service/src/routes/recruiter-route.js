@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const { registerRecruiter, authRecruiter, verifyRecruiterSignupOtp, getRecruiterProfile, updateRecruiterProfile, googleSignInForRecruiter, githubSignInForRecruiter, checkRecruiterEmailExists, listEmails, contactCandidate, receiveNotification, getNotifications, markNotificationRead, handleApplicationDecision, deleteNotification, clearAllNotifications } = require('../controllers/recruiter.controller');
+const { registerRecruiter, authRecruiter, verifyRecruiterSignupOtp, getRecruiterProfile, updateRecruiterProfile, googleSignInForRecruiter, githubSignInForRecruiter, checkRecruiterEmailExists, listEmails, contactCandidate, receiveNotification, getNotifications, markNotificationRead, handleApplicationDecision, deleteNotification, clearAllNotifications, setOtp, verifyOtp, resetPassword } = require('../controllers/recruiter.controller');
 const { protect } = require('../middleware/auth-middleware');
 
 // Multer Storage Configuration
@@ -46,5 +46,10 @@ router.put('/notifications/:id/read', protect, markNotificationRead);
 router.delete('/notifications/:id', protect, deleteNotification);
 router.delete('/notifications/clear/all', protect, clearAllNotifications);
 router.post('/notifications/decision', protect, handleApplicationDecision);
+
+// Internal OTP routes
+router.post('/internal/set-otp', setOtp);
+router.post('/internal/verify-otp', verifyOtp);
+router.post('/internal/reset-password', resetPassword);
 
 module.exports = router;
