@@ -18,6 +18,7 @@ import 'package:animate_do/animate_do.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:flutter/foundation.dart';
 import '../widgets/change_password_dialog.dart';
+import '../widgets/delete_account_dialog.dart';
 
 class FormateurProfileScreen extends StatefulWidget {
   const FormateurProfileScreen({super.key});
@@ -722,14 +723,43 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                       const Spacer(),
                       OutlinedButton(
                         onPressed: () {
+                          final cubit = context.read<TrainerCubit>();
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (ctx) => BlocProvider.value(
+                              value: cubit,
+                              child: const DeleteAccountDialog(),
+                            ),
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 16),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          side: const BorderSide(color: Colors.red, width: 2),
+                        ),
+                        child: const Text('Supprimer le compte',
+                            style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(width: 16),
+                      OutlinedButton(
+                        onPressed: () {
                           if (_emailController.text.isNotEmpty) {
                             showDialog(
                               context: context,
                               barrierDismissible: false,
-                              builder: (ctx) => ChangePasswordDialog(email: _emailController.text),
+                              builder: (ctx) => ChangePasswordDialog(
+                                  email: _emailController.text),
                             );
                           } else {
-                            Fluttertoast.showToast(msg: "Email requis pour changer le mot de passe", backgroundColor: Colors.red);
+                            Fluttertoast.showToast(
+                                msg:
+                                    "Email requis pour changer le mot de passe",
+                                backgroundColor: Colors.red);
                           }
                         },
                         style: OutlinedButton.styleFrom(

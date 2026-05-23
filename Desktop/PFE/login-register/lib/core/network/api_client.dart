@@ -106,7 +106,7 @@ class ApiClient {
     }
   }
 
-  Future<http.Response> delete(String endpoint) async {
+  Future<http.Response> delete(String endpoint, {Map<String, dynamic>? body}) async {
     final currentBaseUrl = _getBaseUrl(endpoint);
     final url = Uri.parse('$currentBaseUrl$endpoint');
     final headers = await _getHeaders();
@@ -115,6 +115,7 @@ class ApiClient {
       final response = await _client.delete(
         url,
         headers: headers,
+        body: body != null ? jsonEncode(body) : null,
       );
       return _handleResponse(response);
     } catch (e) {

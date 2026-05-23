@@ -47,4 +47,16 @@ class RecruiterRepository {
       throw Exception('Failed to load matching candidates: ${response.statusCode}');
     }
   }
+
+  Future<void> deleteAccount({String? password, String? googleToken}) async {
+    final requestBody = <String, dynamic>{};
+    if (password != null) requestBody['password'] = password;
+    if (googleToken != null) requestBody['googleToken'] = googleToken;
+
+    final response = await apiClient.delete('/recruiter/profile/delete', body: requestBody);
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final body = jsonDecode(response.body);
+      throw Exception(body['message'] ?? body['error'] ?? 'Failed to delete recruiter account');
+    }
+  }
 }

@@ -200,4 +200,18 @@ class TrainerCubit extends Cubit<TrainerState> {
       emit(state.copyWith(dashboardData: updatedDashboard));
     }
   }
+
+  Future<void> deleteAccount(String userId, {String? password, String? googleToken}) async {
+    if (isClosed) return;
+    emit(state.copyWith(status: TrainerStatus.loading));
+    try {
+      await _formateurService.deleteAccount(userId, password: password, googleToken: googleToken);
+    } catch (e) {
+      emit(state.copyWith(
+        status: TrainerStatus.failure,
+        errorMessage: e.toString().replaceAll('Exception: ', ''),
+      ));
+      rethrow;
+    }
+  }
 }

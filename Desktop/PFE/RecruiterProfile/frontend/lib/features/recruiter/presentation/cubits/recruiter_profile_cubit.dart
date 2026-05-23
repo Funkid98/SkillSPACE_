@@ -45,4 +45,15 @@ class RecruiterProfileCubit extends Cubit<RecruiterProfileState> {
   Future<String> uploadLogo(List<int> bytes, String filename) async {
     return await repository.uploadLogo(bytes, filename);
   }
+
+  Future<void> deleteAccount({String? password, String? googleToken}) async {
+    emit(RecruiterProfileLoading());
+    try {
+      await repository.deleteAccount(password: password, googleToken: googleToken);
+      // On success, state transitions to initial since we navigate away
+    } catch (e) {
+      emit(RecruiterProfileError(e.toString().replaceAll('Exception: ', '')));
+      rethrow;
+    }
+  }
 }

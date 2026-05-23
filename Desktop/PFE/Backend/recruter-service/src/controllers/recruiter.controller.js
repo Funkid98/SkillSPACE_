@@ -593,6 +593,52 @@ const resetPassword = async (req, res) => {
     }
 };
 
+// @desc    Delete recruiter account permanently
+// @route   DELETE /profile/delete
+// @access  Private
+const deleteRecruiterAccount = async (req, res) => {
+    try {
+        const { password, googleToken } = req.body;
+
+        const recruiterId = req.user._id;
+        const recruiter = await Recruiter.findById(recruiterId);
+        if (!recruiter) return res.status(404).json({ message: "Le compte n'existe pas" });
+
+        if (googleToken) {
+            // Google Re-Auth Flow
+            const { OAuth2Client } = require('google-auth-library');
+            const client = new OAuth2Client('1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com');
+            const ticket = await client.verifyIdToken({
+                idToken: googleToken,
+                audience: '1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com',
+            });
+            const payload = ticket.getPayload();
+            if (payload.email !== recruiter.email) {
+                return res.status(401).json({ message: "L'email Google ne correspond pas au compte" });
+            }
+        } else if (password) {
+            // Password Flow
+            if (!(await recruiter.matchPassword(password))) {
+                return res.status(401).json({ message: 'Mot de passe incorrect' });
+            }
+        } else {
+            return res.status(400).json({ message: "Veuillez fournir un mot de passe ou utiliser l'authentification Google" });
+        }
+
+        // Delete all related data
+        await Notification.deleteMany({ userId: recruiterId });
+        await Recruiter.findByIdAndDelete(recruiterId);
+
+        res.json({ message: 'Compte supprimé avec succès' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+const googleReauth = async (req, res) => {
+    return deleteRecruiterAccount(req, res);
+};
+
 module.exports = {
     registerRecruiter,
     authRecruiter,
@@ -611,5 +657,7 @@ module.exports = {
     clearAllNotifications,
     setOtp,
     verifyOtp,
-    resetPassword
+    resetPassword,
+    deleteRecruiterAccount,
+    googleReauth
 };

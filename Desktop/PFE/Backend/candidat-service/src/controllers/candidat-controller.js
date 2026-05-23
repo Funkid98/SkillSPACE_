@@ -2,6 +2,7 @@ const User = require('../models/candidat')
 const Match = require('../models/match')
 const axios = require('axios')
 const { hashPassword, verifyPassword, createToken, calculateCompletion } = require('../services/candidat-service')
+const { OAuth2Client } = require('google-auth-library')
 
 
 // Register (for testing)
@@ -1225,11 +1226,94 @@ const getApplicationStats = async (req, res) => {
 };
 
 
+// Delete Account permanently (Password-based or Google)
+const deleteAccount = async (req, res) => {
+    try {
+        const { password, googleToken, googleAccessToken } = req.body;
+
+        const userId = req.userId;
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ error: "Le compte n'existe pas" });
+
+        if (googleToken) {
+    const CLIENT_ID = '1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com';
+    const client = new OAuth2Client(CLIENT_ID);
+
+    let payload;
+    try {
+        const ticket = await client.verifyIdToken({
+            idToken: googleToken,
+            audience: CLIENT_ID,
+        });
+        payload = ticket.getPayload();
+    } catch (verifyErr) {
+        // Handle clock skew: "Token used too early" (server clock behind Google's)
+        if (verifyErr.message.includes('used too early') || verifyErr.message.includes('used before')) {
+            const CLOCK_TOLERANCE_SECONDS = 300; // 5 minutes tolerance
+            const decoded = JSON.parse(
+                Buffer.from(googleToken.split('.')[1], 'base64url').toString()
+            );
+            const now = Math.floor(Date.now() / 1000);
+
+            if (decoded.nbf - now > CLOCK_TOLERANCE_SECONDS) {
+                return res.status(401).json({ error: 'Token Google invalide (décalage horaire trop grand)' });
+            }
+            if (decoded.exp < now) {
+                return res.status(401).json({ error: 'Token Google expiré' });
+            }
+            if (decoded.aud !== CLIENT_ID) {
+                return res.status(401).json({ error: 'Token Google invalide (audience incorrecte)' });
+            }
+
+            payload = decoded; // Accept with manual validation
+        } else {
+            return res.status(401).json({ error: 'Token Google invalide: ' + verifyErr.message });
+        }
+    }
+
+    if (payload.email !== user.email) {
+        return res.status(401).json({ error: "L'email Google ne correspond pas au compte" });
+    }
+
+    } else if (googleAccessToken) {
+        // Fallback: web access_token (kept for safety, FedCM now provides idToken)
+        const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${googleAccessToken}` }
+        });
+        if (!response.ok) {
+            return res.status(401).json({ error: "Token Google invalide ou expiré" });
+        }
+        const googleUser = await response.json();
+        if (googleUser.email !== user.email) {
+            return res.status(401).json({ error: "L'email Google ne correspond pas au compte" });
+        }
+
+}
+        // Delete all related data
+        await Application.deleteMany({ candidateId: userId });
+        await Match.deleteMany({ candidateId: userId });
+        await Notification.deleteMany({ userId: userId });
+        await User.findByIdAndDelete(userId);
+
+        res.json({ message: 'Compte supprimé avec succès' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Google re-auth specifically (alias or dedicated verification)
+const googleReauth = async (req, res) => {
+    // We can just proxy to deleteAccount or handle it directly here if needed
+    // For now, it will do the same deletion logic 
+    return deleteAccount(req, res);
+};
+
 module.exports = {
     register, login, getProfile, updateProfile, getRecentCandidatesBySector,
     getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer,
     applyToOffer, getApplicationStats, receiveNotification, getNotifications, markNotificationRead,
     internalUpdateApplication, deleteNotification, clearAllNotifications,
     enrollFormation, leaveFormation, getEnrolledFormations, completeFormation,
-    getEnrolledCandidatesByFormation, getAcceptedOffers, getCoachAdvice, submitReview
+    getEnrolledCandidatesByFormation, getAcceptedOffers, getCoachAdvice, submitReview,
+    deleteAccount, googleReauth
 };

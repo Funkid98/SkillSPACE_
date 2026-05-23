@@ -13,6 +13,7 @@ import '../../../../shared/widgets/animated_reveal.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../data/models/skill_level.dart';
+import '../widgets/delete_account_dialog.dart';
 import '../widgets/quiz_modal.dart';
 import '../widgets/change_password_dialog.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
@@ -203,7 +204,8 @@ class _ProfileContent extends StatelessWidget {
                           showDialog(
                             context: context,
                             barrierDismissible: false,
-                            builder: (ctx) => ChangePasswordDialog(email: state.data.email),
+                            builder: (ctx) =>
+                                ChangePasswordDialog(email: state.data.email),
                           );
                         }
                       },
@@ -227,6 +229,45 @@ class _ProfileContent extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+
+          // Delete Account button
+          const SizedBox(height: 16),
+          AnimatedReveal(
+            delay: const Duration(milliseconds: 800),
+            child: SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  final cubit = context.read<ProfileCubit>();
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (ctx) => BlocProvider.value(
+                      value: cubit,
+                      child: const DeleteAccountDialog(),
+                    ),
+                  );
+                },
+                icon:
+                    const Icon(Icons.delete_forever_rounded, color: Colors.red),
+                label: const Text(
+                  'Supprimer le compte',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.red, width: 1.5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
             ),
           ),
         ],

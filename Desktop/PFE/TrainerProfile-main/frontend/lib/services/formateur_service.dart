@@ -118,4 +118,21 @@ class FormateurService {
       return {'isValid': true, 'reason': ''};
     }
   }
+
+  Future<void> deleteAccount(String userId, {String? password, String? googleToken}) async {
+    final requestBody = <String, dynamic>{};
+    if (password != null) requestBody['password'] = password;
+    if (googleToken != null) requestBody['googleToken'] = googleToken;
+
+    final response = await http.delete(
+      Uri.parse('$baseUrl/profile/delete/$userId'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(requestBody),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? body['error'] ?? 'Échec de la suppression du compte');
+    }
+  }
 }

@@ -992,11 +992,60 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// @desc    Delete formateur account permanently
+// @route   DELETE /api/formateur/profile/delete/:userId
+const deleteFormateurAccount = async (req, res) => {
+  try {
+    const { password, googleToken } = req.body;
+    const { userId } = req.params;
+
+    // Verify ownership (or use req.user._id if available in middleware)
+    const formateur = await Formateur.findById(userId);
+    if (!formateur) {
+      return res.status(404).json({ message: "Le compte n'existe pas" });
+    }
+
+    if (googleToken) {
+      // Google Re-Auth Flow
+      const { OAuth2Client } = require('google-auth-library');
+      const client = new OAuth2Client('1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com');
+      const ticket = await client.verifyIdToken({
+          idToken: googleToken,
+          audience: '1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com',
+      });
+      const payload = ticket.getPayload();
+      if (payload.email !== formateur.email) {
+          return res.status(401).json({ message: "L'email Google ne correspond pas au compte" });
+      }
+    } else if (password) {
+        // Password Flow
+        if (!(await formateur.matchPassword(password))) {
+            return res.status(401).json({ message: 'Mot de passe incorrect' });
+        }
+    } else {
+        return res.status(400).json({ message: "Veuillez fournir un mot de passe ou utiliser l'authentification Google" });
+    }
+
+    // Delete all formations belonging to this trainer
+    await Formation.deleteMany({ trainerId: userId });
+    // Delete the formateur account
+    await Formateur.findByIdAndDelete(userId);
+
+    res.status(200).json({ message: 'Compte supprimé avec succès' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la suppression', error: error.message });
+  }
+};
+
+const googleReauth = async (req, res) => {
+    return deleteFormateurAccount(req, res);
+};
+
 module.exports = {
   getProfile, updateProfile, patchProfile, getDashboardData, getFormations,
   getAllFormations, seedDummyData, suggestExpertise, generateBio, validateUrl,
   createFormation, updateFormation, deleteFormation, enhanceFormation,
   register, login, verifySignupOtp, checkEmailExists, enrollFormation, leaveFormation, 
   getFormationById, updateFormationRating, terminateFormation, rateStudent,
-  setOtp, verifyOtp, resetPassword
+  setOtp, verifyOtp, resetPassword, deleteFormateurAccount, googleReauth
 };

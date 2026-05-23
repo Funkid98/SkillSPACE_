@@ -13,6 +13,7 @@ import '../../../../shared/widgets/animated_reveal.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import '../widgets/change_password_dialog.dart';
+import '../widgets/delete_account_dialog.dart';
 
 class RecruiterProfilePage extends StatefulWidget {
   const RecruiterProfilePage({super.key});
@@ -260,7 +261,8 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                       label: "Nom de l'entreprise",
                       controller: _entrepriseController,
                       icon: Icons.store,
-                      validator: (v) => v == null || v.isEmpty ? l10n.requiredField : null),
+                      validator: (v) =>
+                          v == null || v.isEmpty ? l10n.requiredField : null),
                   const SizedBox(height: 20),
                   Row(
                     children: [
@@ -271,7 +273,9 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                               items: _sizes,
                               onChanged: (v) =>
                                   setState(() => _selectedSize = v),
-                              validator: (v) => v == null || v.isEmpty ? l10n.requiredField : null)),
+                              validator: (v) => v == null || v.isEmpty
+                                  ? l10n.requiredField
+                                  : null)),
                       const SizedBox(width: 16),
                       Expanded(
                           child: _buildDropdown(
@@ -280,7 +284,9 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                               items: _sectors,
                               onChanged: (v) =>
                                   setState(() => _selectedSector = v),
-                              validator: (v) => v == null || v.isEmpty ? l10n.requiredField : null)),
+                              validator: (v) => v == null || v.isEmpty
+                                  ? l10n.requiredField
+                                  : null)),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -293,14 +299,18 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                               items: _years,
                               onChanged: (v) =>
                                   setState(() => _selectedYear = v),
-                              validator: (v) => v == null || v.isEmpty ? l10n.requiredField : null)),
+                              validator: (v) => v == null || v.isEmpty
+                                  ? l10n.requiredField
+                                  : null)),
                       const SizedBox(width: 16),
                       Expanded(
                           child: _buildField(
                               label: l10n.website,
                               controller: _websiteController,
                               icon: Icons.link,
-                              validator: (v) => v == null || v.isEmpty ? l10n.requiredField : null)),
+                              validator: (v) => v == null || v.isEmpty
+                                  ? l10n.requiredField
+                                  : null)),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -313,7 +323,10 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                       Expanded(
                         child: FormField<String>(
                           initialValue: _selectedCountry,
-                          validator: (v) => (_selectedCountry == null || _selectedCountry!.isEmpty) ? l10n.requiredField : null,
+                          validator: (v) => (_selectedCountry == null ||
+                                  _selectedCountry!.isEmpty)
+                              ? l10n.requiredField
+                              : null,
                           builder: (state) => Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -342,7 +355,8 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                                         prefixIcon: const Icon(Icons.search),
                                         hintText: 'Rechercher un pays...',
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                         ),
                                       ),
                                     ),
@@ -364,9 +378,11 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                                         : AppColors.bg,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                        color: state.hasError 
-                                            ? Colors.red 
-                                            : (isDark ? AppColors.borderDark : Colors.transparent)),
+                                        color: state.hasError
+                                            ? Colors.red
+                                            : (isDark
+                                                ? AppColors.borderDark
+                                                : Colors.transparent)),
                                   ),
                                   child: Row(
                                     mainAxisAlignment:
@@ -375,7 +391,8 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                                       Expanded(
                                         child: Row(
                                           children: [
-                                            if (_selectedCountryCode != null) ...[
+                                            if (_selectedCountryCode !=
+                                                null) ...[
                                               CountryFlag.fromCountryCode(
                                                   _selectedCountryCode!,
                                                   height: 16,
@@ -387,16 +404,16 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                                                   _selectedCountry ??
                                                       "Choisir un pays...",
                                                   style: TextStyle(
-                                                      color:
-                                                          _selectedCountry != null
-                                                              ? (isDark
-                                                                  ? Colors.white
-                                                                  : AppColors
-                                                                      .textDark)
-                                                              : (isDark
-                                                                  ? Colors.white38
-                                                                  : AppColors
-                                                                      .textGray)),
+                                                      color: _selectedCountry !=
+                                                              null
+                                                          ? (isDark
+                                                              ? Colors.white
+                                                              : AppColors
+                                                                  .textDark)
+                                                          : (isDark
+                                                              ? Colors.white38
+                                                              : AppColors
+                                                                  .textGray)),
                                                   overflow:
                                                       TextOverflow.ellipsis),
                                             ),
@@ -411,8 +428,11 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                               ),
                               if (state.hasError)
                                 Padding(
-                                  padding: const EdgeInsets.only(top: 8, left: 12),
-                                  child: Text(state.errorText!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+                                  padding:
+                                      const EdgeInsets.only(top: 8, left: 12),
+                                  child: Text(state.errorText!,
+                                      style: const TextStyle(
+                                          color: Colors.red, fontSize: 12)),
                                 ),
                             ],
                           ),
@@ -424,7 +444,9 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                               label: "Ville",
                               controller: _cityController,
                               icon: Icons.location_city,
-                              validator: (v) => v == null || v.isEmpty ? l10n.requiredField : null)),
+                              validator: (v) => v == null || v.isEmpty
+                                  ? l10n.requiredField
+                                  : null)),
                     ],
                   ),
                 ],
@@ -437,14 +459,19 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
               title: l10n.companyLogo,
               icon: Icons.image_outlined,
               child: FormField<bool>(
-                validator: (v) => (_logoBytes == null && profile.logoUrl.isEmpty) ? l10n.requiredField : null,
+                validator: (v) =>
+                    (_logoBytes == null && profile.logoUrl.isEmpty)
+                        ? l10n.requiredField
+                        : null,
                 builder: (state) => Column(
                   children: [
                     _buildLogoUpload(l10n, profile.logoUrl),
                     if (state.hasError)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
-                        child: Text(state.errorText!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+                        child: Text(state.errorText!,
+                            style: const TextStyle(
+                                color: Colors.red, fontSize: 12)),
                       ),
                   ],
                 ),
@@ -469,8 +496,33 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                 const Spacer(),
                 OutlinedButton(
                   onPressed: () {
+                    final cubit = context.read<RecruiterProfileCubit>();
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (ctx) => BlocProvider.value(
+                        value: cubit,
+                        child: const DeleteAccountDialog(),
+                      ),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    side: const BorderSide(color: Colors.red, width: 2),
+                  ),
+                  child: const Text('Supprimer le compte',
+                      style: TextStyle(
+                          color: Colors.red, fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(width: 16),
+                OutlinedButton(
+                  onPressed: () {
                     final authState = context.read<AuthCubit>().state;
-                    final email = authState.loggedInUser?['email']?.toString() ?? '';
+                    final email =
+                        authState.loggedInUser?['email']?.toString() ?? '';
                     if (email.isNotEmpty) {
                       showDialog(
                         context: context,
@@ -478,7 +530,9 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                         builder: (ctx) => ChangePasswordDialog(email: email),
                       );
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email non disponible'), backgroundColor: Colors.red));
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                          content: Text('Email non disponible'),
+                          backgroundColor: Colors.red));
                     }
                   },
                   style: OutlinedButton.styleFrom(

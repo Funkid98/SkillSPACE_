@@ -5,10 +5,13 @@ const {
   getAllFormations, seedDummyData, suggestExpertise, generateBio, validateUrl,
   createFormation, updateFormation, deleteFormation, enhanceFormation,
   register, login, verifySignupOtp, checkEmailExists, enrollFormation, leaveFormation, getFormationById, updateFormationRating, terminateFormation, rateStudent,
-  setOtp, verifyOtp, resetPassword
+  setOtp, verifyOtp, resetPassword, deleteFormateurAccount, googleReauth
 } = require('../controllers/formateurController');
 
-router.route('/profile/:userId').get(getProfile).put(updateProfile).patch(patchProfile);
+router.route('/profile/:userId').get(getProfile).put(updateProfile).patch(patchProfile).delete(deleteFormateurAccount); // Keeping alias
+router.route('/profile/delete/:userId').delete(deleteFormateurAccount);
+router.route('/profile/google-reauth/:userId').post(googleReauth);
+
 router.route('/dashboard/:userId').get(getDashboardData);
 
 // Auth Routes

@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { register, login, getProfile, updateProfile, getRecentCandidatesBySector, getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer, applyToOffer, getApplicationStats, receiveNotification, getNotifications, markNotificationRead, internalUpdateApplication, deleteNotification, clearAllNotifications, enrollFormation, getEnrolledFormations, completeFormation, getEnrolledCandidatesByFormation, getAcceptedOffers, getCoachAdvice, leaveFormation, submitReview } = require('../controllers/candidat-controller')
+const { register, login, getProfile, updateProfile, getRecentCandidatesBySector, getMatchingOffersForCandidate, getMatchingCandidatesGroupedByOffer, reMatchOffer, applyToOffer, getApplicationStats, receiveNotification, getNotifications, markNotificationRead, internalUpdateApplication, deleteNotification, clearAllNotifications, enrollFormation, getEnrolledFormations, completeFormation, getEnrolledCandidatesByFormation, getAcceptedOffers, getCoachAdvice, leaveFormation, submitReview, deleteAccount, googleReauth } = require('../controllers/candidat-controller')
 const auth = require('../middleware/auth-middleware')
 
 
@@ -10,6 +10,9 @@ router.post('/login', login)
 
 router.get('/me', auth, getProfile)
 router.put('/me', auth, updateProfile)
+router.delete('/me', auth, deleteAccount) // Keeping alias
+router.delete('/profile/delete', auth, deleteAccount)
+router.post('/profile/google-reauth', auth, googleReauth)
 router.get('/recent/:sector', auth, getRecentCandidatesBySector)
 router.get('/matching-offers', auth, getMatchingOffersForCandidate)
 router.get('/grouped-matches', auth, getMatchingCandidatesGroupedByOffer)

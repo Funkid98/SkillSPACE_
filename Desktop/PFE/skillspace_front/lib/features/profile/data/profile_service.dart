@@ -60,7 +60,7 @@ class ProfileService {
       throw Exception('Failed to update profile');
     }
   }
-  
+
   static Future<void> removeCv(String token) async {
     // 1. Clear the fields in the profile first
     // 2. The backend should ideally also delete the physical file
@@ -74,6 +74,45 @@ class ProfileService {
 
     if (response.statusCode != 200) {
       throw Exception('Failed to remove CV');
+    }
+  }
+
+  static Future<void> deleteAccount(String token,
+      {String? password,
+      String? googleToken,
+      String? googleAccessToken}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final userData = prefs.getString('user_data');
+    bool isRecruiter = false;
+    if (userData != null) {
+      final user = jsonDecode(userData);
+      isRecruiter = user['role'] == 'recruteur' || user['role'] == 'recruiter';
+    }
+
+    final baseUrl = isRecruiter ? _recruiterBaseUrl : _candidatBaseUrl;
+    final endpoint =
+        isRecruiter ? '/recruiter/profile/delete' : '/candidat/profile/delete';
+
+    final requestBody = <String, dynamic>{};
+    if (password != null) requestBody['password'] = password;
+    if (googleToken != null) requestBody['googleToken'] = googleToken;
+    if (googleAccessToken != null) {
+      requestBody['googleAccessToken'] = googleAccessToken; // ✅
+    }
+
+    final response = await http.delete(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(requestBody),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final body = jsonDecode(response.body);
+      throw Exception(
+          body['message'] ?? body['error'] ?? 'Failed to delete account');
     }
   }
 }
