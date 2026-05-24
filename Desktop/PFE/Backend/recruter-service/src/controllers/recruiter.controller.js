@@ -4,6 +4,18 @@ const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const { sendVerificationEmail } = require('../services/emailService');
 
+const COOKIE_NAME = 'skillspace_token';
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  maxAge: 30 * 24 * 60 * 60 * 1000,
+  path: '/',
+};
+const setAuthCookie = (res, token) => {
+  res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
+};
+
 const client = new OAuth2Client('1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com');
 
 const CANDIDAT_SERVICE_URL = 'http://localhost:5001/api/auth';
@@ -111,12 +123,14 @@ const authRecruiter = async (req, res) => {
                 });
             }
 
+            const token = generateToken(recruiter._id, recruiter.entreprise);
+            setAuthCookie(res, token);
+
             res.json({
                 _id: recruiter._id,
                 email: recruiter.email,
                 entreprise: recruiter.entreprise,
                 role: recruiter.role,
-                token: generateToken(recruiter._id, recruiter.entreprise),
                 message: `Bienvenue "${recruiter.entreprise}"`
             });
         } else {
@@ -145,9 +159,11 @@ const verifyRecruiterSignupOtp = async (req, res) => {
         recruiter.resetOtpExpires = null;
         await recruiter.save();
 
+        const token = generateToken(recruiter._id, recruiter.entreprise);
+        setAuthCookie(res, token);
+
         res.status(200).json({
             message: 'Compte vérifié avec succès.',
-            token: generateToken(recruiter._id, recruiter.entreprise),
             _id: recruiter._id,
             email: recruiter.email,
             entreprise: recruiter.entreprise,
@@ -273,10 +289,12 @@ const googleSignInForRecruiter = async (req, res) => {
             });
         }
 
+        const token = generateToken(recruiter._id, recruiter.entreprise);
+        setAuthCookie(res, token);
+
         res.status(200).json({
             success: true,
             message: `Bienvenue "${recruiter.entreprise}"`,
-            token: generateToken(recruiter._id, recruiter.entreprise),
             user: {
                 id: recruiter._id,
                 email: recruiter.email,
@@ -360,10 +378,12 @@ const githubSignInForRecruiter = async (req, res) => {
             });
         }
 
+        const token = generateToken(recruiter._id, recruiter.entreprise);
+        setAuthCookie(res, token);
+
         res.status(200).json({
             success: true,
             message: `Bienvenue "${recruiter.entreprise}"`,
-            token: generateToken(recruiter._id, recruiter.entreprise),
             user: {
                 id: recruiter._id,
                 email: recruiter.email,

@@ -53,14 +53,28 @@ class AuthCubit extends Cubit<AuthState> {
     await handleGoogleRedirect();
 
     final staySignedIn = CookieService.getBool('stay_signed_in') ?? true;
-    final token = CookieService.getString('jwt_token');
-    final userDataStr = CookieService.getString('user_data');
+    if (!staySignedIn) return;
 
-    if (staySignedIn && token != null && userDataStr != null) {
-      try {
-        final Map<String, dynamic> user = jsonDecode(userDataStr);
-        restoreSession(user);
-      } catch (_) {}
+    final userDataStr = CookieService.getString('user_data');
+    if (userDataStr == null) return;
+
+    final Map<String, dynamic> userData = jsonDecode(userDataStr);
+    final role = userData['role'];
+
+    // Verify the HttpOnly cookie by hitting the appropriate protected endpoint
+    // Candidate → login-register service (/api/auth/me)
+    // Recruiter  → recruiter service (/recruiter/profile)
+    try {
+      final isRecruiter = role == 'recruteur' || role == 'recruiter';
+      final response = isRecruiter
+          ? await ApiClient().get('/recruiter/profile')
+          : await ApiClient().get('/api/auth/me');
+
+      if (response.statusCode == 200) {
+        restoreSession(userData);
+      }
+    } catch (_) {
+      // Not logged in — stay in initial state
     }
   }
 
