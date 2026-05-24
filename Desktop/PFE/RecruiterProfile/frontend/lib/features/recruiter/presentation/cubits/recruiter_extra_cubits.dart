@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/recruiter_job_offer_model.dart';
 import '../../data/repositories/recruiter_job_repository.dart';
 import '../../data/repositories/recruiter_repository.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pfe/core/network/cookie_service.dart';
 
 abstract class RecruiterOffersState {}
 
@@ -123,8 +123,7 @@ class RecruiterCandidatesCubit extends Cubit<RecruiterCandidatesState> {
   void loadCandidates({bool isAutoRefresh = false}) async {
     if (!isAutoRefresh) emit(RecruiterCandidatesLoading());
     try {
-      final prefs = await SharedPreferences.getInstance();
-      _savedCandidateIds = prefs.getStringList('saved_candidates') ?? [];
+      _savedCandidateIds = CookieService.getStringList('saved_candidates') ?? [];
 
       var rawGroups = await repository.getGroupedMatchingCandidates();
       
@@ -223,8 +222,6 @@ class RecruiterCandidatesCubit extends Cubit<RecruiterCandidatesState> {
   }
 
   void toggleSaveCandidate(String offerId, String candidateId) async {
-    final prefs = await SharedPreferences.getInstance();
-
     _fullGroups = _fullGroups.map((group) {
       if (group.offer.id == offerId) {
         final newCandidates = group.candidates.map((c) {
@@ -244,7 +241,7 @@ class RecruiterCandidatesCubit extends Cubit<RecruiterCandidatesState> {
       return group;
     }).toList();
     
-    await prefs.setStringList('saved_candidates', _savedCandidateIds);
+    CookieService.setStringList('saved_candidates', _savedCandidateIds);
 
     filterCandidates(_lastQuery);
   }

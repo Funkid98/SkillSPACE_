@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:reactive_theme/reactive_theme.dart';
 import '../../../../core/app_colors.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pfe/core/network/cookie_service.dart';
 
 class SimulationResultPage extends StatefulWidget {
   final List<Map<String, dynamic>> chatHistory;
@@ -51,8 +51,7 @@ class _SimulationResultPageState extends State<SimulationResultPage>
 
   Future<void> _fetchEvaluation() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final userDataStr = prefs.getString('user_data');
+      final userDataStr = CookieService.getString('user_data');
       String? candidateId;
       if (userDataStr != null) {
         final user = jsonDecode(userDataStr);

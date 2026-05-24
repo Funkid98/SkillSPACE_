@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pfe/core/network/cookie_service.dart';
 import 'simulation_state.dart';
 
 class SimulationCubit extends Cubit<SimulationState> {
@@ -10,8 +10,7 @@ class SimulationCubit extends Cubit<SimulationState> {
   Future<void> fetchAcceptedOffers() async {
     emit(SimulationLoading());
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
+      final token = CookieService.getString('jwt_token') ?? '';
 
       if (token.isEmpty) {
         emit(const SimulationError('Non authentifié'));

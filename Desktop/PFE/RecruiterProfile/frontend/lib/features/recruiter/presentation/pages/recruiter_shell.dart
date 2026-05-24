@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pfe/core/network/api_client.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pfe/core/network/cookie_service.dart';
 import '../../../../recruiter_profile.dart';
 import '../../data/repositories/recruiter_repository.dart';
 import '../cubits/recruiter_dashboard_cubit.dart';
@@ -45,8 +45,7 @@ class _RecruiterShellState extends State<RecruiterShell> {
   }
 
   Future<void> _restoreTab() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedIndex = prefs.getInt('recruiter_active_tab');
+    final savedIndex = CookieService.getInt('recruiter_active_tab');
     if (savedIndex != null &&
         savedIndex >= 0 &&
         savedIndex < RecruiterTab.values.length) {
@@ -63,8 +62,7 @@ class _RecruiterShellState extends State<RecruiterShell> {
 
   Future<void> _onTabChanged(RecruiterTab tab, BuildContext context) async {
     setState(() => _activeTab = tab);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('recruiter_active_tab', tab.index);
+    CookieService.setInt('recruiter_active_tab', tab.index);
   }
 
   @override

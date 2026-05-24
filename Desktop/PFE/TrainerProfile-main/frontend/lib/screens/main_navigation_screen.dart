@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:reactive_theme/reactive_theme.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pfe/core/network/cookie_service.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import 'dashboard_screen.dart';
 import 'formateur_profile_screen.dart';
@@ -36,8 +36,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   Future<void> _loadPersistedIndex() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedIndex = prefs.getInt('trainer_active_index');
+      final savedIndex = CookieService.getInt('trainer_active_index');
       if (savedIndex != null && savedIndex < 3) {
         setState(() => _selectedIndex = savedIndex);
       }
@@ -48,8 +47,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   Future<void> _updateIndex(int index) async {
     setState(() => _selectedIndex = index);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('trainer_active_index', index);
+    CookieService.setInt('trainer_active_index', index);
   }
 
   // We'll use a wrapper to provide the Cubit and trigger loading

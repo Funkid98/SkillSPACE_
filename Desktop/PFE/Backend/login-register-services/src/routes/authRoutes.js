@@ -3,6 +3,8 @@ const router = express.Router();
 const {
   register,
   login,
+  logout,
+  getMe,
   forgotPassword,
   verifyOtp,
   resetPassword,
@@ -12,7 +14,9 @@ const {
   verifySignupOtp,
 } = require('../controllers/authController');
 
-// Public routes
+const { protect } = require('../middleware/authMiddleware');
+
+// ── Public routes ─────────────────────────────────────────────────────────────
 router.get('/exists/:email', checkEmailExists);
 router.post('/register', register);
 router.post('/verify-signup', verifySignupOtp);
@@ -21,19 +25,15 @@ router.post('/forgot-password', forgotPassword);
 router.post('/verify-otp', verifyOtp);
 router.post('/reset-password', resetPassword);
 
-// Google Sign In
+// ── OAuth routes ──────────────────────────────────────────────────────────────
 router.post('/google', googleSignIn);
-
-// GitHub Sign In
 router.post('/github', githubSignIn);
 
-// GitHub OAuth Callback (browser redirect)
+// GitHub OAuth browser callback — shows code to the user
 router.get('/github/callback', async (req, res) => {
   const { code } = req.query;
-  if (!code) {
-    return res.status(400).send('<h2>❌ Erreur: code manquant</h2>');
-  }
-  // Show a page that tells the user to go back to the app and paste the code
+  if (!code) return res.status(400).send('<h2>❌ Erreur: code manquant</h2>');
+
   res.send(`
     <!DOCTYPE html>
     <html>
@@ -60,5 +60,11 @@ router.get('/github/callback', async (req, res) => {
     </html>
   `);
 });
+
+// ── Protected routes ──────────────────────────────────────────────────────────
+// GET  /api/auth/me      — session restore; Flutter calls this on startup
+// POST /api/auth/logout  — clears the HttpOnly cookie
+router.get('/me', protect, getMe);
+router.post('/logout', logout);   // no protect needed — just clears the cookie
 
 module.exports = router;

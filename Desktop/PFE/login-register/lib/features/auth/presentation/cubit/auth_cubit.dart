@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/network/cookie_service.dart';
 import '../../data/datasources/google_auth_web.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../../../core/network/api_client.dart';
@@ -52,10 +52,9 @@ class AuthCubit extends Cubit<AuthState> {
     // On web, check if we're returning from a Google OAuth redirect first.
     await handleGoogleRedirect();
 
-    final prefs = await SharedPreferences.getInstance();
-    final staySignedIn = prefs.getBool('stay_signed_in') ?? true;
-    final token = prefs.getString('jwt_token');
-    final userDataStr = prefs.getString('user_data');
+    final staySignedIn = CookieService.getBool('stay_signed_in') ?? true;
+    final token = CookieService.getString('jwt_token');
+    final userDataStr = CookieService.getString('user_data');
 
     if (staySignedIn && token != null && userDataStr != null) {
       try {
@@ -93,8 +92,7 @@ class AuthCubit extends Cubit<AuthState> {
         userRole = UserRole.formateur;
       }
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('stay_signed_in', state.staySignedIn);
+      CookieService.setBool('stay_signed_in', state.staySignedIn);
 
       String? synchronizedSector;
       if (userRole == UserRole.candidat) {
@@ -164,8 +162,7 @@ class AuthCubit extends Cubit<AuthState> {
       } else if (user.role == 'formateur' || user.role == 'trainer') {
         userRole = UserRole.formateur;
       }
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('stay_signed_in', state.staySignedIn);
+      CookieService.setBool('stay_signed_in', state.staySignedIn);
 
       String? synchronizedSector;
       if (userRole == UserRole.candidat) {
@@ -210,8 +207,7 @@ class AuthCubit extends Cubit<AuthState> {
       } else if (user.role == 'formateur' || user.role == 'trainer') {
         userRole = UserRole.formateur;
       }
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('stay_signed_in', state.staySignedIn);
+      CookieService.setBool('stay_signed_in', state.staySignedIn);
 
       String? synchronizedSector;
       if (userRole == UserRole.candidat) {
@@ -346,9 +342,8 @@ class AuthCubit extends Cubit<AuthState> {
         updatedUser['sector'] = fullProfile.sector;
         emit(state.copyWith(loggedInUser: updatedUser));
 
-        // Persist updated user data to SharedPreferences
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_data', jsonEncode(updatedUser));
+        // Persist updated user data to CookieService
+        CookieService.setString('user_data', jsonEncode(updatedUser));
       }
       return fullProfile;
     } catch (e) {
@@ -365,9 +360,8 @@ class AuthCubit extends Cubit<AuthState> {
         updatedUser['sector'] = sector;
         emit(state.copyWith(loggedInUser: updatedUser));
 
-        // Persist to SharedPreferences
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_data', jsonEncode(updatedUser));
+        // Persist to CookieService
+        CookieService.setString('user_data', jsonEncode(updatedUser));
       }
     } catch (e) {
       print('Error updating sector: $e');
@@ -384,8 +378,7 @@ class AuthCubit extends Cubit<AuthState> {
       });
       emit(state.copyWith(loggedInUser: updatedUser));
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_data', jsonEncode(updatedUser));
+      CookieService.setString('user_data', jsonEncode(updatedUser));
     }
   }
 

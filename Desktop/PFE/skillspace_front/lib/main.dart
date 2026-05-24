@@ -13,7 +13,7 @@ import 'package:skillspace/features/landing/presentation/pages/landing_page.dart
 import 'package:skillspace/features/dashboard_shell/dashboard_shell.dart';
 import 'package:recruiter_profile/recruiter_profile.dart' as recruiter;
 import 'package:trainer_profile/screens/main_navigation_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pfe/core/network/cookie_service.dart';
 import 'package:reactive_theme/reactive_theme.dart';
 
 void main() async {
@@ -24,12 +24,11 @@ void main() async {
   // before Flutter's engine assertion fires. Safe no-op on mobile/desktop.
   KeyboardFix.apply();
 
-  final prefs = await SharedPreferences.getInstance();
-  final staySignedIn = prefs.getBool('stay_signed_in') ?? true;
+  final staySignedIn = CookieService.getBool('stay_signed_in') ?? true;
 
   if (!staySignedIn) {
-    await prefs.remove('jwt_token');
-    await prefs.remove('user_data');
+    CookieService.remove('jwt_token');
+    CookieService.remove('user_data');
   }
 
   final apiClient = ApiClient();

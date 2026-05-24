@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pfe/core/network/cookie_service.dart';
 import '../../../core/utils/string_extension.dart';
 import '../data/models/profile_model.dart';
 import '../data/profile_service.dart';
@@ -15,8 +15,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> loadProfile() async {
     emit(ProfileLoading());
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
+      final token = CookieService.getString('jwt_token') ?? '';
 
       if (token.isEmpty) {
         // Fallback to dummy or initial data if no token (might happen in dev)
@@ -41,8 +40,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     final currentData = (state as ProfileLoaded).data;
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
+      final token = CookieService.getString('jwt_token') ?? '';
 
       if (token.isEmpty) {
         throw Exception('No authentication token found');
@@ -172,8 +170,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     if (state is! ProfileLoaded) return;
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
+      final token = CookieService.getString('jwt_token') ?? '';
 
       if (token.isEmpty) {
         throw Exception('No authentication token found');
@@ -196,8 +193,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   }) async {
     emit(ProfileLoading());
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
+      final token = CookieService.getString('jwt_token') ?? '';
 
       if (token.isEmpty) {
         throw Exception('No authentication token found');

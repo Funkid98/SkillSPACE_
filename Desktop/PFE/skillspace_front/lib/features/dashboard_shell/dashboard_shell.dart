@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_theme/reactive_theme.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pfe/core/network/cookie_service.dart';
 import 'package:skillspace/core/app_colors.dart';
 import '../../shared/widgets/app_sidebar.dart';
 import '../dashboard/cubit/dashboard_cubit.dart';
@@ -53,8 +53,7 @@ class _DashboardShellState extends State<DashboardShell> {
 
   Future<void> _loadPersistedTab() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedIndex = prefs.getInt('active_tab_index');
+      final savedIndex = CookieService.getInt('active_tab_index');
       if (savedIndex != null && savedIndex < DashboardTab.values.length) {
         setState(() {
           _activeTab = DashboardTab.values[savedIndex];
@@ -67,8 +66,7 @@ class _DashboardShellState extends State<DashboardShell> {
 
   Future<void> _onTabChanged(DashboardTab tab) async {
     setState(() => _activeTab = tab);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('active_tab_index', tab.index);
+    CookieService.setInt('active_tab_index', tab.index);
   }
 
   @override

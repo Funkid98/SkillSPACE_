@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pfe/core/network/cookie_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:reactive_theme/reactive_theme.dart';
 import '../../../../core/app_colors.dart';
@@ -31,8 +31,7 @@ class _CandidateFormationDetailsPageState
     setState(() => _isEnrolling = true);
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
+      final token = CookieService.getString('jwt_token') ?? '';
 
       final response = await http.post(
         Uri.parse('http://127.0.0.1:5000/candidat/enroll/$formationId'),

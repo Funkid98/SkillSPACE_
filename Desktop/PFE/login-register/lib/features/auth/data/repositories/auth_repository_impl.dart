@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/network/cookie_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/network/api_client.dart';
@@ -30,11 +30,10 @@ class AuthRepositoryImpl implements AuthRepository {
         _googleSignIn = googleSignIn ?? sharedGoogleSignIn;
 
 
-  // Helper method to save token and user data
-  Future<void> _saveAuthData(String token, UserModel user) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('jwt_token', token);
-    await prefs.setString('user_data', jsonEncode(user.toJson()));
+  // Store only non-sensitive user metadata in a JS-readable cookie.
+  // The JWT itself lives exclusively in the HttpOnly cookie managed by the browser.
+  void _saveUserData(UserModel user) {
+    CookieService.setString('user_data', jsonEncode(user.toJson()));
   }
 
   @override
@@ -85,7 +84,8 @@ class AuthRepositoryImpl implements AuthRepository {
       final user = isRecruiter
           ? _mapRecruiterToUserModel(data)
           : UserModel.fromJson(data['user']);
-      await _saveAuthData(data['token'], user);
+      // Token is in HttpOnly cookie set by the server — only cache user metadata
+      _saveUserData(user);
       return user;
     } else {
       throw Exception(
@@ -122,7 +122,7 @@ class AuthRepositoryImpl implements AuthRepository {
       final user = isRecruiter
           ? _mapRecruiterToUserModel(data)
           : UserModel.fromJson(data['user']);
-      await _saveAuthData(data['token'], user);
+      _saveUserData(user);
       return user;
     } else {
       String errorMessage = 'Code de vérification invalide';
@@ -178,11 +178,10 @@ class AuthRepositoryImpl implements AuthRepository {
       final user = isRecruiter
           ? _mapRecruiterToUserModel(data)
           : UserModel.fromJson(data['user']);
-      await _saveAuthData(data['token'], user);
+      _saveUserData(user);
       return user;
-    } else if ((response.statusCode == 403 || response.statusCode == 401) && 
+    } else if ((response.statusCode == 403 || response.statusCode == 401) &&
                data['requiresVerification'] == true) {
-      print('Triggering NeedsVerificationException for ${data['email'] ?? email}');
       throw NeedsVerificationException(
           data['email'] ?? email, data['message'] ?? 'Vérification requise');
     } else {
@@ -211,7 +210,7 @@ class AuthRepositoryImpl implements AuthRepository {
         final data = jsonDecode(response.body);
         if (response.statusCode == 200 && data['success'] == true) {
           final user = UserModel.fromJson(data['user']);
-          await _saveAuthData(data['token'], user);
+          _saveUserData(user);
           return user;
         }
         throw Exception(
@@ -262,7 +261,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       if (response.statusCode == 200 && data['success'] == true) {
         final user = UserModel.fromJson(data['user']);
-        await _saveAuthData(data['token'], user);
+        _saveUserData(user);
         return user;
       } else {
         throw Exception(
@@ -283,8 +282,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<UserModel> getProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userData = prefs.getString('user_data');
+    final userData = CookieService.getString('user_data');
     bool isRecruiter = false;
     bool isFormateur = false;
     String? userId;
@@ -384,7 +382,7 @@ class AuthRepositoryImpl implements AuthRepository {
     final data = jsonDecode(response.body);
     if (response.statusCode == 200 && data['success'] == true) {
       final user = UserModel.fromJson(data['user']);
-      await _saveAuthData(data['token'], user);
+      _saveUserData(user);
       return user;
     } else {
       throw Exception(data['message'] ?? 'Erreur lors de la connexion GitHub');
@@ -454,15 +452,23 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('jwt_token');
-    await prefs.remove('user_data');
-    await prefs.remove('active_tab_index');
+    // Tell the server to clear the HttpOnly cookie
+    try {
+      await _apiClient.post('/api/auth/logout', {});
+    } catch (_) {}
+    // Clear client-side user metadata cookie
+    CookieService.remove('user_data');
+    CookieService.remove('active_tab_index');
   }
 
   @override
   Future<bool> isLoggedIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.containsKey('jwt_token');
+    // Call /api/auth/me — if the HttpOnly cookie is valid the server returns 200
+    try {
+      final response = await _apiClient.get('/api/auth/me');
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
   }
 }

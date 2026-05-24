@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pfe/core/network/cookie_service.dart';
 import 'models/profile_model.dart';
 
 class ProfileService {
@@ -8,8 +8,7 @@ class ProfileService {
   static const String _recruiterBaseUrl = 'http://127.0.0.1:5002';
 
   static Future<ProfileData> getProfile(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    final userData = prefs.getString('user_data');
+    final userData = CookieService.getString('user_data');
     bool isRecruiter = false;
     if (userData != null) {
       final user = jsonDecode(userData);
@@ -36,8 +35,7 @@ class ProfileService {
   }
 
   static Future<void> updateProfile(String token, ProfileData profile) async {
-    final prefs = await SharedPreferences.getInstance();
-    final userData = prefs.getString('user_data');
+    final userData = CookieService.getString('user_data');
     bool isRecruiter = false;
     if (userData != null) {
       final user = jsonDecode(userData);
@@ -81,8 +79,7 @@ class ProfileService {
       {String? password,
       String? googleToken,
       String? googleAccessToken}) async {
-    final prefs = await SharedPreferences.getInstance();
-    final userData = prefs.getString('user_data');
+    final userData = CookieService.getString('user_data');
     bool isRecruiter = false;
     if (userData != null) {
       final user = jsonDecode(userData);

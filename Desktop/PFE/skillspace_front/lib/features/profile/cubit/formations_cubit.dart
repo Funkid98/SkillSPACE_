@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pfe/core/network/cookie_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -11,8 +11,7 @@ class FormationsCubit extends Cubit<FormationsState> {
   Future<void> fetchFormations() async {
     emit(FormationsLoading());
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
+      final token = CookieService.getString('jwt_token') ?? '';
 
       if (token.isEmpty) {
         emit(FormationsError('Non authentifié'));
@@ -39,8 +38,7 @@ class FormationsCubit extends Cubit<FormationsState> {
 
   Future<void> completeFormation(String formationId) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
+      final token = CookieService.getString('jwt_token') ?? '';
 
       final response = await http.post(
         Uri.parse('http://127.0.0.1:5000/candidat/complete/$formationId'),
@@ -60,8 +58,7 @@ class FormationsCubit extends Cubit<FormationsState> {
 
   Future<void> leaveFormation(String formationId) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
+      final token = CookieService.getString('jwt_token') ?? '';
 
       final response = await http.post(
         Uri.parse('http://127.0.0.1:5000/candidat/leave/$formationId'),
@@ -118,8 +115,7 @@ class FormationsCubit extends Cubit<FormationsState> {
     }
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
+      final token = CookieService.getString('jwt_token') ?? '';
 
       final response = await http.post(
         Uri.parse('http://127.0.0.1:5000/candidat/review/$formationId'),

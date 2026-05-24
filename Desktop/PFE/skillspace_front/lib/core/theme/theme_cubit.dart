@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pfe/core/network/cookie_service.dart';
 
 class ThemeCubit extends Cubit<ThemeMode> {
   ThemeCubit() : super(ThemeMode.light) {
@@ -8,8 +8,7 @@ class ThemeCubit extends Cubit<ThemeMode> {
   }
 
   Future<void> _loadTheme() async {
-    final prefs = await SharedPreferences.getInstance();
-    final isDark = prefs.getBool('is_dark') ?? false;
+    final isDark = CookieService.getBool('is_dark') ?? false;
     emit(isDark ? ThemeMode.dark : ThemeMode.light);
   }
 
@@ -17,7 +16,6 @@ class ThemeCubit extends Cubit<ThemeMode> {
     final isDark = state == ThemeMode.dark;
     final newMode = isDark ? ThemeMode.light : ThemeMode.dark;
     emit(newMode);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('is_dark', !isDark);
+    CookieService.setBool('is_dark', !isDark);
   }
 }

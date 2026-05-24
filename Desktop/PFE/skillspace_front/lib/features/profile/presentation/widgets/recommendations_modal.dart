@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:reactive_theme/reactive_theme.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pfe/core/network/cookie_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/app_colors.dart';
 import '../pages/candidate_formation_details_page.dart';
@@ -44,8 +44,7 @@ class _RecommendationsModalState extends State<RecommendationsModal> {
 
   Future<void> _fetchRecommendations() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
+      final token = CookieService.getString('jwt_token') ?? '';
 
       final response = await http.post(
         Uri.parse('http://127.0.0.1:5000/quiz/recommend'),

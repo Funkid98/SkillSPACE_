@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:reactive_theme/reactive_theme.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pfe/core/network/cookie_service.dart';
 import '../../cubit/profile_cubit.dart';
 import '../../data/models/profile_model.dart';
 import '../../../../core/app_colors.dart';
@@ -42,8 +42,7 @@ class _QuizModalState extends State<QuizModal> {
   Future<void> _generateQuiz() async {
     setState(() => _step = 1);
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
+      final token = CookieService.getString('jwt_token') ?? '';
 
       final response = await http.post(
         Uri.parse('http://127.0.0.1:5000/quiz/generate'),
@@ -77,8 +76,7 @@ class _QuizModalState extends State<QuizModal> {
   Future<void> _evaluateQuiz() async {
     setState(() => _step = 3);
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
+      final token = CookieService.getString('jwt_token') ?? '';
 
       final response = await http.post(
         Uri.parse('http://127.0.0.1:5000/quiz/evaluate'),

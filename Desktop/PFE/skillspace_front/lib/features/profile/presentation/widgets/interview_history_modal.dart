@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:reactive_theme/reactive_theme.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pfe/core/network/cookie_service.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/app_colors.dart';
 import '../../../simulation/presentation/pages/simulation_result_page.dart';
@@ -51,8 +51,7 @@ class _InterviewHistoryModalState extends State<InterviewHistoryModal> {
 
   Future<void> _fetchHistory() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final userDataStr = prefs.getString('user_data');
+      final userDataStr = CookieService.getString('user_data');
       if (userDataStr == null) {
         throw Exception("Utilisateur non connecté");
       }
