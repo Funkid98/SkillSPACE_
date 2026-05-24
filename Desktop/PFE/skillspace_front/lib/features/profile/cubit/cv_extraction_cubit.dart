@@ -8,7 +8,7 @@ class CvExtractionCubit extends Cubit<CvExtractionState> {
   CvExtractionCubit() : super(CvExtractionInitial());
 
   /// Opens file picker, uploads the selected CV, and emits states.
-  Future<void> pickAndUploadCv({required String token}) async {
+  Future<void> pickAndUploadCv() async {
     try {
       // 1. Pick file
       final result = await FilePicker.platform.pickFiles(
@@ -25,10 +25,7 @@ class CvExtractionCubit extends Cubit<CvExtractionState> {
       emit(CvExtractionLoading());
 
       // 3. Upload and extract
-      final data = await CvExtractionService.uploadCv(
-        file: file,
-        token: token,
-      );
+      final data = await CvExtractionService.uploadCv(file: file);
 
       // 4. Success
       emit(CvExtractionSuccess(data));

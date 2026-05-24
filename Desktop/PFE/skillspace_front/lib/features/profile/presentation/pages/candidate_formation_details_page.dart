@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pfe/core/network/cookie_service.dart';
-import 'package:http/http.dart' as http;
+import 'package:pfe/core/network/api_client.dart';
 import 'package:reactive_theme/reactive_theme.dart';
 import '../../../../core/app_colors.dart';
 import '../../../../core/utils/responsive.dart';
@@ -22,6 +21,7 @@ class CandidateFormationDetailsPage extends StatefulWidget {
 
 class _CandidateFormationDetailsPageState
     extends State<CandidateFormationDetailsPage> {
+  final ApiClient _apiClient = ApiClient();
   bool _isEnrolling = false;
 
   Future<void> _enrollInFormation() async {
@@ -31,18 +31,12 @@ class _CandidateFormationDetailsPageState
     setState(() => _isEnrolling = true);
 
     try {
-      final token = CookieService.getString('jwt_token') ?? '';
+      final body = widget.aiReason != null
+          ? {'aiReason': widget.aiReason!}
+          : <String, dynamic>{};
 
-      final response = await http.post(
-        Uri.parse('http://127.0.0.1:5000/candidat/enroll/$formationId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: widget.aiReason != null
-            ? '{"aiReason": "${widget.aiReason!.replaceAll('"', '\\"')}"}'
-            : '{}',
-      );
+      final response = await _apiClient.post(
+          '/candidat/enroll/$formationId', body);
 
       if (response.statusCode == 200) {
         if (mounted) {

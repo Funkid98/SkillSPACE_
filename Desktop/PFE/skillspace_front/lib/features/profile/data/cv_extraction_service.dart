@@ -1,41 +1,25 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
+import 'package:pfe/core/network/api_client.dart';
 
 class CvExtractionService {
-  // Change this to your backend URL
-  static const String _baseUrl = 'http://127.0.0.1:5000';
+  static final ApiClient _apiClient = ApiClient();
 
   /// Upload a CV file and return the AI-extracted data as a Map.
+  /// Uses ApiClient which sends the HttpOnly cookie automatically.
   static Future<Map<String, dynamic>> uploadCv({
     required PlatformFile file,
-    required String token,
   }) async {
-    final uri = Uri.parse('$_baseUrl/cv/upload');
-
-    final request = http.MultipartRequest('POST', uri)
-      ..headers['Authorization'] = 'Bearer $token';
-
-    if (file.bytes != null) {
-      // Web / memory
-      request.files.add(http.MultipartFile.fromBytes(
-        'cv',
-        file.bytes!,
-        filename: file.name,
-      ));
-    } else if (file.path != null) {
-      // Mobile / desktop
-      request.files.add(await http.MultipartFile.fromPath(
-        'cv',
-        file.path!,
-        filename: file.name,
-      ));
-    } else {
+    if (file.bytes == null) {
       throw Exception('Cannot read file');
     }
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
+    final response = await _apiClient.uploadFile(
+      '/cv/upload',
+      file.bytes!,
+      file.name,
+      fieldName: 'cv',
+    );
 
     if (response.statusCode != 200) {
       final body = jsonDecode(response.body);

@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../core/utils/app_toast.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../../cubit/profile_cubit.dart';
 

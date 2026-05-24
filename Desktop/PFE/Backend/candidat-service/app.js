@@ -3,6 +3,7 @@ require('dotenv').config({ path: path.resolve(__dirname, './.env') });
 
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const candidatRoutes = require('./src/routes/candidat-route');
 const cvRoutes = require('./src/routes/cv-route');
 const quizRoutes = require('./src/routes/quiz-route');
@@ -15,13 +16,21 @@ if (!mongoURI) {
     process.exit(1);
 }
 
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',').map((o) => o.trim());
+
 const app = express()
 app.use(cors({
-    origin: '*',
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      callback(new Error(`CORS blocked: ${origin}`));
+    },
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }))
 app.use(express.json())
+app.use(cookieParser())
 app.use('/candidat', candidatRoutes)
 app.use('/cv', cvRoutes)
 app.use('/quiz', quizRoutes)

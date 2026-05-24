@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pfe/core/network/cookie_service.dart';
 import '../../../core/utils/string_extension.dart';
 import '../data/models/profile_model.dart';
 import '../data/profile_service.dart';
@@ -15,20 +14,13 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> loadProfile() async {
     emit(ProfileLoading());
     try {
-      final token = CookieService.getString('jwt_token') ?? '';
-
-      if (token.isEmpty) {
-        // Fallback to dummy or initial data if no token (might happen in dev)
-        var data = await ProfileData.fetch();
-        if (initialUserData != null) {
-          data = _mergeInitialData(data, initialUserData!);
-        }
-        emit(ProfileLoaded(data, isSaved: true));
-        return;
-      }
-
-      final data = await ProfileService.getProfile(token);
-      emit(ProfileLoaded(data, isSaved: true));
+      // ProfileService.getProfile() uses ApiClient (BrowserClient + withCredentials)
+      // — no token reading needed; the HttpOnly cookie is sent automatically.
+      final data = await ProfileService.getProfile();
+      final merged = initialUserData != null
+          ? _mergeInitialData(data, initialUserData!)
+          : data;
+      emit(ProfileLoaded(merged, isSaved: true));
     } catch (e) {
       if (kDebugMode) print('Error loading profile: $e');
       emit(ProfileError('Erreur de chargement du profil'));
@@ -40,16 +32,8 @@ class ProfileCubit extends Cubit<ProfileState> {
     final currentData = (state as ProfileLoaded).data;
 
     try {
-      final token = CookieService.getString('jwt_token') ?? '';
-
-      if (token.isEmpty) {
-        throw Exception('No authentication token found');
-      }
-
-      // Calculate completion before saving
       final updatedData = _calculateCompletion(currentData);
-
-      await ProfileService.updateProfile(token, updatedData);
+      await ProfileService.updateProfile(updatedData);
       emit(ProfileLoaded(updatedData, isSaved: true));
     } catch (e) {
       if (kDebugMode) print('Error saving profile: $e');
@@ -75,7 +59,6 @@ class ProfileCubit extends Cubit<ProfileState> {
   ProfileData _calculateCompletion(ProfileData data) {
     final isRecruiter = data.role == 'recruteur' || data.role == 'recruiter';
     int score = 0;
-    // We use 10 fields for Candidat so each is exactly 10%
     int total = isRecruiter ? 8 : 9;
 
     if (!isRecruiter) {
@@ -90,17 +73,13 @@ class ProfileCubit extends Cubit<ProfileState> {
     if (data.skills.isNotEmpty) score++;
     if (data.hasCv) score++;
 
-    // Adding work info for perfect 10s
     if (data.poste != null && data.poste!.isNotEmpty) score++;
     if (isRecruiter && data.entreprise != null && data.entreprise!.isNotEmpty) {
       score++;
     }
 
     int rawPercent = ((score / total) * 100).toInt();
-    // Round to nearest 10 (e.g., 12.5 -> 10, 25 -> 20, 37.5 -> 40, etc.)
     int percent = (rawPercent / 10).round() * 10;
-
-    // Ensure 100 is always 100 when finished
     if (score == total) percent = 100;
 
     return data.copyWith(completionPercent: percent);
@@ -161,7 +140,6 @@ class ProfileCubit extends Cubit<ProfileState> {
             current.skills,
       );
 
-      // Auto-calculate completion after extraction
       emit(ProfileLoaded(_calculateCompletion(updated), isSaved: false));
     }
   }
@@ -170,15 +148,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     if (state is! ProfileLoaded) return;
 
     try {
-      final token = CookieService.getString('jwt_token') ?? '';
-
-      if (token.isEmpty) {
-        throw Exception('No authentication token found');
-      }
-
-      await ProfileService.removeCv(token);
-
-      // After removing from backend, we refresh local profile to get cleared fields
+      await ProfileService.removeCv();
       await loadProfile();
     } catch (e) {
       if (kDebugMode) print('Error removing CV: $e');
@@ -189,21 +159,14 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> deleteAccount({
     String? password,
     String? googleToken,
-    String? googleAccessToken, // ✅ add this
+    String? googleAccessToken,
   }) async {
     emit(ProfileLoading());
     try {
-      final token = CookieService.getString('jwt_token') ?? '';
-
-      if (token.isEmpty) {
-        throw Exception('No authentication token found');
-      }
-
       await ProfileService.deleteAccount(
-        token,
         password: password,
         googleToken: googleToken,
-        googleAccessToken: googleAccessToken, // ✅ pass through
+        googleAccessToken: googleAccessToken,
       );
     } catch (e) {
       if (kDebugMode) print('Error deleting account: $e');

@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_theme/reactive_theme.dart';
-import 'package:pfe/core/network/cookie_service.dart';
 import '../../../../core/utils/string_extension.dart';
 import '../../../../core/utils/app_toast.dart';
 import '../../cubit/profile_cubit.dart';
@@ -1015,9 +1014,8 @@ class _CvCard extends StatelessWidget {
   }
 
   void _triggerUpload(BuildContext context) async {
-    final token = CookieService.getString('jwt_token') ?? '';
     if (!context.mounted) return;
-    context.read<CvExtractionCubit>().pickAndUploadCv(token: token);
+    context.read<CvExtractionCubit>().pickAndUploadCv();
   }
 }
 

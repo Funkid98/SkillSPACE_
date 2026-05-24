@@ -1,9 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:http/http.dart' as http;
+import 'package:pfe/core/network/api_client.dart';
 import 'package:reactive_theme/reactive_theme.dart';
-import 'package:pfe/core/network/cookie_service.dart';
 import '../../cubit/profile_cubit.dart';
 import '../../data/models/profile_model.dart';
 import '../../../../core/app_colors.dart';
@@ -39,22 +38,15 @@ class _QuizModalState extends State<QuizModal> {
   int _finalScore = 0; // computed score after evaluation
   int _quizRawScore = 0; // raw 0-100 score for the specific quiz level
 
+  final ApiClient _apiClient = ApiClient();
+
   Future<void> _generateQuiz() async {
     setState(() => _step = 1);
     try {
-      final token = CookieService.getString('jwt_token') ?? '';
-
-      final response = await http.post(
-        Uri.parse('http://127.0.0.1:5000/quiz/generate'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'skill': widget.skill.name,
-          'level': _selectedLevel,
-        }),
-      );
+      final response = await _apiClient.post('/quiz/generate', {
+        'skill': widget.skill.name,
+        'level': _selectedLevel,
+      });
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -76,29 +68,17 @@ class _QuizModalState extends State<QuizModal> {
   Future<void> _evaluateQuiz() async {
     setState(() => _step = 3);
     try {
-      final token = CookieService.getString('jwt_token') ?? '';
-
-      final response = await http.post(
-        Uri.parse('http://127.0.0.1:5000/quiz/evaluate'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'skill': widget.skill.name,
-          'claimedLevel': _selectedLevel,
-          'qna': _qna,
-        }),
-      );
+      final response = await _apiClient.post('/quiz/evaluate', {
+        'skill': widget.skill.name,
+        'claimedLevel': _selectedLevel,
+        'qna': _qna,
+      });
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
-        // Use the strictly calculated score from the backend
         int score = (data['updated_score'] ?? data['score'] ?? 0).toInt();
         int rawScore = (data['score'] ?? 0).toInt();
-
-        // Use the determined_level from backend (Dreyfus enforcement)
         String displayLevel = data['determined_level'] ?? 'Beginner';
 
         if (mounted) {
@@ -115,13 +95,12 @@ class _QuizModalState extends State<QuizModal> {
           _evaluationFeedback = data['feedback'] ?? '';
           _answersAnalysis = data['answers_analysis'] ?? [];
 
-          // Only suggest next level on a perfect 100/100 score
           if ((_selectedLevel == 'Beginner' ||
                   _selectedLevel == 'Intermediate') &&
               rawScore == 100) {
-            _step = 5; // Go to "Suggest Next Level" step
+            _step = 5;
           } else {
-            _step = 4; // Final Result
+            _step = 4;
           }
         });
       } else {

@@ -4,14 +4,16 @@ const Formateur = require('../models/formateurModel');
 const protect = async (req, res, next) => {
   let token;
 
-  // Check if token exists in headers
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
+  if (req.cookies && req.cookies.skillspace_token) {
+    token = req.cookies.skillspace_token;
+  }
+  
+  if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (token) {
     try {
-      // Get token from header
-      token = req.headers.authorization.split(' ')[1];
 
       // Decode token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -34,12 +36,10 @@ const protect = async (req, res, next) => {
       next();
     } catch (error) {
       console.error(error);
-      res.status(401).json({ message: 'Non autorisé, token échoué' });
+      return res.status(401).json({ message: 'Non autorisé, token échoué' });
     }
-  }
-
-  if (!token) {
-    res.status(401).json({ message: 'Non autorisé, pas de token' });
+  } else {
+    return res.status(401).json({ message: 'Non autorisé, pas de token' });
   }
 };
 

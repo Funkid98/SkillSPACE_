@@ -1,8 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:pfe/core/network/api_client.dart';
 import 'package:reactive_theme/reactive_theme.dart';
-import 'package:pfe/core/network/cookie_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/app_colors.dart';
 import '../pages/candidate_formation_details_page.dart';
@@ -42,25 +41,17 @@ class _RecommendationsModalState extends State<RecommendationsModal> {
     _fetchRecommendations();
   }
 
+  final ApiClient _apiClient = ApiClient();
+
   Future<void> _fetchRecommendations() async {
     try {
-      final token = CookieService.getString('jwt_token') ?? '';
-
-      final response = await http.post(
-        Uri.parse('http://127.0.0.1:5000/quiz/recommend'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'skill': widget.skill,
-          'score': widget.score,
-          // Pass context for personalized AI recommendations
-          if (widget.claimedLevel != null) 'claimedLevel': widget.claimedLevel,
-          if (widget.answersAnalysis != null)
-            'answersAnalysis': widget.answersAnalysis,
-        }),
-      );
+      final response = await _apiClient.post('/quiz/recommend', {
+        'skill': widget.skill,
+        'score': widget.score,
+        if (widget.claimedLevel != null) 'claimedLevel': widget.claimedLevel!,
+        if (widget.answersAnalysis != null)
+          'answersAnalysis': widget.answersAnalysis!,
+      });
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
