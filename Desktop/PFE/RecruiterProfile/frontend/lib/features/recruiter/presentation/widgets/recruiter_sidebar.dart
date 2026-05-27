@@ -126,157 +126,167 @@ class _RecruiterSidebarState extends State<RecruiterSidebar> {
           ),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              color: isDark
-                  ? Colors.black.withOpacity(0.35)
-                  : Colors.white.withOpacity(0.25),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 24, 12, 40),
-                    child: BlocBuilder<RecruiterProfileCubit,
-                        RecruiterProfileState>(
-                      builder: (context, state) {
-                        Widget nameWidget;
-                        if (state is RecruiterProfileLoaded) {
-                          final profile = state.profile;
-                          nameWidget = Row(
-                            children: [
-                              if (profile.logoUrl.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 12),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(
-                                      profile.logoUrl,
-                                      width: 32,
-                                      height: 32,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (ctx, _, __) =>
-                                          const Icon(Icons.business,
-                                              size: 32,
-                                              color: AppColors.textGray),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Stack(
+                  children: [
+                    // ── Spline 3D background ──────────────────────────
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: SplineRobot(
+                          mouseNotifier: _mouseNotifier,
+                          width: constraints.maxWidth,
+                          height: constraints.maxHeight,
+                        ),
+                      ),
+                    ),
+                    // ── Gradient overlay ──────────────────────────────
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            stops: const [0.0, 0.35, 0.65, 1.0],
+                            colors: [
+                              Colors.black.withValues(alpha: 0.88),
+                              Colors.black.withValues(alpha: 0.62),
+                              Colors.black.withValues(alpha: 0.70),
+                              Colors.black.withValues(alpha: 0.92),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // ── Sidebar content ────────────────────────────────
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 24, 12, 40),
+                          child: BlocBuilder<RecruiterProfileCubit,
+                              RecruiterProfileState>(
+                            builder: (context, state) {
+                              Widget nameWidget;
+                              if (state is RecruiterProfileLoaded) {
+                                final profile = state.profile;
+                                nameWidget = Row(
+                                  children: [
+                                    if (profile.logoUrl.isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(right: 12),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: Image.network(
+                                            profile.logoUrl,
+                                            width: 32,
+                                            height: 32,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (ctx, _, __) =>
+                                                const Icon(Icons.business,
+                                                    size: 32,
+                                                    color: AppColors.textGray),
+                                          ),
+                                        ),
+                                      ),
+                                    Expanded(
+                                      child: Text(
+                                        profile.entreprise.isNotEmpty
+                                            ? profile.entreprise
+                                            : 'SkillSpace',
+                                        style: AppTextStyles.navBrand.copyWith(
+                                          fontSize: 18,
+                                          color: isDark
+                                              ? Colors.white
+                                              : AppColors.navy,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
-                                  ),
-                                ),
-                              Expanded(
-                                child: Text(
-                                  profile.entreprise.isNotEmpty
-                                      ? profile.entreprise
-                                      : 'SkillSpace',
-                                  style: AppTextStyles.navBrand.copyWith(
-                                    fontSize: 18,
-                                    color: isDark
-                                        ? Colors.white
-                                        : AppColors.navy,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          );
-                        } else {
-                          nameWidget = Text('SkillSpace',
-                              style: AppTextStyles.navBrand.copyWith(
-                                color: isDark ? Colors.white : AppColors.navy,
-                              ));
-                        }
-                        return Row(
-                          children: [
-                            Expanded(child: nameWidget),
-                            const NotificationBell(isRecruiter: true),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                  // ── Spline Robot 3D Assistant ────────────────────────────────
-                  Center(
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 20),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.orange
-                                .withOpacity(isDark ? 0.08 : 0.03),
-                            blurRadius: 20,
-                            spreadRadius: 2,
+                                  ],
+                                );
+                              } else {
+                                nameWidget = Text('SkillSpace',
+                                    style: AppTextStyles.navBrand.copyWith(
+                                      color: isDark ? Colors.white : AppColors.navy,
+                                    ));
+                              }
+                              return Row(
+                                children: [
+                                  Expanded(child: nameWidget),
+                                  const NotificationBell(isRecruiter: true),
+                                ],
+                              );
+                            },
                           ),
-                        ],
-                      ),
-                      child: SplineRobot(
-                        mouseNotifier: _mouseNotifier,
-                        width: 210,
-                        height: 160,
-                      ),
-                    ),
-                  ),
-                  ...RecruiterTab.values.asMap().entries.map(
-                    (entry) {
-                      final index = entry.key;
-                      final tab = entry.value;
-                      return AnimatedReveal(
-                        delay: Duration(milliseconds: 100 + (index * 100)),
-                        direction: RevealDirection.fromLeft,
-                        child: _NavItem(
-                          tab: tab,
-                          isActive: tab == widget.activeTab,
-                          onTap: () => widget.onTabSelected(tab),
                         ),
-                      );
-                    },
-                  ),
-                  const Spacer(),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: ThemeToggle(),
-                  ),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
-                    child: Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                      child: InkWell(
-                        onTap: () =>
-                            _showLogoutConfirmation(context, widget.onLogout),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 12),
-                          decoration: BoxDecoration(
+                        ...RecruiterTab.values.asMap().entries.map(
+                          (entry) {
+                            final index = entry.key;
+                            final tab = entry.value;
+                            return AnimatedReveal(
+                              delay: Duration(milliseconds: 100 + (index * 100)),
+                              direction: RevealDirection.fromLeft,
+                              child: _NavItem(
+                                tab: tab,
+                                isActive: tab == widget.activeTab,
+                                onTap: () => widget.onTabSelected(tab),
+                              ),
+                            );
+                          },
+                        ),
+                        const Spacer(),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: ThemeToggle(),
+                        ),
+                        const SizedBox(height: 12),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
+                          child: Material(
+                            color: Colors.transparent,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isDark
-                                  ? AppColors.error.withOpacity(0.2)
-                                  : AppColors.error.withOpacity(0.15),
-                            ),
-                            color: AppColors.error.withOpacity(0.05),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.logout_rounded,
-                                  size: 17,
-                                  color: AppColors.error.withOpacity(0.8)),
-                              const SizedBox(width: 10),
-                              Text(
-                                l10n.logout,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.error.withOpacity(0.8),
+                            child: InkWell(
+                              onTap: () =>
+                                  _showLogoutConfirmation(context, widget.onLogout),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 12),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isDark
+                                        ? AppColors.error.withValues(alpha: 0.2)
+                                        : AppColors.error.withValues(alpha: 0.15),
+                                  ),
+                                  color: AppColors.error.withValues(alpha: 0.05),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.logout_rounded,
+                                        size: 17,
+                                        color: AppColors.error.withValues(alpha: 0.8)),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      l10n.logout,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.error.withValues(alpha: 0.8),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                );
+              },
             ),
           ),
         ));

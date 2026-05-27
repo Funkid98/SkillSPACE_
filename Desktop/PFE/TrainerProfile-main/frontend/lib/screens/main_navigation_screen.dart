@@ -252,119 +252,132 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                    child: Container(
-                      color: isDark
-                          ? Colors.black.withOpacity(0.35)
-                          : Colors.white.withOpacity(0.25),
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 30),
-                          // Logo
-                          Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 24.0),
-                            child: Row(
-                              children: [
-                                if (imageBase64.isNotEmpty)
-                                  CircleAvatar(
-                                    radius: 18,
-                                    backgroundImage: MemoryImage(
-                                        base64Decode(imageBase64)),
-                                  )
-                                else
-                                  const Icon(Icons.hub,
-                                      color: Color(0xFFE9652B), size: 30),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'SkillSpace',
-                                  style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark
-                                        ? Colors.white
-                                        : Colors.blue[900],
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return Stack(
+                          children: [
+                            // ── Spline 3D background ──────────────────────────
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: SplineRobot(
+                                  mouseNotifier: _mouseNotifier,
+                                  width: constraints.maxWidth,
+                                  height: constraints.maxHeight,
+                                ),
+                              ),
+                            ),
+                            // ── Gradient overlay ──────────────────────────────
+                            Positioned.fill(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    stops: const [0.0, 0.35, 0.65, 1.0],
+                                    colors: [
+                                      Colors.black.withValues(alpha: 0.88),
+                                      Colors.black.withValues(alpha: 0.62),
+                                      Colors.black.withValues(alpha: 0.70),
+                                      Colors.black.withValues(alpha: 0.92),
+                                    ],
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
-                          // ── Spline Robot 3D Assistant ────────────────────────────────
-                          Center(
-                            child: Container(
-                              margin:
-                                  const EdgeInsets.only(top: 10, bottom: 20),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFFE9652B)
-                                        .withOpacity(isDark ? 0.08 : 0.03),
-                                    blurRadius: 20,
-                                    spreadRadius: 2,
+                            // ── Sidebar content ────────────────────────────────
+                            Column(
+                              children: [
+                                const SizedBox(height: 30),
+                                // Logo
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 24.0),
+                                  child: Row(
+                                    children: [
+                                      if (imageBase64.isNotEmpty)
+                                        CircleAvatar(
+                                          radius: 18,
+                                          backgroundImage: MemoryImage(
+                                              base64Decode(imageBase64)),
+                                        )
+                                      else
+                                        const Icon(Icons.hub,
+                                            color: Color(0xFFE9652B), size: 30),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        'SkillSpace',
+                                        style: TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.blue[900],
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                              child: SplineRobot(
-                                mouseNotifier: _mouseNotifier,
-                                width: 210,
-                                height: 160,
-                              ),
-                            ),
-                          ),
-                          // Nav Items
-                          _buildNavItem(sideCtx, 0, 'Tableau de bord',
-                              Icons.grid_view_outlined),
-                          _buildNavItem(
-                              sideCtx, 1, 'Mon profil', Icons.person_outline),
-                          _buildNavItem(sideCtx, 2, 'Mes formations',
-                              Icons.school_outlined),
-                          const Spacer(),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: _ThemeToggle(),
-                          ),
-                          const SizedBox(height: 16),
-                          // Logout
-                          const Divider(),
-                          Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16.0),
-                            child: InkWell(
-                              onTap: () => _showLogoutConfirmation(sideCtx),
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 12),
-                                decoration: BoxDecoration(
+                                ),
+                                const SizedBox(height: 30),
+                                // Nav Items
+                                _buildNavItem(sideCtx, 0, 'Tableau de bord',
+                                    Icons.grid_view_outlined),
+                                _buildNavItem(
+                                    sideCtx, 1, 'Mon profil', Icons.person_outline),
+                                _buildNavItem(sideCtx, 2, 'Mes formations',
+                                    Icons.school_outlined),
+                                const Spacer(),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 16),
+                                  child: _ThemeToggle(),
+                                ),
+                                const SizedBox(height: 16),
+                                // Logout
+                                const Divider(),
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 16.0),
+                                  child: InkWell(
+                                    onTap: () => _showLogoutConfirmation(sideCtx),
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Colors.red
-                                          .withOpacity(isDark ? 0.2 : 0.15),
-                                    ),
-                                    color: Colors.red.withOpacity(0.05)),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.logout_rounded,
-                                        size: 17,
-                                        color: Colors.red.withOpacity(0.8)),
-                                    const SizedBox(width: 10),
-                                    Text(
-                                      'Déconnexion',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.red.withOpacity(0.8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 14, vertical: 12),
+                                      decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: Colors.red
+                                                .withOpacity(isDark ? 0.2 : 0.15),
+                                          ),
+                                          color: Colors.red.withOpacity(0.05)),
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.logout_rounded,
+                                              size: 17,
+                                              color: Colors.red.withOpacity(0.8)),
+                                          const SizedBox(width: 10),
+                                          Text(
+                                            'Déconnexion',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.red.withOpacity(0.8),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(height: 20),
+                              ],
                             ),
-                          ),
-                          const SizedBox(height: 20),
-                        ],
-                      ),
+                          ],
+                        );
+                      },
                     ),
+                  ),
                   ),
                 ));
           },

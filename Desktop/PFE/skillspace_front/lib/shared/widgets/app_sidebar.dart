@@ -225,19 +225,7 @@ class _AppSidebarState extends State<AppSidebar> {
                     ),
                     const SizedBox(height: 6),
                     // ── Nav items ─────────────────────────────────────────
-                    ...DashboardTab.values.where((tab) {
-                      final role = context.read<AuthCubit>().state.role;
-                      if (role == UserRole.recruteur) {
-                        return tab == DashboardTab.tableau ||
-                            tab == DashboardTab.profil;
-                      }
-                      if (role == UserRole.formateur) {
-                        return tab == DashboardTab.tableau ||
-                            tab == DashboardTab.profil ||
-                            tab == DashboardTab.formations;
-                      }
-                      return true;
-                    }).map(
+                    ...DashboardTab.values.map(
                       (tab) => _NavItem(
                         tab: tab,
                         isActive: tab == widget.activeTab,
@@ -560,156 +548,165 @@ class _MobileDrawer extends StatelessWidget {
               ),
             ),
           ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Handle pill
-                Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.2)
-                        : Colors.black.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Header row
-                Row(
+          child: Builder(
+            builder: (context) {
+              final drawerMouseNotifier = ValueNotifier<Offset?>(null);
+              return MouseRegion(
+                onHover: (event) {
+                  final box = context.findRenderObject() as RenderBox?;
+                  if (box != null) {
+                    final localPos = box.globalToLocal(event.position);
+                    drawerMouseNotifier.value = Offset(
+                      localPos.dx / box.size.width,
+                      localPos.dy / box.size.height,
+                    );
+                  }
+                },
+                onExit: (_) => drawerMouseNotifier.value = null,
+                child: Stack(
                   children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppColors.navy, AppColors.orange],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                    // ── Spline 3D background ──────────────────────────
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: SplineRobot(
+                          mouseNotifier: drawerMouseNotifier,
+                          width: double.infinity,
+                          height: double.infinity,
                         ),
-                        borderRadius: BorderRadius.circular(9),
                       ),
-                      child: const Icon(Icons.bolt_rounded,
-                          color: Colors.white, size: 18),
                     ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'SkillSpace',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                        color: isDark ? Colors.white : AppColors.navy,
+                    // ── Gradient overlay ──────────────────────────────
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            stops: const [0.0, 0.35, 0.65, 1.0],
+                            colors: [
+                              Colors.black.withValues(alpha: 0.88),
+                              Colors.black.withValues(alpha: 0.62),
+                              Colors.black.withValues(alpha: 0.70),
+                              Colors.black.withValues(alpha: 0.92),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // ── Drawer content ────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Handle pill
+                          Container(
+                            width: 36,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.2)
+                                  : Colors.black.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Header row
+                          Row(
+                            children: [
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [AppColors.navy, AppColors.orange],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(9),
+                                ),
+                                child: const Icon(Icons.bolt_rounded,
+                                    color: Colors.white, size: 18),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'SkillSpace',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.5,
+                                  color: isDark ? Colors.white : AppColors.navy,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          // Nav items
+                          ...DashboardTab.values.map(
+                            (tab) => _DrawerItem(
+                              tab: tab,
+                              isActive: tab == activeTab,
+                              onTap: () => onTabSelected(tab),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Divider(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.08)
+                                : Colors.black.withValues(alpha: 0.06),
+                            height: 1,
+                          ),
+                          const SizedBox(height: 8),
+                          // Logout row
+                          InkWell(
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showLogoutConfirmation(context, onLogout);
+                            },
+                            borderRadius: BorderRadius.circular(14),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 14),
+                              decoration: BoxDecoration(
+                                color: AppColors.error.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: AppColors.error.withValues(alpha: 0.15),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 34,
+                                    height: 34,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.error.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(Icons.logout_rounded,
+                                        color: AppColors.error.withValues(alpha: 0.85),
+                                        size: 18),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Text(
+                                    l10n.logout,
+                                    style: TextStyle(
+                                      color: AppColors.error.withValues(alpha: 0.85),
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                // ── Spline Robot (mobile drawer) ──────────────────────────
-                Builder(builder: (context) {
-                  final drawerMouseNotifier = ValueNotifier<Offset?>(null);
-                  return MouseRegion(
-                    onHover: (event) {
-                      final box = context.findRenderObject() as RenderBox?;
-                      if (box != null) {
-                        final localPos = box.globalToLocal(event.position);
-                        drawerMouseNotifier.value = Offset(
-                          localPos.dx / box.size.width,
-                          localPos.dy / box.size.height,
-                        );
-                      }
-                    },
-                    onExit: (_) => drawerMouseNotifier.value = null,
-                    child: SplineRobot(
-                      mouseNotifier: drawerMouseNotifier,
-                      width: double.infinity,
-                      height: 140,
-                    ),
-                  );
-                }),
-                const SizedBox(height: 8),
-                Divider(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.black.withValues(alpha: 0.06),
-                  height: 1,
-                ),
-                const SizedBox(height: 10),
-                // Nav items
-                ...DashboardTab.values.where((tab) {
-                  final role = context.read<AuthCubit>().state.role;
-                  if (role == UserRole.recruteur) {
-                    return tab == DashboardTab.tableau ||
-                        tab == DashboardTab.profil;
-                  }
-                  if (role == UserRole.formateur) {
-                    return tab == DashboardTab.tableau ||
-                        tab == DashboardTab.profil ||
-                        tab == DashboardTab.formations;
-                  }
-                  return true;
-                }).map(
-                  (tab) => _DrawerItem(
-                    tab: tab,
-                    isActive: tab == activeTab,
-                    onTap: () => onTabSelected(tab),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Divider(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.black.withValues(alpha: 0.06),
-                  height: 1,
-                ),
-                const SizedBox(height: 8),
-                // Logout row
-                InkWell(
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showLogoutConfirmation(context, onLogout);
-                  },
-                  borderRadius: BorderRadius.circular(14),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: AppColors.error.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: AppColors.error.withValues(alpha: 0.15),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            color: AppColors.error.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(Icons.logout_rounded,
-                              color: AppColors.error.withValues(alpha: 0.85),
-                              size: 18),
-                        ),
-                        const SizedBox(width: 14),
-                        Text(
-                          l10n.logout,
-                          style: TextStyle(
-                            color: AppColors.error.withValues(alpha: 0.85),
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),

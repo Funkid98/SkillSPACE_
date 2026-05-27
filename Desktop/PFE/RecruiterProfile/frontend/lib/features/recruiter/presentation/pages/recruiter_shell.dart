@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pfe/core/network/api_client.dart';
@@ -9,6 +11,7 @@ import '../cubits/recruiter_extra_cubits.dart';
 import '../cubits/recruiter_profile_cubit.dart';
 import '../../data/repositories/recruiter_job_repository.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:pfe/core/widgets/spline_robot.dart';
 
 import '../../../../core/app_colors.dart';
 import '../../../../core/app_text_styles.dart';
@@ -262,105 +265,179 @@ class _RecruiterMobileDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-      ),
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color:
-                  isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(2),
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF0F172A).withValues(alpha: 0.85)
+                : Colors.white.withValues(alpha: 0.95),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(
+              top: BorderSide(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.black.withValues(alpha: 0.06),
+              ),
             ),
           ),
-          const SizedBox(height: 32),
-
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: ThemeToggle(),
-          ),
-          const SizedBox(height: 16),
-          ...RecruiterTab.values.asMap().entries.map(
-            (entry) {
-              final index = entry.key;
-              final tab = entry.value;
-              return AnimatedReveal(
-                delay: Duration(milliseconds: 100 + (index * 100)),
-                direction: RevealDirection.fromBottom,
-                child: ListTile(
-                  leading: Icon(tab.icon,
-                      color: tab == activeTab
-                          ? AppColors.orange
-                          : AppColors.textGray),
-                  title: Text(
-                    tab.label(context),
-                    style: TextStyle(
-                      color: tab == activeTab
-                          ? (isDark ? AppColors.orange : AppColors.textDark)
-                          : (isDark ? Colors.white60 : AppColors.textGray),
-                      fontWeight: tab == activeTab
-                          ? FontWeight.bold
-                          : FontWeight.normal,
+          child: Builder(
+            builder: (context) {
+              final drawerMouseNotifier = ValueNotifier<Offset?>(null);
+              return MouseRegion(
+                onHover: (event) {
+                  final box = context.findRenderObject() as RenderBox?;
+                  if (box != null) {
+                    final localPos = box.globalToLocal(event.position);
+                    drawerMouseNotifier.value = Offset(
+                      localPos.dx / box.size.width,
+                      localPos.dy / box.size.height,
+                    );
+                  }
+                },
+                onExit: (_) => drawerMouseNotifier.value = null,
+                child: Stack(
+                  children: [
+                    // ── Spline 3D background ──────────────────────────
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: SplineRobot(
+                          mouseNotifier: drawerMouseNotifier,
+                          width: double.infinity,
+                          height: double.infinity,
+                        ),
+                      ),
                     ),
-                  ),
-                  onTap: () => onTabSelected(tab),
+                    // ── Gradient overlay ──────────────────────────────
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            stops: const [0.0, 0.35, 0.65, 1.0],
+                            colors: [
+                              Colors.black.withValues(alpha: 0.88),
+                              Colors.black.withValues(alpha: 0.62),
+                              Colors.black.withValues(alpha: 0.70),
+                              Colors.black.withValues(alpha: 0.92),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // ── Drawer content ────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withOpacity(0.1)
+                                  : Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: ThemeToggle(),
+                          ),
+                          const SizedBox(height: 16),
+                          ...RecruiterTab.values.asMap().entries.map(
+                            (entry) {
+                              final index = entry.key;
+                              final tab = entry.value;
+                              return AnimatedReveal(
+                                delay:
+                                    Duration(milliseconds: 100 + (index * 100)),
+                                direction: RevealDirection.fromBottom,
+                                child: ListTile(
+                                  leading: Icon(tab.icon,
+                                      color: tab == activeTab
+                                          ? AppColors.orange
+                                          : AppColors.textGray),
+                                  title: Text(
+                                    tab.label(context),
+                                    style: TextStyle(
+                                      color: tab == activeTab
+                                          ? (isDark
+                                              ? AppColors.orange
+                                              : AppColors.textDark)
+                                          : (isDark
+                                              ? Colors.white60
+                                              : AppColors.textGray),
+                                      fontWeight: tab == activeTab
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                  onTap: () => onTabSelected(tab),
+                                ),
+                              );
+                            },
+                          ),
+                          const Divider(height: 40),
+                          InkWell(
+                            onTap: () {
+                              Navigator.pop(context); // Close drawer
+                              if (onLogout != null) {
+                                onLogout!();
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(14),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 14),
+                              decoration: BoxDecoration(
+                                color: AppColors.error.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: AppColors.error.withOpacity(0.15),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 34,
+                                    height: 34,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.error.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(Icons.logout_rounded,
+                                        color:
+                                            AppColors.error.withOpacity(0.85),
+                                        size: 18),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  const Text(
+                                    'Déconnexion',
+                                    style: TextStyle(
+                                      color: AppColors.error,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
           ),
-          const Divider(height: 40),
-          InkWell(
-            onTap: () {
-              Navigator.pop(context); // Close drawer
-              if (onLogout != null) {
-                onLogout!();
-              }
-            },
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: AppColors.error.withOpacity(0.15),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(Icons.logout_rounded,
-                        color: AppColors.error.withOpacity(0.85),
-                        size: 18),
-                  ),
-                  const SizedBox(width: 14),
-                  const Text(
-                    'Déconnexion',
-                    style: TextStyle(
-                      color: AppColors.error,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

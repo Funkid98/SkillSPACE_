@@ -117,11 +117,13 @@ class _SplineRobotState extends State<SplineRobot> {
           '[class*="logo"],' +
           '[class*="watermark"],' +
           '[class*="badge"],' +
-          'a[target="_blank"]' +
+          'a[target="_blank"],' +
+          '#hint, .hint, [id*="hint"], [class*="hint"],' +
+          '#cursor, .cursor, [id*="cursor"], [class*="cursor"]' +
           '{ display:none !important; opacity:0 !important; pointer-events:none !important; }';
         shadow.appendChild(style);
       }
-      ['a[href*="spline"]','[class*="logo"]','[class*="watermark"]','a[target="_blank"]'].forEach(sel => {
+      ['a[href*="spline"]','[class*="logo"]','[class*="watermark"]','a[target="_blank"]','#hint','.hint','#cursor','.cursor'].forEach(sel => {
         shadow.querySelectorAll(sel).forEach(el => el.style.setProperty('display','none','important'));
       });
     }
