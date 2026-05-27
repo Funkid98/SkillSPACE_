@@ -38,7 +38,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = ReactiveMode.isDarkMode(context);
     return BlocBuilder<TrainerCubit, TrainerState>(
       builder: (context, state) {
         if (state.status == TrainerStatus.loading) {

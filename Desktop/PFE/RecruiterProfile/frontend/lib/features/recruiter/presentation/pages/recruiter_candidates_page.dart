@@ -227,22 +227,33 @@ class RecruiterCandidatesPage extends StatelessWidget {
             height: 62,
             padding: const EdgeInsets.symmetric(horizontal: 20),
             decoration: BoxDecoration(
-              color: isSavedFilterActive ? AppColors.navy : (isDark ? AppColors.surfaceDark : Colors.white),
+              color: isSavedFilterActive
+                  ? AppColors.navy
+                  : (isDark ? AppColors.surfaceDark : Colors.white),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                  color: isSavedFilterActive ? AppColors.navy : (isDark ? AppColors.borderDark : AppColors.border), width: 1),
+                  color: isSavedFilterActive
+                      ? AppColors.navy
+                      : (isDark ? AppColors.borderDark : AppColors.border),
+                  width: 1),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.star_rounded, size: 22, color: isSavedFilterActive ? AppColors.orange : AppColors.textGray),
+                Icon(Icons.star_rounded,
+                    size: 22,
+                    color: isSavedFilterActive
+                        ? AppColors.orange
+                        : AppColors.textGray),
                 const SizedBox(width: 10),
                 Text(
                   '${l10n.savedLabel} ($savedCount)',
                   style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: isSavedFilterActive ? Colors.white : (isDark ? Colors.white : AppColors.textDark)),
+                      color: isSavedFilterActive
+                          ? Colors.white
+                          : (isDark ? Colors.white : AppColors.textDark)),
                 ),
               ],
             ),
@@ -265,8 +276,6 @@ class _CandidateMatchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = RecruiterLocalizations.of(context);
-
     // Layout switch for mobile
     final isCompact =
         Responsive.isMobile(context) || Responsive.isTablet(context);
@@ -352,7 +361,9 @@ class _CandidateMatchCard extends StatelessWidget {
             const SizedBox(width: 8),
             InkWell(
               onTap: () {
-                context.read<RecruiterCandidatesCubit>().toggleSaveCandidate(offerId, candidate.id);
+                context
+                    .read<RecruiterCandidatesCubit>()
+                    .toggleSaveCandidate(offerId, candidate.id);
               },
               borderRadius: BorderRadius.circular(20),
               child: Padding(
@@ -362,7 +373,8 @@ class _CandidateMatchCard extends StatelessWidget {
                       ? Icons.star_rounded
                       : Icons.star_outline_rounded,
                   size: 22,
-                  color: candidate.isSaved ? AppColors.orange : AppColors.textGray,
+                  color:
+                      candidate.isSaved ? AppColors.orange : AppColors.textGray,
                 ),
               ),
             ),

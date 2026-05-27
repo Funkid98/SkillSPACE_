@@ -30,6 +30,7 @@ class FormateurService {
       if (response.statusCode == 200) {
         return FormateurModel.fromJson(json.decode(response.body));
       } else {
+        print('Backend error (${response.statusCode}): ${response.body}');
         return null;
       }
     } catch (e) {

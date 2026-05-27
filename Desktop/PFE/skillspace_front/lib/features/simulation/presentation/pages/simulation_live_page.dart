@@ -39,7 +39,6 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
 
   bool _isMicOn = false;
   bool _isCamOn = true;
-  final bool _isScreenOn = false;
 
   // PiP Position
   double? _pipTop;
@@ -569,12 +568,10 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.orange,
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor: isDark
-                              ? Colors.white12
-                              : Colors.black12,
-                          disabledForegroundColor: isDark
-                              ? Colors.white38
-                              : Colors.black38,
+                          disabledBackgroundColor:
+                              isDark ? Colors.white12 : Colors.black12,
+                          disabledForegroundColor:
+                              isDark ? Colors.white38 : Colors.black38,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
                         ),

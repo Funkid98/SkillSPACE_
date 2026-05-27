@@ -13,7 +13,7 @@ import '../services/dashboard_service.dart';
 import '../cubits/trainer_cubit.dart';
 import '../cubits/trainer_state.dart';
 import '../widgets/mesh_gradient_background.dart';
-import '../widgets/video_background.dart';
+import 'package:pfe/core/widgets/spline_robot.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   final VoidCallback? onLogout;
@@ -27,11 +27,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
   final FormateurService _formateurService = FormateurService();
   final DashboardService _dashboardService = DashboardService();
+  final ValueNotifier<Offset?> _mouseNotifier = ValueNotifier<Offset?>(null);
 
   @override
   void initState() {
     super.initState();
     _loadPersistedIndex();
+  }
+
+  @override
+  void dispose() {
+    _mouseNotifier.dispose();
+    super.dispose();
   }
 
   Future<void> _loadPersistedIndex() async {
@@ -206,125 +213,160 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 : (trainerState.profileData?.profilePicture ?? '');
 
             final isDark = ReactiveMode.isDarkMode(context);
-            return Container(
-              width: 260,
-              clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(
-                color: isDark ? Colors.transparent : Colors.white,
-                border: Border(
-                  right: BorderSide(
-                      color: isDark
-                          ? Colors.white.withOpacity(0.15)
-                          : Colors.black.withOpacity(0.08),
-                      width: 1.5),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: isDark
-                        ? Colors.black.withOpacity(0.15)
-                        : Colors.black.withOpacity(0.05),
-                    blurRadius: isDark ? 30 : 15,
-                    spreadRadius: -5,
-                    offset: const Offset(10, 0),
+            return MouseRegion(
+                onHover: (event) {
+                  final box = context.findRenderObject() as RenderBox?;
+                  if (box != null) {
+                    final localPos = box.globalToLocal(event.position);
+                    _mouseNotifier.value = Offset(
+                      localPos.dx / box.size.width,
+                      localPos.dy / box.size.height,
+                    );
+                  }
+                },
+                onExit: (_) {
+                  _mouseNotifier.value = null;
+                },
+                child: Container(
+                  width: 260,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.transparent : Colors.white,
+                    border: Border(
+                      right: BorderSide(
+                          color: isDark
+                              ? Colors.white.withOpacity(0.15)
+                              : Colors.black.withOpacity(0.08),
+                          width: 1.5),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isDark
+                            ? Colors.black.withOpacity(0.15)
+                            : Colors.black.withOpacity(0.05),
+                        blurRadius: isDark ? 30 : 15,
+                        spreadRadius: -5,
+                        offset: const Offset(10, 0),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: VideoBackground(
-                assetPath: 'assets/sidebar-video.mp4',
-                opacity: isDark ? 0.75 : 0.0,
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                  child: Container(
-                    color: isDark
-                        ? Colors.black.withOpacity(0.35)
-                        : Colors.white.withOpacity(0.25),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 30),
-                        // Logo
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                          child: Row(
-                            children: [
-                              if (imageBase64.isNotEmpty)
-                                CircleAvatar(
-                                  radius: 18,
-                                  backgroundImage:
-                                      MemoryImage(base64Decode(imageBase64)),
-                                )
-                              else
-                                const Icon(Icons.hub,
-                                    color: Color(0xFFE9652B), size: 30),
-                              const SizedBox(width: 12),
-                              Text(
-                                'SkillSpace',
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color:
-                                      isDark ? Colors.white : Colors.blue[900],
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                    child: Container(
+                      color: isDark
+                          ? Colors.black.withOpacity(0.35)
+                          : Colors.white.withOpacity(0.25),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 30),
+                          // Logo
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 24.0),
+                            child: Row(
+                              children: [
+                                if (imageBase64.isNotEmpty)
+                                  CircleAvatar(
+                                    radius: 18,
+                                    backgroundImage: MemoryImage(
+                                        base64Decode(imageBase64)),
+                                  )
+                                else
+                                  const Icon(Icons.hub,
+                                      color: Color(0xFFE9652B), size: 30),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'SkillSpace',
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDark
+                                        ? Colors.white
+                                        : Colors.blue[900],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 40),
-                        // Nav Items
-                        _buildNavItem(sideCtx, 0, 'Tableau de bord',
-                            Icons.grid_view_outlined),
-                        _buildNavItem(
-                            sideCtx, 1, 'Mon profil', Icons.person_outline),
-                        _buildNavItem(sideCtx, 2, 'Mes formations',
-                            Icons.school_outlined),
-                        const Spacer(),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: _ThemeToggle(),
-                        ),
-                        const SizedBox(height: 16),
-                        // Logout
-                        const Divider(),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: InkWell(
-                            onTap: () => _showLogoutConfirmation(sideCtx),
-                            borderRadius: BorderRadius.circular(12),
+                          // ── Spline Robot 3D Assistant ────────────────────────────────
+                          Center(
                             child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 12),
+                              margin:
+                                  const EdgeInsets.only(top: 10, bottom: 20),
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.red.withOpacity(isDark ? 0.2 : 0.15),
-                                ),
-                                color: Colors.red.withOpacity(0.05),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.logout_rounded,
-                                      size: 17,
-                                      color: Colors.red.withOpacity(0.8)),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    'Déconnexion',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.red.withOpacity(0.8),
-                                    ),
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFE9652B)
+                                        .withOpacity(isDark ? 0.08 : 0.03),
+                                    blurRadius: 20,
+                                    spreadRadius: 2,
                                   ),
                                 ],
                               ),
+                              child: SplineRobot(
+                                mouseNotifier: _mouseNotifier,
+                                width: 210,
+                                height: 160,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
+                          // Nav Items
+                          _buildNavItem(sideCtx, 0, 'Tableau de bord',
+                              Icons.grid_view_outlined),
+                          _buildNavItem(
+                              sideCtx, 1, 'Mon profil', Icons.person_outline),
+                          _buildNavItem(sideCtx, 2, 'Mes formations',
+                              Icons.school_outlined),
+                          const Spacer(),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: _ThemeToggle(),
+                          ),
+                          const SizedBox(height: 16),
+                          // Logout
+                          const Divider(),
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: InkWell(
+                              onTap: () => _showLogoutConfirmation(sideCtx),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 12),
+                                decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.red
+                                          .withOpacity(isDark ? 0.2 : 0.15),
+                                    ),
+                                    color: Colors.red.withOpacity(0.05)),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.logout_rounded,
+                                        size: 17,
+                                        color: Colors.red.withOpacity(0.8)),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      'Déconnexion',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.red.withOpacity(0.8),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ),
-            );
+                ));
           },
         );
       },

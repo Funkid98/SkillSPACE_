@@ -11,7 +11,6 @@ import '../profile/presentation/pages/profile_page.dart';
 import '../job_offers/cubit/job_offers_cubit.dart';
 import '../job_offers/presentation/pages/job_offers_page.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
-import '../../core/l10n/app_localizations.dart';
 import '../simulation/cubit/simulation_cubit.dart';
 import '../simulation/presentation/pages/simulation_selection_page.dart';
 import '../profile/presentation/pages/candidate_formations_page.dart';
@@ -116,7 +115,6 @@ class _DashboardShellState extends State<DashboardShell> {
   }
 
   Widget _buildContent() {
-    final l10n = AppLocalizations.of(context);
     switch (_activeTab) {
       case DashboardTab.tableau:
         return BlocProvider(
@@ -124,8 +122,6 @@ class _DashboardShellState extends State<DashboardShell> {
           child: const DashboardPage(),
         );
       case DashboardTab.profil:
-        final authState = context.read<AuthCubit>().state;
-        final role = authState.loggedInUser?['role']?.toString() ?? '';
         return BlocProvider(
           create: (_) => ProfileCubit(initialUserData: widget.initialUserData)
             ..loadProfile(),

@@ -114,6 +114,8 @@ class AuthCubit extends Cubit<AuthState> {
         synchronizedSector = fullProfile?.sector;
       }
 
+      CookieService.setString('auth_provider', 'email');
+
       emit(state.copyWith(
         isLoading: false,
         isSuccess: true,
@@ -184,6 +186,8 @@ class AuthCubit extends Cubit<AuthState> {
         synchronizedSector = fullProfile?.sector;
       }
 
+      CookieService.setString('auth_provider', 'email');
+
       emit(state.copyWith(
         isLoading: false,
         isSuccess: true,
@@ -228,6 +232,8 @@ class AuthCubit extends Cubit<AuthState> {
         final fullProfile = await _fetchFullProfile();
         synchronizedSector = fullProfile?.sector;
       }
+
+      CookieService.setString('auth_provider', 'google');
 
       emit(state.copyWith(
         isLoading: false,
@@ -297,6 +303,8 @@ class AuthCubit extends Cubit<AuthState> {
         final fullProfile = await _fetchFullProfile();
         synchronizedSector = fullProfile?.sector;
       }
+
+      CookieService.setString('auth_provider', 'github');
 
       emit(state.copyWith(
         isLoading: false,
@@ -412,6 +420,8 @@ class AuthCubit extends Cubit<AuthState> {
         userRole = UserRole.formateur;
       }
 
+      CookieService.setString('auth_provider', 'email');
+
       emit(state.copyWith(
         isLoading: false,
         isSuccess: true,
@@ -436,6 +446,7 @@ class AuthCubit extends Cubit<AuthState> {
 
   Future<void> logout() async {
     await authRepository.logout();
+    CookieService.remove('auth_provider');
     emit(const AuthState()); // Reset to initial state
   }
 }

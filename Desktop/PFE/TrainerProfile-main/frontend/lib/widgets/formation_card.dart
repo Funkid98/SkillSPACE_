@@ -199,7 +199,8 @@ class _FormationCardState extends State<FormationCard> {
                             Text(
                               '(${widget.formation.reviewCount} avis)',
                               style: TextStyle(
-                                color: isDark ? Colors.white60 : Colors.grey[600],
+                                color:
+                                    isDark ? Colors.white60 : Colors.grey[600],
                                 fontSize: 13,
                               ),
                             ),
@@ -369,37 +370,5 @@ class _FormationCardState extends State<FormationCard> {
             ),
           ),
         ));
-  }
-}
-
-class _CustomRatingBar extends StatelessWidget {
-  final double rating;
-  final Function(double) onRatingUpdate;
-
-  const _CustomRatingBar({
-    required this.rating,
-    required this.onRatingUpdate,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (index) {
-        final isSelected = index < rating;
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => onRatingUpdate(index + 1.0),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
-            child: Icon(
-              isSelected ? Icons.star : Icons.star_border,
-              color: isSelected ? Colors.amber : Colors.grey[400],
-              size: 20,
-            ),
-          ),
-        );
-      }),
-    );
   }
 }

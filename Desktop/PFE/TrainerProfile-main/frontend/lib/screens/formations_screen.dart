@@ -15,7 +15,6 @@ class FormationsScreen extends StatefulWidget {
 
 class _FormationsScreenState extends State<FormationsScreen> {
   final DashboardService _dashboardService = DashboardService();
-  final String _userId = '507f1f77bcf86cd799439011';
   bool _isLoading = true;
   List<FormationModel> _formations = [];
 
@@ -44,7 +43,8 @@ class _FormationsScreenState extends State<FormationsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFE9652B)));
+      return const Center(
+          child: CircularProgressIndicator(color: Color(0xFFE9652B)));
     }
 
     return Scaffold(
@@ -72,8 +72,10 @@ class _FormationsScreenState extends State<FormationsScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE9652B),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ],
@@ -84,10 +86,13 @@ class _FormationsScreenState extends State<FormationsScreen> {
                 : Wrap(
                     spacing: 24,
                     runSpacing: 24,
-                    children: _formations.map((f) => FormationCard(
-                      formation: f,
-                      width: 380, // Slightly wider for a grid feel on desktop
-                    )).toList(),
+                    children: _formations
+                        .map((f) => FormationCard(
+                              formation: f,
+                              width:
+                                  380, // Slightly wider for a grid feel on desktop
+                            ))
+                        .toList(),
                   ),
             const SizedBox(height: 40),
           ],

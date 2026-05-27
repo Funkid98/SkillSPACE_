@@ -32,7 +32,6 @@ class AudienceSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = Responsive.isMobile(context);
     final width = MediaQuery.of(context).size.width;
     final isCompact = width < 1000;
     final l10n = AppLocalizations.of(context);

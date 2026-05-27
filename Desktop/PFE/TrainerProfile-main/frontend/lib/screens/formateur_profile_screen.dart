@@ -7,16 +7,18 @@ import 'package:image_picker/image_picker.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
-import '../cubits/expertise_cubit.dart';
-import '../services/formateur_service.dart';
-import '../models/formateur_model.dart';
-import '../cubits/trainer_cubit.dart';
-import '../cubits/trainer_state.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:pdfx/pdfx.dart';
-import 'package:animate_do/animate_do.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:flutter/foundation.dart';
+import 'package:pfe/core/network/cookie_service.dart';
+
+import '../cubits/expertise_cubit.dart';
+import '../cubits/profile_cubit.dart';
+import '../cubits/profile_state.dart';
+import '../cubits/trainer_cubit.dart';
+import '../services/formateur_service.dart';
+import '../models/formateur_model.dart';
 import '../widgets/change_password_dialog.dart';
 import '../widgets/delete_account_dialog.dart';
 
@@ -27,13 +29,17 @@ class FormateurProfileScreen extends StatefulWidget {
   State<FormateurProfileScreen> createState() => _FormateurProfileScreenState();
 }
 
-// Wrap in BlocProvider so ExpertiseCubit is scoped to this screen only
+// ─── Wrapper to provide scoped Cubits ───────────────────────────────────────
 class FormateurProfileScreenWrapper extends StatelessWidget {
   const FormateurProfileScreenWrapper({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => ExpertiseCubit(FormateurService()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => ExpertiseCubit(FormateurService())),
+        BlocProvider(create: (_) => ProfileCubit(FormateurService())),
+      ],
       child: const FormateurProfileScreen(),
     );
   }
@@ -41,16 +47,8 @@ class FormateurProfileScreenWrapper extends StatelessWidget {
 
 class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
   final FormateurService _formateurService = FormateurService();
-  bool _isLoading = true;
-  bool _isGeneratingBio = false;
-  String? _lastValidatedPortfolioUrl;
-  Map<String, String> _originalProfile =
-      {}; // tracks what was loaded from server
 
-  String _profilePictureBase64 = '';
-  List<Certification> certificationsList = [];
-  PhoneNumber _number = PhoneNumber(isoCode: 'TN');
-
+  // Controllers for Text Inputs
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -62,13 +60,17 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
   final _portfolioController = TextEditingController();
   final _expertiseController = TextEditingController();
 
+  PhoneNumber _number = PhoneNumber(isoCode: 'TN');
+  String? _lastValidatedPortfolioUrl;
+  bool _isInitialized = false;
+
   final Color primaryColor = const Color(0xFFE9652B);
   final Color darkColor = const Color(0xFF1A1C1E);
 
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    _loadInitialProfile();
   }
 
   @override
@@ -86,100 +88,56 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
     super.dispose();
   }
 
-  Future<void> _initPhoneNumber(String text) async {
+  // ─── Initialization ────────────────────────────────────────────────────────
+  void _loadInitialProfile() {
+    final userId = context.read<AuthCubit>().state.loggedInUser?['id'] ?? '';
+    if (userId.isEmpty) return;
+
+    final cachedProfile = context.read<TrainerCubit>().state.profileData;
+    final profileCubit = context.read<ProfileCubit>();
+    profileCubit.loadProfile(userId, cached: cachedProfile);
+
+    if (profileCubit.state.status == ProfileStatus.loaded) {
+      _populateControllers(profileCubit.state);
+    }
+  }
+
+  void _populateControllers(ProfileState state) async {
+    if (_isInitialized) return;
+    _isInitialized = true;
+
+    _firstNameController.text = state.firstName;
+    _lastNameController.text = state.lastName;
+    _emailController.text = state.email;
+    _jobTitleController.text = state.jobTitle;
+    _locationController.text = state.location;
+    _bioController.text = state.bio;
+    _linkedInController.text = state.linkedIn;
+    _portfolioController.text = state.portfolio;
+
     try {
-      final number = await PhoneNumber.getRegionInfoFromPhoneNumber(text, 'TN');
-      setState(() {
-        _number = number;
-        if (number.dialCode != null && text.contains(number.dialCode!)) {
-          final national =
-              text.replaceAll(number.dialCode!, '').replaceAll('+', '').trim();
-          _phoneController.text = national;
+      if (state.phone.isNotEmpty) {
+        final number =
+            await PhoneNumber.getRegionInfoFromPhoneNumber(state.phone, 'TN');
+        if (mounted) {
+          setState(() {
+            _number = number;
+            if (number.dialCode != null &&
+                state.phone.contains(number.dialCode!)) {
+              _phoneController.text = state.phone
+                  .replaceAll(number.dialCode!, '')
+                  .replaceAll('+', '')
+                  .trim();
+            }
+          });
         }
-      });
+      }
     } catch (e) {
       if (kDebugMode) print('Error parsing phone number: $e');
     }
   }
 
-  Future<void> _loadProfile() async {
-    final userId = context.read<AuthCubit>().state.loggedInUser?['id'] ?? '';
-    if (userId.isEmpty) return;
-
-    // Check if we already have it in TrainerCubit
-    final trainerState = context.read<TrainerCubit>().state;
-    FormateurModel? profile;
-
-    if (trainerState.profileData != null) {
-      profile = trainerState.profileData;
-      _isLoading = false; // Don't show spinner if we have cache
-    } else {
-      setState(() => _isLoading = true);
-      profile = await _formateurService.getProfile(userId);
-    }
-
-    if (!mounted) return;
-
-    if (profile != null) {
-      context.read<ExpertiseCubit>().setInitialTags(profile.expertise.toList());
-      _lastValidatedPortfolioUrl = profile.portfolio; // Initial cache
-      if (!mounted) return;
-      setState(() {
-        _firstNameController.text = profile!.firstName;
-        _lastNameController.text = profile.lastName;
-        _emailController.text = profile.email;
-        _initPhoneNumber(profile.phone);
-        _jobTitleController.text = profile.jobTitle;
-        _locationController.text = profile.location;
-        _bioController.text = profile.bio;
-        _linkedInController.text = profile.linkedIn;
-        _portfolioController.text = profile.portfolio;
-        _profilePictureBase64 = profile.profilePicture;
-        certificationsList = profile.certifications;
-        _isLoading = false;
-        // Snapshot original values for change detection
-        _originalProfile = {
-          'firstName': profile.firstName,
-          'lastName': profile.lastName,
-          'phone': profile.phone,
-          'jobTitle': profile.jobTitle,
-          'location': profile.location,
-          'bio': profile.bio,
-          'linkedIn': profile.linkedIn,
-          'portfolio': profile.portfolio,
-        };
-      });
-    } else {
-      // Defaults if not found
-      context.read<ExpertiseCubit>().setInitialTags(
-          ["React", "JavaScript", "Python", "Data Science", "UX Design"]);
-      setState(() {
-        final authState = context.read<AuthCubit>().state.loggedInUser;
-        _firstNameController.text = authState?['firstName'] ?? '';
-        _lastNameController.text = authState?['lastName'] ?? '';
-        _emailController.text = authState?['email'] ?? '';
-        _phoneController.text = '';
-        _jobTitleController.text = 'Formatrice senior en développement web';
-        _locationController.text = '';
-        _bioController.text =
-            "Formatrice passionnée avec 8 ans d'expérience dans le développement web et la data science. J'accompagne les jeunes diplômés dans leur montée en compétences pour faciliter leur insertion professionnelle.";
-        _linkedInController.text = '';
-        _portfolioController.text = '';
-        certificationsList = [
-          Certification(
-              name: 'Certified Scrum Master (CSM)',
-              issuer: 'Scrum Alliance',
-              year: '2023'),
-          Certification(
-              name: 'Google Professional Data Engineer',
-              issuer: 'Google Cloud',
-              year: '2022')
-        ];
-        _isLoading = false;
-      });
-    }
-  }
-
+  // ─── Actions ───────────────────────────────────────────────────────────────
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(
@@ -191,273 +149,36 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
 
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
-      if (!mounted) return;
-      setState(() {
-        _profilePictureBase64 = base64Encode(bytes);
-      });
+      if (mounted) {
+        context.read<ProfileCubit>().updatePicture(bytes);
+      }
     }
   }
 
-  void _showFilePreview(Certification c) {
-    if (c.fullFile == null && (c.image == null || c.image!.isEmpty)) return;
+  Future<void> _handleSaveProfile() async {
+    final cubit = context.read<ProfileCubit>();
+    final state = cubit.state;
 
-    final bytes = base64Decode(c.fullFile ?? c.image!);
-    final isPdf = c.fileType == 'pdf';
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          insetPadding: const EdgeInsets.all(16),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          child: Container(
-            width: double.infinity,
-            height: MediaQuery.of(context).size.height * 0.8,
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              children: [
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(c.name,
-                            style: GoogleFonts.outfit(
-                                fontWeight: FontWeight.bold, fontSize: 18),
-                            overflow: TextOverflow.ellipsis),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: isPdf
-                        ? _PdfViewer(pdfBytes: bytes)
-                        : InteractiveViewer(
-                            child: Image.memory(
-                              bytes,
-                              fit: BoxFit.contain,
-                              width: double.infinity,
-                            ),
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Text(
-                    isPdf
-                        ? 'Visualisation PDF multi-pages'
-                        : 'Visualisation Image',
-                    style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<String?> _generateThumbnailFromPdf(Uint8List pdfBytes) async {
-    if (pdfBytes.isEmpty) return null;
-    try {
-      final document = await PdfDocument.openData(pdfBytes);
-      final page = await document.getPage(1);
-
-      // Smaller thumbnail for faster upload
-      final double renderWidth = 220.0;
-      final double renderHeight = page.width > 0
-          ? (page.height / page.width * renderWidth)
-          : renderWidth;
-
-      final pageImage = await page.render(
-        width: renderWidth,
-        height: renderHeight,
-        format: PdfPageImageFormat.png,
-        quality: 80,
-      );
-
-      await page.close();
-      await document.close();
-
-      return pageImage != null ? base64Encode(pageImage.bytes) : null;
-    } catch (e) {
-      debugPrint('Pdf thumbnail error: $e');
-      return null;
-    }
-  }
-
-  Future<void> _handleGenerateBio() async {
-    final firstName = _firstNameController.text.trim();
-    final lastName = _lastNameController.text.trim();
-    final jobTitle = _jobTitleController.text.trim();
-    final expertise = context.read<ExpertiseCubit>().state.tags;
-
-    if (firstName.isEmpty || jobTitle.isEmpty) {
-      Fluttertoast.showToast(
-          msg: "Veuillez d'abord remplir votre prénom et titre professionnel",
-          backgroundColor: Colors.orange);
-      return;
-    }
-
-    setState(() => _isGeneratingBio = true);
-
-    final generatedBio = await _formateurService.generateBio(
-      "$firstName $lastName",
-      jobTitle,
-      expertise,
-    );
-
-    if (!mounted) return;
-    setState(() {
-      _isGeneratingBio = false;
-      if (generatedBio != null && generatedBio.isNotEmpty) {
-        _bioController.text = generatedBio;
-        Fluttertoast.showToast(
-            msg: "Bio générée ! Vous pouvez la modifier.",
-            backgroundColor: Colors.blue);
-      } else {
-        Fluttertoast.showToast(
-            msg: "Échec de la génération de la bio",
-            backgroundColor: Colors.red);
-      }
-    });
-  }
-
-  int _calculateCompleteness() {
-    int score = 0;
-    // Basic fields (8 fields * 10% = 80%)
-    if (_firstNameController.text.trim().isNotEmpty) score += 10;
-    if (_lastNameController.text.trim().isNotEmpty) score += 10;
-    if (_emailController.text.trim().isNotEmpty) score += 10;
-    if (_phoneController.text.trim().isNotEmpty) score += 10;
-    if (_jobTitleController.text.trim().isNotEmpty) score += 10;
-    if (_locationController.text.trim().isNotEmpty) score += 10;
-    if (_bioController.text.trim().isNotEmpty) score += 10;
-    if (_linkedInController.text.trim().isNotEmpty) score += 10;
-
-    // Photo (10%)
-    if (_profilePictureBase64.isNotEmpty) score += 10;
-
-    // Expertise (10%)
-    // Since expertise is in Cubit, it's safer to check the cubit state or the local list if you have one
-    if (context.read<ExpertiseCubit>().state.tags.isNotEmpty) score += 10;
-
-    return score > 100 ? 100 : score;
-  }
-
-  /// Returns only the simple text fields that differ from the original snapshot.
-  /// Returns null if anything heavy changed (picture, certifications, expertise).
-  Map<String, String>? _getChangedSimpleFields() {
-    final current = {
-      'firstName': _firstNameController.text.trim(),
-      'lastName': _lastNameController.text.trim(),
-      'phone': _number.phoneNumber ?? _phoneController.text.trim(),
-      'jobTitle': _jobTitleController.text.trim(),
-      'location': _locationController.text.trim(),
-      'bio': _bioController.text.trim(),
-      'linkedIn': _linkedInController.text.trim(),
-      'portfolio': _portfolioController.text.trim(),
-    };
-
-    final changed = <String, String>{};
-    current.forEach((key, value) {
-      if (_originalProfile[key] != value) changed[key] = value;
-    });
-
-    return changed.isEmpty ? {} : changed;
-  }
-
-  Future<void> _saveProfile() async {
-    if (_isLoading) return;
-    final userId = context.read<AuthCubit>().state.loggedInUser?['id'] ?? '';
-    if (userId.isEmpty) return;
-
-    final expertiseTags = context.read<ExpertiseCubit>().state.tags;
-
-    // --- Fast path: only simple text fields changed ---
-    final changedFields = _getChangedSimpleFields();
-    final expertiseChanged =
-        expertiseTags.join(',') != (_originalProfile['expertise'] ?? '');
-    final pictureChanged =
-        _profilePictureBase64 != (_originalProfile['profilePicture'] ?? '');
-    final certsChanged = certificationsList.length.toString() !=
-        (_originalProfile['certCount'] ?? '0');
-
-    if (changedFields != null &&
-        !expertiseChanged &&
-        !pictureChanged &&
-        !certsChanged) {
-      if (changedFields.isEmpty) {
-        Fluttertoast.showToast(
-            msg: "Aucune modification détectée", backgroundColor: Colors.grey);
-        return;
-      }
-
-      // Validate LinkedIn only if it was changed
-      if (changedFields.containsKey('linkedIn')) {
-        final linkedInRegex = RegExp(
-            r'^https:\/\/(www\.|[a-z]{2}\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+\/?$');
-        if (!linkedInRegex.hasMatch(changedFields['linkedIn']!)) {
-          Fluttertoast.showToast(
-              msg: "Veuillez entrer un lien LinkedIn valide",
-              backgroundColor: Colors.red);
-          return;
-        }
-      }
-
-      setState(() => _isLoading = true);
-      final patched =
-          await _formateurService.patchProfile(userId, changedFields);
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-
-      if (patched != null) {
-        // Update snapshot
-        changedFields.forEach((k, v) => _originalProfile[k] = v);
-        context.read<TrainerCubit>().syncProfileWithDashboard(patched);
-        Fluttertoast.showToast(
-            msg: "Profil mis à jour !", backgroundColor: Colors.green);
-      } else {
-        Fluttertoast.showToast(
-            msg: "Échec de la mise à jour", backgroundColor: Colors.red);
-      }
-      return;
-    }
-
-    // --- Full path: expertise / picture / certifications changed ---
-    final currentCompleteness = _calculateCompleteness();
-
-    if (_firstNameController.text.trim().isEmpty ||
-        _lastNameController.text.trim().isEmpty ||
-        _emailController.text.trim().isEmpty ||
-        _phoneController.text.trim().isEmpty ||
-        _jobTitleController.text.trim().isEmpty ||
-        _locationController.text.trim().isEmpty ||
-        _bioController.text.trim().isEmpty ||
-        _linkedInController.text.trim().isEmpty ||
-        expertiseTags.isEmpty) {
+    // Basic required fields validation
+    if (state.firstName.isEmpty ||
+        state.lastName.isEmpty ||
+        state.email.isEmpty ||
+        state.phone.isEmpty ||
+        state.jobTitle.isEmpty ||
+        state.location.isEmpty ||
+        state.bio.isEmpty ||
+        state.linkedIn.isEmpty ||
+        state.expertise.isEmpty) {
       Fluttertoast.showToast(
           msg: "Veuillez remplir tous les champs obligatoires (*)",
           backgroundColor: Colors.red);
       return;
     }
 
-    // 1. Basic LinkedIn Validation (Regex)
-    final linkedInUrl = _linkedInController.text.trim();
+    // LinkedIn Validation
     final linkedInRegex = RegExp(
         r'^https:\/\/(www\.|[a-z]{2}\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+\/?$');
-    if (!linkedInRegex.hasMatch(linkedInUrl)) {
+    if (!linkedInRegex.hasMatch(state.linkedIn)) {
       Fluttertoast.showToast(
           msg:
               "Veuillez entrer un lien LinkedIn valide (https://linkedin.com/in/...)",
@@ -465,26 +186,20 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
-
-    // 2. Smart Portfolio Validation (AI)
-    final portfolioUrl = _portfolioController.text.trim();
+    // Smart Portfolio Validation
+    final portfolioUrl = state.portfolio;
     if (portfolioUrl.isNotEmpty) {
       if (!portfolioUrl.startsWith('http')) {
-        setState(() => _isLoading = false);
         Fluttertoast.showToast(
             msg: "Le portfolio doit commencer par http:// ou https://",
             backgroundColor: Colors.red);
         return;
       }
-
-      // Call AI Validation only if URL changed
       if (portfolioUrl != _lastValidatedPortfolioUrl) {
         final validation = await _formateurService.validateUrl(portfolioUrl);
         if (!mounted) return;
 
         if (validation['isValid'] == false) {
-          setState(() => _isLoading = false);
           Fluttertoast.showToast(
               msg: validation['reason'] ??
                   "Lien de portfolio invalide ou générique.",
@@ -492,268 +207,243 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
               toastLength: Toast.LENGTH_LONG);
           return;
         }
-        _lastValidatedPortfolioUrl = portfolioUrl; // Cache result
+        _lastValidatedPortfolioUrl = portfolioUrl;
       }
     }
 
-    final newProfile = FormateurModel(
-      id: '',
-      userId: userId,
-      firstName: _firstNameController.text,
-      lastName: _lastNameController.text,
-      email: _emailController.text,
-      phone: _number.phoneNumber ?? _phoneController.text,
-      jobTitle: _jobTitleController.text,
-      location: _locationController.text,
-      bio: _bioController.text,
-      profilePicture: _profilePictureBase64,
-      profileCompleteness: currentCompleteness,
-      expertise: expertiseTags,
-      certifications: certificationsList,
-      linkedIn: linkedInUrl,
-      portfolio: portfolioUrl,
-    );
+    // Save using Cubit
+    final success = await cubit.saveProfile();
 
-    final updatedProfile =
-        await _formateurService.updateProfile(userId, newProfile);
+    if (success && mounted) {
+      final updatedModel = cubit.state.toModel();
 
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (updatedProfile != null) {
-      // Update the snapshot for future change detection
-      _originalProfile = {
-        'firstName': updatedProfile.firstName,
-        'lastName': updatedProfile.lastName,
-        'phone': updatedProfile.phone,
-        'jobTitle': updatedProfile.jobTitle,
-        'location': updatedProfile.location,
-        'bio': updatedProfile.bio,
-        'linkedIn': updatedProfile.linkedIn,
-        'portfolio': updatedProfile.portfolio,
-        'expertise': updatedProfile.expertise.join(','),
-        'profilePicture': updatedProfile.profilePicture,
-        'certCount': updatedProfile.certifications.length.toString(),
-      };
-
-      // Sync with TrainerCubit
-      context.read<TrainerCubit>().syncProfileWithDashboard(updatedProfile);
-
+      // Sync with global states
+      context.read<TrainerCubit>().syncProfileWithDashboard(updatedModel);
       context.read<AuthCubit>().updateUserLocal({
-        'firstName': updatedProfile.firstName,
-        'lastName': updatedProfile.lastName,
-        'email': updatedProfile.email,
-        'profilePicture': updatedProfile.profilePicture,
+        'firstName': updatedModel.firstName,
+        'lastName': updatedModel.lastName,
+        'email': updatedModel.email,
+        'profilePicture': updatedModel.profilePicture,
       });
+
       Fluttertoast.showToast(
           msg: "Profil mis à jour !", backgroundColor: Colors.green);
     }
   }
 
+  // ─── UI Builders ───────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final isDark = ReactiveMode.isDarkMode(context);
 
-    return BlocBuilder<TrainerCubit, TrainerState>(
+    return BlocConsumer<ProfileCubit, ProfileState>(
+      listenWhen: (previous, current) {
+        return previous.status != current.status ||
+            previous.bio != current.bio ||
+            previous.errorMessage != current.errorMessage;
+      },
+      listener: (context, state) {
+        if (state.status == ProfileStatus.loaded) {
+          _populateControllers(state);
+        }
+
+        // Auto-update bio controller if generated by AI
+        if (state.bio != _bioController.text && !state.isGeneratingBio) {
+          _bioController.text = state.bio;
+        }
+
+        if (state.status == ProfileStatus.failure &&
+            state.errorMessage != null) {
+          Fluttertoast.showToast(
+              msg: state.errorMessage!, backgroundColor: Colors.red);
+        }
+      },
       builder: (context, state) {
-        if (_isLoading && state.profileData == null) {
+        if (state.status == ProfileStatus.loading && !_isInitialized) {
           return const Center(
               child: CircularProgressIndicator(color: Color(0xFFE9652B)));
         }
 
+        final isSaving = state.status == ProfileStatus.saving;
+        final cubit = context.read<ProfileCubit>();
+
         return Scaffold(
           backgroundColor: Colors.transparent,
-          body: FadeInUp(
-            duration: const Duration(milliseconds: 600),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(32.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  FadeInDown(
-                    delay: const Duration(milliseconds: 100),
-                    child: Text('Mon profil formateur',
-                        style: GoogleFonts.outfit(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : darkColor)),
-                  ),
-                  const SizedBox(height: 8),
-                  FadeInDown(
-                    delay: const Duration(milliseconds: 200),
-                    child: Text(
-                        'Gérez vos informations et domaines d\'expertise',
-                        style: GoogleFonts.outfit(color: Colors.grey[600])),
-                  ),
-                  const SizedBox(height: 32),
-                  FadeInUp(
-                      delay: const Duration(milliseconds: 300),
-                      child: _buildCompletenessCard()),
-                  const SizedBox(height: 32),
-                  _buildSectionCard('Informations personnelles', [
-                    _buildResponsiveRow([
-                      _buildInputField('Prénom', _firstNameController),
-                      _buildInputField('Nom', _lastNameController),
-                    ]),
-                    _buildResponsiveRow([
-                      _buildInputField('Email', _emailController,
-                          keyboardType: TextInputType.emailAddress),
-                      _PhoneField(
-                        label: 'Téléphone',
-                        controller: _phoneController,
-                        initialNumber: _number,
-                        onChanged: (PhoneNumber number) {
-                          setState(() {
-                            _number = number;
-                          });
-                        },
-                      ),
-                    ]),
-                    _buildResponsiveRow([
-                      _buildInputField(
-                          'Titre professionnel', _jobTitleController),
-                      _buildInputField('Localisation', _locationController),
-                    ]),
-                    _buildInputField(
-                      'Bio',
-                      _bioController,
-                      maxLines: 4,
-                      labelSuffix: GestureDetector(
-                        onTap: _isGeneratingBio ? null : _handleGenerateBio,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (_isGeneratingBio)
-                              const SizedBox(
-                                width: 12,
-                                height: 12,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Color(0xFFE9652B)),
-                              )
-                            else
-                              const Icon(Icons.auto_awesome,
-                                  size: 14, color: Color(0xFFE9652B)),
-                            const SizedBox(width: 4),
-                            Text(
-                              _isGeneratingBio
-                                  ? 'Génération...'
-                                  : 'Générer avec IA',
-                              style: const TextStyle(
-                                color: Color(0xFFE9652B),
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Mon profil formateur',
+                    style: GoogleFonts.outfit(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : darkColor)),
+                const SizedBox(height: 8),
+                Text('Gérez vos informations et domaines d\'expertise',
+                    style: GoogleFonts.outfit(color: Colors.grey[600])),
+                const SizedBox(height: 32),
+                _buildCompletenessCard(state.profileCompleteness),
+                const SizedBox(height: 32),
+                _buildSectionCard('Informations personnelles', [
+                  _buildResponsiveRow([
+                    _buildInputField('Prénom', _firstNameController,
+                        onChanged: cubit.updateFirstName),
+                    _buildInputField('Nom', _lastNameController,
+                        onChanged: cubit.updateLastName),
                   ]),
-                  const SizedBox(height: 32),
-                  _buildSectionCard('Photo de profil', [
-                    _buildPhotoUpload(),
-                  ]),
-                  const SizedBox(height: 32),
-                  _buildSectionCard('Domaines d\'expertise', [
-                    const SizedBox(height: 8),
-                    BlocBuilder<ExpertiseCubit, ExpertiseState>(
-                      builder: (context, expertiseState) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Wrap(
-                              spacing: 12,
-                              runSpacing: 12,
-                              children: expertiseState.tags
-                                  .map((e) => _buildExpertiseTag(e))
-                                  .toList(),
-                            ),
-                            const SizedBox(height: 24),
-                            _buildAddExpertiseField(expertiseState),
-                          ],
-                        );
+                  _buildResponsiveRow([
+                    _buildInputField('Email', _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        onChanged: cubit.updateEmail),
+                    _PhoneField(
+                      label: 'Téléphone',
+                      controller: _phoneController,
+                      initialNumber: _number,
+                      onChanged: (PhoneNumber number) {
+                        cubit.updatePhone(number.phoneNumber ?? '');
                       },
                     ),
                   ]),
-                  const SizedBox(height: 32),
-                  _buildSectionCard('Certifications & Diplômes', [
-                    ...certificationsList
-                        .map((c) => _buildCertificationItem(c)),
-                    const SizedBox(height: 16),
-                    TextButton.icon(
-                      onPressed: _showAddCertificationDialog,
-                      icon: const Icon(Icons.add,
-                          size: 20, color: Color(0xFFE9652B)),
-                      label: Text('Ajouter une certification',
-                          style: TextStyle(
-                              color: primaryColor,
-                              fontWeight: FontWeight.bold)),
-                    )
+                  _buildResponsiveRow([
+                    _buildInputField('Titre professionnel', _jobTitleController,
+                        onChanged: cubit.updateJobTitle),
+                    _buildInputField('Localisation', _locationController,
+                        onChanged: cubit.updateLocation),
                   ]),
-                  const SizedBox(height: 32),
-                  _buildSectionCard('Liens professionnels', [
-                    _buildResponsiveRow([
-                      _buildInputField('LinkedIn', _linkedInController),
-                      _buildInputField(
-                          'Portfolio / Site web', _portfolioController,
-                          isRequired: false),
-                    ]),
-                  ]),
-                  const SizedBox(height: 40),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                  _buildInputField(
+                    'Bio',
+                    _bioController,
+                    maxLines: 4,
+                    onChanged: cubit.updateBio,
+                    labelSuffix: GestureDetector(
+                      onTap: state.isGeneratingBio
+                          ? null
+                          : () {
+                              if (state.firstName.isEmpty ||
+                                  state.jobTitle.isEmpty) {
+                                Fluttertoast.showToast(
+                                    msg:
+                                        "Veuillez d'abord remplir votre prénom et titre professionnel",
+                                    backgroundColor: Colors.orange);
+                                return;
+                              }
+                              cubit.generateBio();
+                            },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (state.isGeneratingBio)
+                            const SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Color(0xFFE9652B)))
+                          else
+                            const Icon(Icons.auto_awesome,
+                                size: 14, color: Color(0xFFE9652B)),
+                          const SizedBox(width: 4),
+                          Text(
+                            state.isGeneratingBio
+                                ? 'Génération...'
+                                : 'Générer avec IA',
+                            style: const TextStyle(
+                                color: Color(0xFFE9652B),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 32),
+                _buildSectionCard('Photo de profil', [
+                  _buildPhotoUpload(
+                      state.profilePictureBytes, state.profilePicture),
+                ]),
+                const SizedBox(height: 32),
+                _buildSectionCard('Domaines d\'expertise', [
+                  const SizedBox(height: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 32, vertical: 16),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          side: const BorderSide(color: Color(0xFF1E293B)),
-                        ),
-                        child: const Text('Annuler',
-                            style: TextStyle(
-                                color: Color(0xFF1E293B),
-                                fontWeight: FontWeight.bold)),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: state.expertise
+                            .map((e) =>
+                                _buildExpertiseTag(e, cubit, state.expertise))
+                            .toList(),
                       ),
-                      const Spacer(),
+                      const SizedBox(height: 24),
+                      _buildAddExpertiseField(cubit, state.expertise),
+                    ],
+                  ),
+                ]),
+                const SizedBox(height: 32),
+                _buildSectionCard('Certifications & Diplômes', [
+                  ...state.certifications
+                      .map((c) => _buildCertificationItem(c, cubit)),
+                  const SizedBox(height: 16),
+                  TextButton.icon(
+                    onPressed: () => _showAddCertificationDialog(cubit),
+                    icon: const Icon(Icons.add,
+                        size: 20, color: Color(0xFFE9652B)),
+                    label: Text('Ajouter une certification',
+                        style: TextStyle(
+                            color: primaryColor, fontWeight: FontWeight.bold)),
+                  )
+                ]),
+                const SizedBox(height: 32),
+                _buildSectionCard('Liens professionnels', [
+                  _buildResponsiveRow([
+                    _buildInputField('LinkedIn', _linkedInController,
+                        onChanged: cubit.updateLinkedIn),
+                    _buildInputField(
+                        'Portfolio / Site web', _portfolioController,
+                        isRequired: false, onChanged: cubit.updatePortfolio),
+                  ]),
+                ]),
+                const SizedBox(height: 40),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    const Spacer(),
+                    OutlinedButton(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (ctx) => BlocProvider.value(
+                            value: context.read<TrainerCubit>(),
+                            child: const DeleteAccountDialog(),
+                          ),
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        side: const BorderSide(color: Colors.red, width: 2),
+                      ),
+                      child: const Text('Supprimer le compte',
+                          style: TextStyle(
+                              color: Colors.red, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 16),
+                    if (CookieService.getString('auth_provider') != 'google' &&
+                        CookieService.getString('auth_provider') !=
+                            'github') ...[
                       OutlinedButton(
                         onPressed: () {
-                          final cubit = context.read<TrainerCubit>();
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (ctx) => BlocProvider.value(
-                              value: cubit,
-                              child: const DeleteAccountDialog(),
-                            ),
-                          );
-                        },
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 16),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          side: const BorderSide(color: Colors.red, width: 2),
-                        ),
-                        child: const Text('Supprimer le compte',
-                            style: TextStyle(
-                                color: Colors.red,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                      const SizedBox(width: 16),
-                      OutlinedButton(
-                        onPressed: () {
-                          if (_emailController.text.isNotEmpty) {
+                          if (state.email.isNotEmpty) {
                             showDialog(
                               context: context,
                               barrierDismissible: false,
-                              builder: (ctx) => ChangePasswordDialog(
-                                  email: _emailController.text),
+                              builder: (ctx) =>
+                                  ChangePasswordDialog(email: state.email),
                             );
                           } else {
                             Fluttertoast.showToast(
@@ -775,35 +465,31 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                                 fontWeight: FontWeight.bold)),
                       ),
                       const SizedBox(width: 16),
-                      ElevatedButton(
-                        onPressed: _isLoading ? null : _saveProfile,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryColor,
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor:
-                              primaryColor.withOpacity(0.6),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 32, vertical: 16),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Text('Enregistrer',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
                     ],
-                  ),
-                  const SizedBox(height: 60),
-                ],
-              ),
+                    ElevatedButton(
+                      onPressed: isSaving ? null : _handleSaveProfile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: primaryColor.withOpacity(0.6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 32, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: isSaving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 2))
+                          : const Text('Enregistrer',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 60),
+              ],
             ),
           ),
         );
@@ -811,11 +497,11 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
     );
   }
 
-  Widget _buildCompletenessCard() {
-    final currentScore = _calculateCompleteness();
+  // ─── Component Extractors ──────────────────────────────────────────────────
+  Widget _buildCompletenessCard(int score) {
     final isDark = ReactiveMode.isDarkMode(context);
     return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0, end: currentScore.toDouble()),
+      tween: Tween<double>(begin: 0, end: score.toDouble()),
       duration: const Duration(milliseconds: 1500),
       curve: Curves.easeOutCubic,
       builder: (context, value, child) {
@@ -892,12 +578,16 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
     );
   }
 
-  Widget _buildInputField(String label, TextEditingController controller,
-      {int maxLines = 1,
-      bool isRequired = true,
-      Widget? labelSuffix,
-      TextInputType keyboardType = TextInputType.text,
-      List<TextInputFormatter>? inputFormatters}) {
+  Widget _buildInputField(
+    String label,
+    TextEditingController controller, {
+    int maxLines = 1,
+    bool isRequired = true,
+    Widget? labelSuffix,
+    TextInputType keyboardType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
+    Function(String)? onChanged,
+  }) {
     final isDark = ReactiveMode.isDarkMode(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 24.0),
@@ -930,6 +620,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
             maxLines: maxLines,
             keyboardType: keyboardType,
             inputFormatters: inputFormatters,
+            onChanged: onChanged,
             style: TextStyle(
                 color: isDark ? Colors.white : const Color(0xFF1E293B)),
             decoration: InputDecoration(
@@ -957,7 +648,13 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
     );
   }
 
-  Widget _buildPhotoUpload() {
+  Widget _buildPhotoUpload(Uint8List? bytes, String fallbackBase64) {
+    final imageProvider = bytes != null
+        ? MemoryImage(bytes)
+        : (fallbackBase64.isNotEmpty
+            ? MemoryImage(base64Decode(fallbackBase64))
+            : null);
+
     return Center(
       child: InkWell(
         onTap: _pickImage,
@@ -971,26 +668,21 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
             border: Border.all(color: Colors.grey[300]!, width: 2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              )
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4))
             ],
           ),
           clipBehavior: Clip.antiAlias,
-          child: _profilePictureBase64.isNotEmpty
+          child: imageProvider != null
               ? Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.memory(
-                      base64Decode(_profilePictureBase64),
-                      fit: BoxFit.cover,
-                    ),
+                    Image(image: imageProvider, fit: BoxFit.cover),
                     Container(color: Colors.black.withValues(alpha: 0.3)),
                     const Center(
-                      child:
-                          Icon(Icons.camera_alt, color: Colors.white, size: 36),
-                    ),
+                        child: Icon(Icons.camera_alt,
+                            color: Colors.white, size: 36)),
                   ],
                 )
               : Column(
@@ -1011,9 +703,13 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
     );
   }
 
-  Widget _buildExpertiseTag(String tag) {
+  Widget _buildExpertiseTag(
+      String tag, ProfileCubit profileCubit, List<String> currentTags) {
     return GestureDetector(
-      onTap: () => context.read<ExpertiseCubit>().removeTag(tag),
+      onTap: () {
+        final newTags = currentTags.where((t) => t != tag).toList();
+        profileCubit.updateExpertise(newTags);
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
@@ -1033,11 +729,22 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
     );
   }
 
-  Widget _buildAddExpertiseField(ExpertiseState expertiseState) {
-    final cubit = context.read<ExpertiseCubit>();
+  Widget _buildAddExpertiseField(
+      ProfileCubit profileCubit, List<String> currentTags) {
     final isDark = ReactiveMode.isDarkMode(context);
-    return StatefulBuilder(
-      builder: (context, localSetState) {
+    final expertiseCubit = context.read<
+        ExpertiseCubit>(); // We still use this purely for fetching AI suggestions
+
+    void addTag(String tag) {
+      if (tag.trim().isNotEmpty && !currentTags.contains(tag.trim())) {
+        profileCubit.updateExpertise([...currentTags, tag.trim()]);
+      }
+      _expertiseController.clear();
+      expertiseCubit.setInitialTags([]); // Clear suggestions visually
+    }
+
+    return BlocBuilder<ExpertiseCubit, ExpertiseState>(
+      builder: (context, expertiseState) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1048,11 +755,9 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                     controller: _expertiseController,
                     style: TextStyle(
                         color: isDark ? Colors.white : const Color(0xFF1E293B)),
-                    onChanged: (value) => cubit.fetchSuggestions(value),
-                    onSubmitted: (value) {
-                      cubit.addTag(value);
-                      _expertiseController.clear();
-                    },
+                    onChanged: (value) =>
+                        expertiseCubit.fetchSuggestions(value),
+                    onSubmitted: addTag,
                     decoration: InputDecoration(
                       hintText: 'Saisir Votre Expertise ...',
                       hintStyle: TextStyle(
@@ -1072,8 +777,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                                   height: 16,
                                   child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: Color(0xFFE9652B))),
-                            )
+                                      color: Color(0xFFE9652B))))
                           : null,
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -1096,10 +800,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                 ),
                 const SizedBox(width: 12),
                 GestureDetector(
-                  onTap: () {
-                    cubit.addTag(_expertiseController.text);
-                    _expertiseController.clear();
-                  },
+                  onTap: () => addTag(_expertiseController.text),
                   child: Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
@@ -1146,7 +847,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                     ),
                     const Divider(height: 1),
                     ...expertiseState.suggestions.map((s) => InkWell(
-                          onTap: () => cubit.addTag(s),
+                          onTap: () => addTag(s),
                           borderRadius: BorderRadius.circular(8),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
@@ -1174,10 +875,30 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
     );
   }
 
-  Widget _buildCertificationItem(Certification c) {
-    bool isPdf = c.fileType == 'pdf';
-
+  Widget _buildCertificationItem(Certification c, ProfileCubit cubit) {
+    final bool isPdf = c.fileType == 'pdf';
     final isDark = ReactiveMode.isDarkMode(context);
+    // Use thumbnail first; for image-type certs fall back to fullFile
+    final String? imageData = (c.image != null && c.image!.isNotEmpty)
+        ? c.image
+        : (!isPdf && c.fullFile != null && c.fullFile!.isNotEmpty)
+            ? c.fullFile
+            : null;
+
+    Uint8List? decodedImage;
+    if (imageData != null) {
+      try {
+        final cleanData =
+            imageData.contains(',') ? imageData.split(',').last : imageData;
+        final normalized = cleanData.replaceAll(RegExp(r'\s+'), '');
+        final padded = normalized.padRight(
+            normalized.length + (4 - normalized.length % 4) % 4, '=');
+        decodedImage = base64Decode(padded);
+      } catch (e) {
+        debugPrint('Error decoding base64 image: $e');
+      }
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -1185,10 +906,9 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
-          ),
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 15,
+              offset: const Offset(0, 6))
         ],
         border: Border.all(color: isDark ? Colors.white10 : Colors.grey[100]!),
       ),
@@ -1197,47 +917,58 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
         child: IntrinsicHeight(
           child: Row(
             children: [
-              // Preview/Icon Area
               Container(
                 width: 100,
                 decoration: BoxDecoration(
                   color: isPdf ? const Color(0xFFFEF2F2) : Colors.grey[50]!,
                   border: Border(right: BorderSide(color: Colors.grey[100]!)),
                 ),
-                child: Center(
-                  child: c.image != null && c.image!.isNotEmpty
-                      ? Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Image.memory(
-                              base64Decode(c.image!),
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Center(
-                                child: Icon(Icons.workspace_premium,
-                                    color: Color(0xFFE9652B), size: 32),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Center(
+                      child: decodedImage != null
+                          ? Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Image.memory(
+                                decodedImage,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Icon(
+                                        isPdf
+                                            ? Icons.description
+                                            : Icons.workspace_premium,
+                                        color: isPdf
+                                            ? Colors.redAccent.withOpacity(0.5)
+                                            : const Color(0xFFE9652B),
+                                        size: 32),
                               ),
-                            ),
-                            if (isPdf)
-                              Positioned(
-                                top: 4,
-                                right: 4,
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: BoxDecoration(
-                                      color: Colors.redAccent,
-                                      borderRadius: BorderRadius.circular(4)),
-                                  child: const Icon(Icons.picture_as_pdf,
-                                      color: Colors.white, size: 10),
-                                ),
-                              ),
-                          ],
-                        )
-                      : const Icon(Icons.workspace_premium,
-                          color: Color(0xFFE9652B), size: 32),
+                            )
+                          : Icon(
+                              isPdf
+                                  ? Icons.description
+                                  : Icons.workspace_premium,
+                              color: isPdf
+                                  ? Colors.redAccent.withOpacity(0.5)
+                                  : const Color(0xFFE9652B),
+                              size: 32),
+                    ),
+                    if (isPdf)
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                              color: Colors.redAccent,
+                              borderRadius: BorderRadius.circular(4)),
+                          child: const Icon(Icons.picture_as_pdf,
+                              color: Colors.white, size: 10),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              // Content Area
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
@@ -1245,46 +976,32 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        c.name,
-                        style: GoogleFonts.outfit(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 17,
-                          color: const Color(0xFF1E293B),
-                        ),
-                      ),
+                      Text(c.name,
+                          style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 17,
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF1E293B))),
                       const SizedBox(height: 4),
-                      Text(
-                        '${c.issuer} • ${c.year}',
-                        style: GoogleFonts.outfit(
-                          color: Colors.grey[500],
-                          fontSize: 14,
-                        ),
-                      ),
+                      Text('${c.issuer} • ${c.year}',
+                          style: GoogleFonts.outfit(
+                              color: Colors.grey[500], fontSize: 14)),
                     ],
                   ),
                 ),
               ),
-              // Action Area
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.visibility_outlined,
-                        color: Color(0xFFE9652B), size: 22),
-                    onPressed: () {
-                      _showFilePreview(c);
-                    },
-                  ),
+                      icon: const Icon(Icons.visibility_outlined,
+                          color: Color(0xFFE9652B), size: 22),
+                      onPressed: () => _showFilePreview(c)),
                   IconButton(
-                    icon: const Icon(Icons.delete_outline,
-                        color: Colors.redAccent, size: 22),
-                    onPressed: () {
-                      setState(() {
-                        certificationsList.remove(c);
-                      });
-                    },
-                  ),
+                      icon: const Icon(Icons.delete_outline,
+                          color: Colors.redAccent, size: 22),
+                      onPressed: () => cubit.removeCertification(c)),
                 ],
               ),
               const SizedBox(width: 8),
@@ -1295,7 +1012,92 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
     );
   }
 
-  void _showAddCertificationDialog() {
+  // ─── Dialogs & Modals ──────────────────────────────────────────────────────
+  void _showFilePreview(Certification c) {
+    if (c.fullFile == null && (c.image == null || c.image!.isEmpty)) return;
+    final bytes = base64Decode(c.fullFile ?? c.image!);
+    final isPdf = c.fileType == 'pdf';
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          width: double.infinity,
+          height: MediaQuery.of(context).size.height * 0.8,
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            children: [
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                        child: Text(c.name,
+                            style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.bold, fontSize: 18),
+                            overflow: TextOverflow.ellipsis)),
+                    IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context)),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: isPdf
+                      ? _PdfViewer(pdfBytes: bytes)
+                      : InteractiveViewer(
+                          child: Image.memory(bytes,
+                              fit: BoxFit.contain, width: double.infinity)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Text(
+                    isPdf
+                        ? 'Visualisation PDF multi-pages'
+                        : 'Visualisation Image',
+                    style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<String?> _generateThumbnailFromPdf(Uint8List pdfBytes) async {
+    if (pdfBytes.isEmpty) return null;
+    try {
+      final document = await PdfDocument.openData(pdfBytes);
+      final page = await document.getPage(1);
+      final double renderWidth = 220.0;
+      final double renderHeight = page.width > 0
+          ? (page.height / page.width * renderWidth)
+          : renderWidth;
+
+      final pageImage = await page.render(
+          width: renderWidth,
+          height: renderHeight,
+          format: PdfPageImageFormat.png,
+          quality: 80);
+      await page.close();
+      await document.close();
+
+      return pageImage != null ? base64Encode(pageImage.bytes) : null;
+    } catch (e) {
+      debugPrint('Pdf thumbnail error: $e');
+      return null;
+    }
+  }
+
+  void _showAddCertificationDialog(ProfileCubit cubit) {
     final nameController = TextEditingController();
     final issuerController = TextEditingController();
     final yearController = TextEditingController();
@@ -1321,7 +1123,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                 ],
               ),
               content: SizedBox(
-                width: 500, // Fixed width helps IntrinsicWidth in AlertDialog
+                width: 500,
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -1346,14 +1148,11 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                             onTap: () async {
                               FilePickerResult? result =
                                   await FilePicker.platform.pickFiles(
-                                type: FileType.custom,
-                                allowedExtensions: ['jpg', 'png', 'pdf'],
-                              );
-
+                                      type: FileType.custom,
+                                      allowedExtensions: ['jpg', 'png', 'pdf']);
                               if (result != null) {
                                 final file = result.files.first;
                                 Uint8List? actualBytes = file.bytes;
-
                                 if (actualBytes != null) {
                                   setDialogState(() {
                                     isGeneratingThumbnail = true;
@@ -1394,52 +1193,53 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                                                 borderRadius:
                                                     BorderRadius.circular(16),
                                                 child: Image.memory(
-                                                  base64Decode(
-                                                      selectedThumbnailBase64!),
-                                                  fit: BoxFit.cover,
-                                                  width: double.infinity,
-                                                  height: 140,
-                                                  errorBuilder: (context, error,
-                                                          stackTrace) =>
-                                                      const Icon(
-                                                          Icons
-                                                              .workspace_premium,
-                                                          color:
-                                                              Color(0xFFE9652B),
-                                                          size: 32),
-                                                ),
+                                                    base64Decode(
+                                                        selectedThumbnailBase64!),
+                                                    fit: BoxFit.cover,
+                                                    width: double.infinity,
+                                                    height: 140,
+                                                    errorBuilder: (context,
+                                                            error,
+                                                            stackTrace) =>
+                                                        const Icon(
+                                                            Icons
+                                                                .workspace_premium,
+                                                            color: Color(
+                                                                0xFFE9652B),
+                                                            size: 32)),
                                               ),
                                             ),
                                             Positioned(
-                                              top: 8,
-                                              right: 8,
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.all(4),
-                                                decoration: const BoxDecoration(
-                                                  color: Colors.black54,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: const Icon(Icons.edit,
-                                                    color: Colors.white,
-                                                    size: 14),
-                                              ),
-                                            ),
+                                                top: 8,
+                                                right: 8,
+                                                child: Container(
+                                                    padding:
+                                                        const EdgeInsets.all(4),
+                                                    decoration:
+                                                        const BoxDecoration(
+                                                            color:
+                                                                Colors.black54,
+                                                            shape: BoxShape
+                                                                .circle),
+                                                    child: const Icon(
+                                                        Icons.edit,
+                                                        color: Colors.white,
+                                                        size: 14))),
                                             Positioned(
-                                              bottom: 8,
-                                              right: 8,
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.all(4),
-                                                decoration: const BoxDecoration(
-                                                  color: Colors.white,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: const Icon(Icons.check,
-                                                    color: Colors.green,
-                                                    size: 16),
-                                              ),
-                                            ),
+                                                bottom: 8,
+                                                right: 8,
+                                                child: Container(
+                                                    padding:
+                                                        const EdgeInsets.all(4),
+                                                    decoration:
+                                                        const BoxDecoration(
+                                                            color: Colors.white,
+                                                            shape: BoxShape
+                                                                .circle),
+                                                    child: const Icon(
+                                                        Icons.check,
+                                                        color: Colors.green,
+                                                        size: 16))),
                                           ],
                                         )
                                       : Column(
@@ -1471,34 +1271,27 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Annuler',
-                      style: TextStyle(color: Colors.grey)),
-                ),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Annuler',
+                        style: TextStyle(color: Colors.grey))),
                 ElevatedButton(
                   onPressed: () {
                     if (nameController.text.trim().isEmpty ||
                         issuerController.text.trim().isEmpty ||
-                        yearController.text.trim().isEmpty) {
-                      return;
-                    }
-                    setState(() {
-                      certificationsList.add(Certification(
-                        name: nameController.text.trim(),
-                        issuer: issuerController.text.trim(),
-                        year: yearController.text.trim(),
-                        image: selectedThumbnailBase64,
-                        fileType: fileType,
-                        fullFile: selectedFullFileBase64,
-                      ));
-                    });
-                    Navigator.pop(context);
+                        yearController.text.trim().isEmpty) return;
+                    cubit.addCertification(Certification(
+                      name: nameController.text.trim(),
+                      issuer: issuerController.text.trim(),
+                      year: yearController.text.trim(),
+                      image: selectedThumbnailBase64,
+                      fileType: fileType,
+                      fullFile: selectedFullFileBase64,
+                    ));
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE9652B),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
+                      backgroundColor: const Color(0xFFE9652B),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12))),
                   child: const Text('Ajouter',
                       style: TextStyle(color: Colors.white)),
                 ),
@@ -1562,15 +1355,13 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
 
   Widget _buildResponsiveRow(List<Widget> children) {
     return LayoutBuilder(builder: (context, constraints) {
-      if (constraints.maxWidth < 600) {
-        return Column(children: children);
-      }
+      if (constraints.maxWidth < 600) return Column(children: children);
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: children
             .expand((w) => [
                   Expanded(child: w),
-                  if (w != children.last) const SizedBox(width: 24),
+                  if (w != children.last) const SizedBox(width: 24)
                 ])
             .toList(),
       );
@@ -1578,6 +1369,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
   }
 }
 
+// ─── Extracted Widgets ───────────────────────────────────────────────────────
 class _PdfViewer extends StatefulWidget {
   final Uint8List pdfBytes;
   const _PdfViewer({required this.pdfBytes});
@@ -1594,9 +1386,8 @@ class _PdfViewerState extends State<_PdfViewer> {
   void initState() {
     super.initState();
     try {
-      _pdfController = PdfController(
-        document: PdfDocument.openData(widget.pdfBytes),
-      );
+      _pdfController =
+          PdfController(document: PdfDocument.openData(widget.pdfBytes));
     } catch (e) {
       debugPrint('Error initializing PDF viewer: $e');
       setState(() => _hasError = true);
@@ -1605,31 +1396,22 @@ class _PdfViewerState extends State<_PdfViewer> {
 
   @override
   void dispose() {
-    if (!_hasError) {
-      _pdfController.dispose();
-    }
+    if (!_hasError) _pdfController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_hasError) {
+    if (_hasError)
       return const Center(child: Text("Erreur lors de l'ouverture du PDF"));
-    }
     return LayoutBuilder(builder: (context, constraints) {
-      // Force finite dimensions for Web renderer
       final width = constraints.maxWidth > 0 ? constraints.maxWidth : 400.0;
       final height = constraints.maxHeight > 0 ? constraints.maxHeight : 600.0;
-
       return RepaintBoundary(
-        child: SizedBox(
-          width: width,
-          height: height,
-          child: PdfView(
-            controller: _pdfController,
-          ),
-        ),
-      );
+          child: SizedBox(
+              width: width,
+              height: height,
+              child: PdfView(controller: _pdfController)));
     });
   }
 }
@@ -1657,14 +1439,11 @@ class _PhoneField extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 8),
-            child: Text(
-              label,
-              style: GoogleFonts.outfit(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: isDark ? Colors.white70 : const Color(0xFF1E293B),
-              ),
-            ),
+            child: Text(label,
+                style: GoogleFonts.outfit(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white70 : const Color(0xFF1E293B))),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -1680,31 +1459,27 @@ class _PhoneField extends StatelessWidget {
               initialValue: initialNumber,
               formatInput: false,
               selectorConfig: const SelectorConfig(
-                selectorType: PhoneInputSelectorType.DIALOG,
-                setSelectorButtonAsPrefixIcon: true,
-                leadingPadding: 0,
-              ),
+                  selectorType: PhoneInputSelectorType.DIALOG,
+                  setSelectorButtonAsPrefixIcon: true,
+                  leadingPadding: 0),
               ignoreBlank: false,
               autoValidateMode: AutovalidateMode.onUserInteraction,
               selectorTextStyle: GoogleFonts.outfit(
-                color: isDark ? Colors.white : const Color(0xFF1E293B),
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+                  color: isDark ? Colors.white : const Color(0xFF1E293B),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500),
               textStyle: GoogleFonts.outfit(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: isDark ? Colors.white : const Color(0xFF1E293B),
-              ),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white : const Color(0xFF1E293B)),
               inputDecoration: const InputDecoration(
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-                fillColor: Colors.transparent,
-                filled: true,
-              ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                  fillColor: Colors.transparent,
+                  filled: true),
             ),
           ),
         ],

@@ -634,7 +634,6 @@ class _SkillsModalContent extends StatelessWidget {
         final data = state is DashboardLoaded
             ? state.data
             : (state is DashboardSaving ? state.data : null);
-        final isSaving = state is DashboardSaving;
 
         if (data == null) return const SizedBox.shrink();
 
@@ -1087,5 +1086,3 @@ class _AICoachCard extends StatelessWidget {
     );
   }
 }
-
-

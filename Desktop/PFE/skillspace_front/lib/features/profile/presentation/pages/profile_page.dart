@@ -17,6 +17,7 @@ import '../widgets/quiz_modal.dart';
 import '../widgets/change_password_dialog.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pfe/core/network/cookie_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -188,45 +189,47 @@ class _ProfileContent extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Container(
-                    height: 56,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.orange, width: 2),
-                    ),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        final state = context.read<ProfileCubit>().state;
-                        if (state is ProfileLoaded) {
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (ctx) =>
-                                ChangePasswordDialog(email: state.data.email),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        foregroundColor: AppColors.orange,
-                        elevation: 0,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
+                if (CookieService.getString('auth_provider') != 'google' && CookieService.getString('auth_provider') != 'github') ...[
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Container(
+                      height: 56,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.orange, width: 2),
                       ),
-                      child: const Text(
-                        'Changer mot de passe',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final state = context.read<ProfileCubit>().state;
+                          if (state is ProfileLoaded) {
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (ctx) =>
+                                  ChangePasswordDialog(email: state.data.email),
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: AppColors.orange,
+                          elevation: 0,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text(
+                          'Changer mot de passe',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ),

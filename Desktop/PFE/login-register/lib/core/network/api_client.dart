@@ -120,6 +120,7 @@ class ApiClient {
     if (endpoint.startsWith('/offers') || endpoint.startsWith('/api/offers')) return offerBaseUrl;
     if (endpoint.startsWith('/job')) return offerBaseUrl;
     if (endpoint.startsWith('/formateur') || endpoint.startsWith('/api/formateur')) return trainerBaseUrl;
+    if (endpoint.startsWith('/quiz') || endpoint.startsWith('/recommend')) return candidatBaseUrl;
     return baseUrl;
   }
 

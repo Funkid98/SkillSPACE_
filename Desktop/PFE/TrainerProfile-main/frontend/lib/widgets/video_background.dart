@@ -112,7 +112,8 @@ class _VideoBackgroundState extends State<VideoBackground> {
                         ? ValueListenableBuilder(
                             valueListenable: _controller,
                             builder: (context, VideoPlayerValue value, child) {
-                              if (value.size.width == 0 || value.size.height == 0) {
+                              if (value.size.width == 0 ||
+                                  value.size.height == 0) {
                                 return const SizedBox.shrink();
                               }
                               return Transform.scale(

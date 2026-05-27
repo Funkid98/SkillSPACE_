@@ -158,26 +158,35 @@ class CandidateFormationsPage extends StatelessWidget {
                                                         fontSize: 14,
                                                         color: isDark
                                                             ? Colors.white60
-                                                            : AppColors.textGray)),
-                                                if (f['reviewCount'] != null && f['reviewCount'] > 0) ...[
+                                                            : AppColors
+                                                                .textGray)),
+                                                if (f['reviewCount'] != null &&
+                                                    f['reviewCount'] > 0) ...[
                                                   const SizedBox(width: 12),
                                                   Container(
                                                     height: 4,
                                                     width: 4,
                                                     decoration: BoxDecoration(
-                                                      color: isDark ? Colors.white24 : Colors.black12,
+                                                      color: isDark
+                                                          ? Colors.white24
+                                                          : Colors.black12,
                                                       shape: BoxShape.circle,
                                                     ),
                                                   ),
                                                   const SizedBox(width: 12),
-                                                  const Icon(Icons.star, color: Colors.amber, size: 14),
+                                                  const Icon(Icons.star,
+                                                      color: Colors.amber,
+                                                      size: 14),
                                                   const SizedBox(width: 4),
                                                   Text(
                                                     '${(f['globalRating'] ?? 0.0).toStringAsFixed(1)} (${f['reviewCount']} avis)',
                                                     style: TextStyle(
                                                       fontSize: 12,
-                                                      color: isDark ? Colors.white54 : Colors.grey[600],
-                                                      fontWeight: FontWeight.w500,
+                                                      color: isDark
+                                                          ? Colors.white54
+                                                          : Colors.grey[600],
+                                                      fontWeight:
+                                                          FontWeight.w500,
                                                     ),
                                                   ),
                                                 ],
@@ -269,25 +278,33 @@ class CandidateFormationsPage extends StatelessWidget {
                                   if (isCompleted) ...[
                                     const SizedBox(height: 20),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 12),
                                       decoration: BoxDecoration(
                                         color: isDark
                                             ? Colors.white.withOpacity(0.05)
                                             : AppColors.bg,
                                         borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
+                                        border: Border.all(
+                                            color: isDark
+                                                ? Colors.white10
+                                                : Colors.black
+                                                    .withOpacity(0.05)),
                                       ),
                                       child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           const Text('Votre note :',
                                               style: TextStyle(
                                                   fontWeight: FontWeight.w600,
                                                   fontSize: 14)),
                                           _CustomRatingBar(
-                                            rating: (f['rating'] ?? 0).toDouble(),
+                                            rating:
+                                                (f['rating'] ?? 0).toDouble(),
                                             onRatingUpdate: (rating) {
-                                              _submitRating(context, f, rating.toInt());
+                                              _submitRating(
+                                                  context, f, rating.toInt());
                                             },
                                           ),
                                         ],
@@ -330,82 +347,6 @@ class CandidateFormationsPage extends StatelessWidget {
             },
           ),
         ));
-  }
-
-  void _showReviewDialog(BuildContext context, dynamic formation,
-      {bool onlyReview = false}) {
-    int localRating = (formation['rating'] ?? 5).toInt();
-    final controller = TextEditingController(text: formation['review'] ?? '');
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title:
-              Text(onlyReview ? 'Ajouter un commentaire' : 'Laisser un avis'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (!onlyReview) ...[
-                const Text('Quelle note donneriez-vous à cette formation ?'),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(5, (index) {
-                    return IconButton(
-                      icon: Icon(
-                        index < localRating ? Icons.star : Icons.star_border,
-                        color: Colors.amber,
-                        size: 32,
-                      ),
-                      onPressed: () {
-                        setDialogState(() {
-                          localRating = index + 1;
-                        });
-                      },
-                    );
-                  }),
-                ),
-                const SizedBox(height: 16),
-              ],
-              TextField(
-                controller: controller,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  hintText: 'Votre commentaire (optionnel)',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Annuler'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final success = await context
-                    .read<FormationsCubit>()
-                    .submitReview(
-                        formation['_id'] ?? formation['id'].toString(),
-                        localRating,
-                        controller.text);
-                if (success && context.mounted) {
-                  Navigator.pop(dialogContext);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Merci pour votre avis !')),
-                  );
-                }
-              },
-              style:
-                  ElevatedButton.styleFrom(backgroundColor: AppColors.orange),
-              child: const Text('Envoyer'),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   void _submitRating(
@@ -471,7 +412,8 @@ class _CustomRatingBar extends StatelessWidget {
               onRatingUpdate(index + 1.0);
             },
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
               child: Icon(
                 Icons.star,
                 color: isSelected ? Colors.amber : Colors.grey[300],

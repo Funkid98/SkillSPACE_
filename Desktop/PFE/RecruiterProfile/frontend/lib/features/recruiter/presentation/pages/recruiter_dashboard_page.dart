@@ -257,14 +257,16 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = Responsive.isMobile(context) || Responsive.isTablet(context);
+    final isCompact =
+        Responsive.isMobile(context) || Responsive.isTablet(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: EdgeInsets.all(isCompact ? 16 : 24),
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isDark ? AppColors.borderDark : AppColors.border, width: 1),
+        border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -281,7 +283,9 @@ class _StatCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withOpacity(0.05) : AppColors.iconBg,
+                  color: isDark
+                      ? Colors.white.withOpacity(0.05)
+                      : AppColors.iconBg,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(item.icon, size: 20, color: AppColors.orange),
@@ -338,7 +342,8 @@ class _RecentCandidatesCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: isDark ? AppColors.borderDark : AppColors.border, width: 1),
+        border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -386,7 +391,8 @@ class _CandidateRow extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 22,
-            backgroundColor: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
+            backgroundColor:
+                isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
             child: Text(
               candidate.initials,
               style: TextStyle(
@@ -491,7 +497,8 @@ class _ActiveOffersCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: isDark ? AppColors.borderDark : AppColors.border, width: 1),
+        border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -518,7 +525,6 @@ class _OfferItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = RecruiterLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -539,7 +545,9 @@ class _OfferItem extends StatelessWidget {
               Flexible(
                 child: Text(
                   '${offer.applicationCount} candidatures',
-                  style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : AppColors.textGray),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.white60 : AppColors.textGray),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

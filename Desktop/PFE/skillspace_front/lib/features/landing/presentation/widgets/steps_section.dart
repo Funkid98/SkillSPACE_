@@ -21,7 +21,6 @@ class StepsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = Responsive.isMobile(context);
     final l10n = AppLocalizations.of(context);
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
 
@@ -32,22 +31,6 @@ class StepsSection extends StatelessWidget {
       _StepItem('04', l10n.step4Title, l10n.step4Desc),
       _StepItem('05', l10n.step5Title, l10n.step5Desc),
     ];
-
-    final directions = isAr
-        ? [
-            RevealDirection.fromRight,
-            RevealDirection.fromBottom,
-            RevealDirection.fromBottom,
-            RevealDirection.fromBottom,
-            RevealDirection.fromLeft,
-          ]
-        : [
-            RevealDirection.fromLeft,
-            RevealDirection.fromBottom,
-            RevealDirection.fromBottom,
-            RevealDirection.fromBottom,
-            RevealDirection.fromRight,
-          ];
 
     final width = MediaQuery.of(context).size.width;
     final isCompact = width < 1100;

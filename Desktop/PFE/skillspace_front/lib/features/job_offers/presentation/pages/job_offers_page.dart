@@ -328,7 +328,8 @@ class _JobCardState extends State<_JobCard> {
               MaterialPageRoute(
                 builder: (_) => CandidateFormationDetailsPage(
                   formation: formation,
-                  aiReason: 'Formation recommandée pour combler votre lacune en $skillName.',
+                  aiReason:
+                      'Formation recommandée pour combler votre lacune en $skillName.',
                 ),
               ),
             );
@@ -383,7 +384,8 @@ class _JobCardState extends State<_JobCard> {
             context: context,
             isScrollControlled: true,
             backgroundColor: Colors.transparent,
-            builder: (context) => _AllFormationsModalContent(formations: formations),
+            builder: (context) =>
+                _AllFormationsModalContent(formations: formations),
           );
         }
       } else {
@@ -842,7 +844,8 @@ class _JobCardState extends State<_JobCard> {
                                       TextButton(
                                         onPressed: _isLoadingFormation
                                             ? null
-                                            : () => _navigateToFormationByName(skill),
+                                            : () => _navigateToFormationByName(
+                                                skill),
                                         style: TextButton.styleFrom(
                                           foregroundColor: AppColors.orange,
                                           padding: const EdgeInsets.symmetric(
@@ -1248,10 +1251,12 @@ class _AllFormationsModalContent extends StatefulWidget {
   const _AllFormationsModalContent({required this.formations});
 
   @override
-  State<_AllFormationsModalContent> createState() => _AllFormationsModalContentState();
+  State<_AllFormationsModalContent> createState() =>
+      _AllFormationsModalContentState();
 }
 
-class _AllFormationsModalContentState extends State<_AllFormationsModalContent> {
+class _AllFormationsModalContentState
+    extends State<_AllFormationsModalContent> {
   late List<dynamic> _filtered;
   final _searchController = TextEditingController();
 
@@ -1272,8 +1277,12 @@ class _AllFormationsModalContentState extends State<_AllFormationsModalContent> 
           final desc = (f['description'] ?? '').toString().toLowerCase();
           final category = (f['category'] ?? '').toString().toLowerCase();
           final List<dynamic> tags = f['tags'] ?? [];
-          final hasTag = tags.any((tag) => tag.toString().toLowerCase().contains(query));
-          return title.contains(query) || desc.contains(query) || category.contains(query) || hasTag;
+          final hasTag =
+              tags.any((tag) => tag.toString().toLowerCase().contains(query));
+          return title.contains(query) ||
+              desc.contains(query) ||
+              category.contains(query) ||
+              hasTag;
         }).toList();
       }
     });
@@ -1320,9 +1329,8 @@ class _AllFormationsModalContentState extends State<_AllFormationsModalContent> 
                 onPressed: () => Navigator.pop(context),
                 icon: const Icon(Icons.close_rounded),
                 style: IconButton.styleFrom(
-                  backgroundColor: isDark
-                      ? Colors.white.withOpacity(0.05)
-                      : AppColors.bg,
+                  backgroundColor:
+                      isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,
                 ),
               ),
             ],
@@ -1333,11 +1341,14 @@ class _AllFormationsModalContentState extends State<_AllFormationsModalContent> 
             onChanged: _onSearch,
             decoration: InputDecoration(
               hintText: 'Rechercher une formation (ex: Python, React...)',
-              hintStyle: const TextStyle(color: AppColors.textGray, fontSize: 14),
-              prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textGray),
+              hintStyle:
+                  const TextStyle(color: AppColors.textGray, fontSize: 14),
+              prefixIcon:
+                  const Icon(Icons.search_rounded, color: AppColors.textGray),
               filled: true,
               fillColor: isDark ? Colors.white.withOpacity(0.03) : AppColors.bg,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide(
@@ -1391,7 +1402,6 @@ class _AllFormationsModalContentState extends State<_AllFormationsModalContent> 
                       final f = _filtered[index];
                       final title = f['title'] ?? 'Formation';
                       final category = f['category'] ?? 'Général';
-                      final level = f['level'] ?? 'Tous niveaux';
                       final duration = f['duration'] ?? 'N/A';
                       final rating = (f['rating'] ?? 0.0).toDouble();
 
@@ -1399,10 +1409,14 @@ class _AllFormationsModalContentState extends State<_AllFormationsModalContent> 
                         margin: const EdgeInsets.only(bottom: 16),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withOpacity(0.02) : AppColors.bg,
+                          color: isDark
+                              ? Colors.white.withOpacity(0.02)
+                              : AppColors.bg,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: isDark ? AppColors.borderDark : AppColors.border,
+                            color: isDark
+                                ? AppColors.borderDark
+                                : AppColors.border,
                           ),
                         ),
                         child: Row(
@@ -1431,7 +1445,9 @@ class _AllFormationsModalContentState extends State<_AllFormationsModalContent> 
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w800,
-                                      color: isDark ? Colors.white : AppColors.textDark,
+                                      color: isDark
+                                          ? Colors.white
+                                          : AppColors.textDark,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -1440,10 +1456,13 @@ class _AllFormationsModalContentState extends State<_AllFormationsModalContent> 
                                   Row(
                                     children: [
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 3),
                                         decoration: BoxDecoration(
-                                          color: AppColors.orange.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(8),
+                                          color:
+                                              AppColors.orange.withOpacity(0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                         ),
                                         child: Text(
                                           category,
@@ -1455,14 +1474,17 @@ class _AllFormationsModalContentState extends State<_AllFormationsModalContent> 
                                         ),
                                       ),
                                       const SizedBox(width: 8),
-                                      Icon(Icons.star, color: Colors.amber, size: 12),
+                                      Icon(Icons.star,
+                                          color: Colors.amber, size: 12),
                                       const SizedBox(width: 2),
                                       Text(
                                         rating.toStringAsFixed(1),
                                         style: TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold,
-                                          color: isDark ? Colors.white70 : AppColors.textDark,
+                                          color: isDark
+                                              ? Colors.white70
+                                              : AppColors.textDark,
                                         ),
                                       ),
                                       const SizedBox(width: 8),
@@ -1485,16 +1507,19 @@ class _AllFormationsModalContentState extends State<_AllFormationsModalContent> 
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => CandidateFormationDetailsPage(
+                                    builder: (_) =>
+                                        CandidateFormationDetailsPage(
                                       formation: f,
-                                      aiReason: 'Formation disponible sur la plateforme pour acquérir de nouvelles compétences.',
+                                      aiReason:
+                                          'Formation disponible sur la plateforme pour acquérir de nouvelles compétences.',
                                     ),
                                   ),
                                 );
                               },
                               style: TextButton.styleFrom(
                                 foregroundColor: AppColors.orange,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
                               ),
                               child: const Text(
                                 'Voir →',

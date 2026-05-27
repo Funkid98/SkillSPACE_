@@ -72,7 +72,7 @@ services:
       context: .
       dockerfile: skillspace_front/Dockerfile
     ports:
-      - "8081:80"
+      - "3000:80"
     restart: always
 
 networks:
