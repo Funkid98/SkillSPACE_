@@ -56,14 +56,11 @@ class _SimulationResultPageState extends State<SimulationResultPage>
       if (userDataStr != null) {
         final user = jsonDecode(userDataStr);
         candidateId = user['id'] ?? user['_id'];
-        print('SimulationResultPage: Found candidateId = $candidateId');
       } else {
         print(
             'SimulationResultPage: userDataStr is null! Cannot get candidateId');
       }
 
-      print(
-          'SimulationResultPage: Sending /finish request with candidateId = $candidateId');
       final response = await http.post(
         Uri.parse('http://localhost:5005/api/interview/finish'),
         headers: {'Content-Type': 'application/json'},
