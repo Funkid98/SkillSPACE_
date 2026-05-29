@@ -1,78 +1,116 @@
 services:
-  # ─── Backend: Login & Register ────
+
+  # ───────── API GATEWAY (Express) ─────────
+  api-gateway:
+    image: funkid99/skillspace-gateway:latest
+    build:
+      context: ./Backend/api-gateway
+    ports:
+      - "8088:8080"
+    env_file:
+      - ./Backend/api-gateway/.env
+    environment:
+      - AUTH_SERVICE_URL=http://login-register:5001
+      - CANDIDAT_SERVICE_URL=http://candidat:5000
+      - RECRUITER_SERVICE_URL=http://recruiter:5002
+      - OFFER_SERVICE_URL=http://offer:5003
+      - TRAINER_SERVICE_URL=http://trainer:5004
+      - INTERVIEW_SERVICE_URL=http://interview:5005
+    depends_on:
+      - login-register
+      - candidat
+      - recruiter
+      - offer
+      - trainer
+      - interview
+    restart: always
+
+  # ───────── NGINX GATEWAY (frontend + legacy) ──
+  gateway:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - api-gateway
+      - frontend
+    restart: always
+
+  # ───────── LOGIN SERVICE ───────
   login-register:
     image: funkid99/skillspace-login:latest
     build:
       context: ./Backend/login-register-services
-    ports:
-      - "5001:5001"
+    expose:
+      - "5001"
     env_file:
       - ./Backend/login-register-services/.env
     restart: always
 
-  # ─── Backend: Candidate Service ───
+  # ───────── CANDIDAT SERVICE ────
   candidat:
     image: funkid99/skillspace-candidat:latest
     build:
       context: ./Backend/candidat-service
-    ports:
-      - "5000:5000"
+    expose:
+      - "5000"
     env_file:
       - ./Backend/candidat-service/.env
     restart: always
 
-  # ─── Backend: Recruiter Service ───
+  # ───────── RECRUITER SERVICE ───
   recruiter:
     image: funkid99/skillspace-recruiter:latest
     build:
       context: ./Backend/recruter-service
-    ports:
-      - "5002:5002"
+    expose:
+      - "5002"
     env_file:
       - ./Backend/recruter-service/.env
     restart: always
 
-  # ─── Backend: Offer Service ───
+  # ───────── OFFER SERVICE ───────
   offer:
     image: funkid99/skillspace-offer:latest
     build:
       context: ./Backend/offer-service
-    ports:
-      - "5003:5003"
+    expose:
+      - "5003"
     env_file:
       - ./Backend/offer-service/.env
     restart: always
 
-  # ─── Backend: Trainer Service ─────
+  # ───────── TRAINER SERVICE ─────
   trainer:
     image: funkid99/skillspace-trainer:latest
     build:
       context: ./TrainerProfile-main/backend
-    ports:
-      - "5004:5004"
+    expose:
+      - "5004"
     env_file:
       - ./TrainerProfile-main/backend/.env
     restart: always
 
-  # ─── Backend: Interview Service ───
+  # ───────── INTERVIEW SERVICE ───
   interview:
     image: funkid99/skillspace-interview:latest
     build:
       context: ./Backend/interview-service
-    ports:
-      - "5005:5005"
+    expose:
+      - "5005"
     env_file:
       - ./Backend/interview-service/.env
     restart: always
 
-  # ─── Frontend: SkillSpace App ─────
+  # ───────── FRONTEND ────────────
   frontend:
     image: funkid99/skillspace-frontend:latest
     build:
       context: .
       dockerfile: skillspace_front/Dockerfile
-    ports:
-      - "3000:80"
+    expose:
+      - "80"
     restart: always
 
 networks:

@@ -1278,7 +1278,9 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                   onPressed: () {
                     if (nameController.text.trim().isEmpty ||
                         issuerController.text.trim().isEmpty ||
-                        yearController.text.trim().isEmpty) return;
+                        yearController.text.trim().isEmpty) {
+                      return;
+                    }
                     cubit.addCertification(Certification(
                       name: nameController.text.trim(),
                       issuer: issuerController.text.trim(),
@@ -1402,8 +1404,9 @@ class _PdfViewerState extends State<_PdfViewer> {
 
   @override
   Widget build(BuildContext context) {
-    if (_hasError)
+    if (_hasError) {
       return const Center(child: Text("Erreur lors de l'ouverture du PDF"));
+    }
     return LayoutBuilder(builder: (context, constraints) {
       final width = constraints.maxWidth > 0 ? constraints.maxWidth : 400.0;
       final height = constraints.maxHeight > 0 ? constraints.maxHeight : 600.0;

@@ -135,7 +135,8 @@ class _SplineRobotState extends State<SplineRobot> {
 </html>
 ''';
 
-    ui_web.platformViewRegistry.registerViewFactory(_viewId, (int viewId) => _iframe!);
+    ui_web.platformViewRegistry
+        .registerViewFactory(_viewId, (int viewId) => _iframe!);
 
     widget.mouseNotifier.addListener(_onMouseChanged);
   }
@@ -153,14 +154,15 @@ class _SplineRobotState extends State<SplineRobot> {
     void applyFix() {
       if (retries > 20) return;
       retries++;
-      
+
       final iframe = _iframe;
       if (iframe != null && iframe.isConnected == true) {
         html.Element? current = iframe;
         while (current != null) {
           if (current.tagName.toLowerCase() == 'flt-platform-view') {
             current.style.pointerEvents = 'none';
-            final slot = current.querySelector('flt-platform-view-slot-content');
+            final slot =
+                current.querySelector('flt-platform-view-slot-content');
             if (slot != null) {
               slot.style.pointerEvents = 'none';
             }
@@ -168,7 +170,7 @@ class _SplineRobotState extends State<SplineRobot> {
           }
           final parentNode = current.parentNode;
           if (parentNode is html.ShadowRoot) {
-            current = parentNode.host as html.Element?;
+            current = parentNode.host;
           } else {
             current = current.parent;
           }
@@ -176,6 +178,7 @@ class _SplineRobotState extends State<SplineRobot> {
       }
       Future.delayed(const Duration(milliseconds: 100), applyFix);
     }
+
     Future.delayed(const Duration(milliseconds: 100), applyFix);
 
     // ── 2. JS mousemove on the window (capture phase) → postMessage to iframe ──
@@ -183,15 +186,15 @@ class _SplineRobotState extends State<SplineRobot> {
     html.window.addEventListener('mousemove', (html.Event event) {
       if (event is! html.MouseEvent) return;
       final e = event;
-      
+
       final iframe = _iframe;
       if (iframe == null) return;
       final rect = iframe.getBoundingClientRect();
       if (rect.width == 0 || rect.height == 0) return;
-      
+
       final x = (e.client.x - rect.left) / rect.width;
       final y = (e.client.y - rect.top) / rect.height;
-      
+
       if (x < -0.1 || x > 1.1 || y < -0.1 || y > 1.1) {
         iframe.contentWindow?.postMessage({'type': 'static'}, '*');
         return;

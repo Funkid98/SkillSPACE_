@@ -192,7 +192,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
     });
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:5005/api/interview/start'),
+        Uri.parse('http://localhost:8088/api/interview/start'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'role': widget.roleTitle,
@@ -253,7 +253,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:5005/api/interview/chat'),
+        Uri.parse('http://localhost:8088/api/interview/chat'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'message': answer,
@@ -367,7 +367,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
 
     try {
       var request = http.MultipartRequest(
-          'POST', Uri.parse('http://localhost:5005/api/interview/transcribe'));
+          'POST', Uri.parse('http://localhost:8088/api/interview/transcribe'));
 
       if (kIsWeb) {
         // On web, stop() returns a blob URL. Fetch bytes first.

@@ -1,0 +1,16 @@
+{
+  "name": "skillspace-api-gateway",
+  "version": "1.0.0",
+  "description": "Unified API Gateway for SkillSpace microservices",
+  "main": "gateway.js",
+  "scripts": {
+    "start": "node --no-deprecation gateway.js",
+    "dev": "node --no-deprecation --watch gateway.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "http-proxy": "^1.18.1"
+  }
+}

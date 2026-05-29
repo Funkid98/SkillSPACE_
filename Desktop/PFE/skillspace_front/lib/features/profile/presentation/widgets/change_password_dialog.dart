@@ -6,12 +6,12 @@ import '../../../../core/utils/app_toast.dart';
 
 class ChangePasswordDialog extends StatefulWidget {
   final String email;
-  final String apiUrl; // e.g. 'http://localhost:5001/api/auth'
+  final String apiUrl; // e.g. 'http://localhost:8088/api/auth'
   
   const ChangePasswordDialog({
     super.key, 
     required this.email,
-    this.apiUrl = 'http://localhost:5001/api/auth',
+    this.apiUrl = 'http://localhost:8088/api/auth',
   });
 
   @override

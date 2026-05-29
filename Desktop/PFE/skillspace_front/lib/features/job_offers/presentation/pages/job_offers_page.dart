@@ -273,7 +273,7 @@ class _JobCardState extends State<_JobCard> {
     try {
       final response = await http.get(
         Uri.parse(
-            'http://127.0.0.1:5004/api/formateur/formations/item/$formationId'),
+            'http://localhost:8088/api/formateur/formations/item/$formationId'),
       );
 
       if (response.statusCode == 200) {
@@ -315,7 +315,7 @@ class _JobCardState extends State<_JobCard> {
     try {
       final response = await http.get(
         Uri.parse(
-            'http://127.0.0.1:5004/api/formateur/all-formations?query=${Uri.encodeComponent(skillName)}'),
+            'http://localhost:8088/api/formateur/all-formations?query=${Uri.encodeComponent(skillName)}'),
       );
 
       if (response.statusCode == 200) {
@@ -374,7 +374,7 @@ class _JobCardState extends State<_JobCard> {
     setState(() => _isLoadingFormation = true);
     try {
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:5004/api/formateur/all-formations'),
+        Uri.parse('http://localhost:8088/api/formateur/all-formations'),
       );
 
       if (response.statusCode == 200) {

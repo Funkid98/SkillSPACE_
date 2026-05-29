@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/formateur_model.dart';
 
 class FormateurService {
-  final String baseUrl = 'http://localhost:5004/api/formateur';
+  final String baseUrl = 'http://localhost:8088/api/formateur';
 
   Future<FormateurModel?> getProfile(String userId) async {
     try {

@@ -62,7 +62,7 @@ class _SimulationResultPageState extends State<SimulationResultPage>
       }
 
       final response = await http.post(
-        Uri.parse('http://localhost:5005/api/interview/finish'),
+        Uri.parse('http://localhost:8088/api/interview/finish'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'history': widget.chatHistory,

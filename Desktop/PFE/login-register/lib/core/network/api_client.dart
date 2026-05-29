@@ -6,11 +6,11 @@ import 'package:http/browser_client.dart';
 import 'package:http/http.dart' as http;
 
 class ApiClient {
-  static const String baseUrl         = 'http://localhost:5001';
-  static const String candidatBaseUrl = 'http://localhost:5000';
-  static const String recruiterBaseUrl= 'http://localhost:5002';
-  static const String offerBaseUrl    = 'http://localhost:5003';
-  static const String trainerBaseUrl  = 'http://localhost:5004';
+  static const String baseUrl         = 'http://localhost:8088';
+  static const String candidatBaseUrl = 'http://localhost:8088';
+  static const String recruiterBaseUrl= 'http://localhost:8088';
+  static const String offerBaseUrl    = 'http://localhost:8088';
+  static const String trainerBaseUrl  = 'http://localhost:8088';
 
   // BrowserClient is required so the browser automatically attaches the
   // HttpOnly 'skillspace_token' cookie on every cross-origin request.

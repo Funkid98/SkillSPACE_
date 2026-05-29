@@ -12,8 +12,8 @@ const mongoose = require('mongoose');
 const mongoURI = process.env.MONGODB_URI;
 
 if (!mongoURI) {
-    console.error('❌ FATAL ERROR: MONGODB_URI is not defined in .env');
-    process.exit(1);
+  console.error('❌ FATAL ERROR: MONGODB_URI is not defined in .env');
+  process.exit(1);
 }
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',').map((o) => o.trim());
@@ -38,8 +38,8 @@ app.use('/quiz', quizRoutes)
 const PORT = process.env.PORT || 5000
 
 mongoose.connect(mongoURI)
-    .then(() => {
-        console.log('MongoDB connected')
-        app.listen(PORT, '0.0.0.0', () => console.log(`Candidat service running on :${PORT}`))
-    })
-    .catch(err => console.error('MongoDB connection error:', err));
+  .then(() => {
+    console.log('MongoDB connected')
+    app.listen(PORT, '0.0.0.0', () => console.log(`Candidat service running on :${PORT}`))
+  })
+  .catch(err => console.error('MongoDB connection error:', err));

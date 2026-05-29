@@ -60,7 +60,7 @@ class _InterviewHistoryModalState extends State<InterviewHistoryModal> {
       print('InterviewHistoryModal: Fetching history for candidateId = $candidateId');
 
       final response = await http.get(
-        Uri.parse('http://localhost:5005/api/interview/history/$candidateId'),
+        Uri.parse('http://localhost:8088/api/interview/history/$candidateId'),
       );
 
       if (response.statusCode == 200) {
