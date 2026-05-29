@@ -1,6 +1,7 @@
 const Groq = require('groq-sdk');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const groq = new Groq({
   apiKey: "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",
@@ -123,9 +124,45 @@ exports.startSimulation = async (req, res) => {
 
 exports.chatWithAI = async (req, res) => {
   try {
-    const { message, roleTitle, history = [] } = req.body;
+    let message = req.body.message;
     const langCode = req.body.language || 'fr';
     const langString = langCode === 'en' ? 'English' : 'French';
+
+    // If an audio file was uploaded, transcribe it first
+    let audioUrl = null;
+    if (req.file) {
+      const transcription = await groq.audio.transcriptions.create({
+        file: fs.createReadStream(req.file.path),
+        model: "whisper-large-v3",
+        language: langCode,
+        response_format: "json",
+        prompt: langCode === 'en'
+          ? "Umm, mmm, hmm, uh, like, you know..."
+          : "Euh, mmm, hmm, donc, alors, c'est-à-dire, d'accord...",
+      });
+      message = transcription.text;
+
+      // Save audio permanently in uploads/audio/
+      const audioDir = path.join(__dirname, '..', 'uploads', 'audio');
+      if (!fs.existsSync(audioDir)) {
+        fs.mkdirSync(audioDir, { recursive: true });
+      }
+      const ext = path.extname(req.file.originalname) || '.wav';
+      const filename = `user_${crypto.randomUUID()}${ext}`;
+      const destPath = path.join(audioDir, filename);
+      fs.copyFileSync(req.file.path, destPath);
+      audioUrl = `/api/interview/uploads/audio/${filename}`;
+
+      // Clean up temp file from multer
+      fs.unlinkSync(req.file.path);
+    }
+
+    if (!message) {
+      return res.status(400).json({ success: false, message: "No message or audio provided." });
+    }
+
+    const history = req.body.history ? (typeof req.body.history === 'string' ? JSON.parse(req.body.history) : req.body.history) : [];
+    const roleTitle = req.body.roleTitle || '';
 
     // Construct the detailed system prompt
     const systemPrompt = `You are Thomas Lefebvre, an experienced hiring manager conducting a realistic job interview.
@@ -154,6 +191,9 @@ exports.chatWithAI = async (req, res) => {
       content: msg.text
     }));
 
+    // Determine the actual user message text for the chat display
+    const userMessageText = req.file ? (message || '(message vocal)') : message;
+
     const chatCompletion = await groq.chat.completions.create({
       messages: [
         { role: "system", content: systemPrompt },
@@ -168,11 +208,12 @@ exports.chatWithAI = async (req, res) => {
     const aiResponse = chatCompletion.choices[0]?.message?.content || "C'est intéressant. Pourriez-vous détailler un peu plus ?";
     const audioBase64 = await generateAudio(aiResponse, langCode);
 
-    // TTS is handled client-side via Puter.js
     res.status(200).json({
       success: true,
       reply: aiResponse,
-      audioBase64: audioBase64
+      audioBase64: audioBase64,
+      userTranscript: message,
+      audioUrl: audioUrl // URL to the saved user recording
     });
   } catch (error) {
     console.error(error);
@@ -456,12 +497,18 @@ ${transcript}`;
       try {
         console.log("Attempting to save interview history for candidateId:", req.body.candidateId);
         const InterviewHistory = require('../models/InterviewHistory');
+        const conversation = history.map(msg => ({
+          role: msg.isUser ? 'user' : 'assistant',
+          text: msg.text || '',
+          audioUrl: msg.audioUrl || null
+        }));
         const historyRecord = new InterviewHistory({
           candidateId: req.body.candidateId,
           roleTitle: roleTitle,
           globalScore: evaluationData.globalScore || evaluationData.score,
           emotionalState: evaluationData.emotionalState,
-          analysis: evaluationData
+          analysis: evaluationData,
+          conversation: conversation
         });
         await historyRecord.save();
         console.log("Successfully saved interview history! ID:", historyRecord._id);

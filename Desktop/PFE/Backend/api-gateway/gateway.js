@@ -43,7 +43,7 @@ const ROUTES = [
 // Proxy server
 const proxy = httpProxy.createProxyServer({
   changeOrigin: true,
-  proxyTimeout: 30000,
+  proxyTimeout: 60000,
 });
 
 proxy.on('error', (err, req, res) => {

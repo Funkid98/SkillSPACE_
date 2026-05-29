@@ -6,6 +6,11 @@ const interviewHistorySchema = new mongoose.Schema({
   globalScore: { type: Number },
   emotionalState: { type: String },
   analysis: { type: Object },
+  conversation: [{
+    role: { type: String, enum: ['user', 'assistant'] },
+    text: { type: String },
+    audioUrl: { type: String, default: null }
+  }],
   createdAt: { type: Date, default: Date.now }
 });
 

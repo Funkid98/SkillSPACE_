@@ -23,8 +23,8 @@ const upload = multer({ storage: storage });
 // Initialize a new simulation session
 router.post('/start', interviewController.startSimulation);
 
-// Send message to AI and get response
-router.post('/chat', interviewController.chatWithAI);
+// Send message to AI and get response (text or audio)
+router.post('/chat', upload.single('audio'), interviewController.chatWithAI);
 
 // Finish simulation and get final score analysis
 router.post('/finish', interviewController.finishSimulation);

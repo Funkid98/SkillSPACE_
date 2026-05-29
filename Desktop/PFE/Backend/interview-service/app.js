@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const path = require('path');
 const interviewRoutes = require('./routes/interview.routes');
 
 const app = express();
@@ -20,6 +21,9 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
+
+// Serve uploaded audio files
+app.use('/api/interview/uploads/audio', express.static(path.join(__dirname, 'uploads', 'audio')));
 
 // Routes
 app.use('/api/interview', interviewRoutes);

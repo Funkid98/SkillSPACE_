@@ -23,21 +23,19 @@ class SimulationLivePage extends StatefulWidget {
 }
 
 class _SimulationLivePageState extends State<SimulationLivePage> {
-  final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<Map<String, dynamic>> _chatHistory = [];
   final AudioPlayer _audioPlayer = AudioPlayer();
 
-  // Audio Recording (Whisper)
+  // Audio Recording
   final AudioRecorder _audioRecorder = AudioRecorder();
   String _selectedLanguage = 'fr'; // 'fr' or 'en'
-  bool _isTranscribing = false;
+  bool _isRecording = false;
+  bool _isSending = false;
 
   // Camera
   CameraController? _cameraController;
   List<CameraDescription>? _cameras;
-
-  bool _isMicOn = false;
   bool _isCamOn = true;
 
   // PiP Position
@@ -54,7 +52,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
 
   // Timer
   Timer? _timer;
-  int _secondsRemaining = 90; // 90 seconds per answer
+  int _secondsRemaining = 90;
   static const int _maxResponseTime = 90;
 
   @override
@@ -79,37 +77,15 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
         return;
       }
 
-      // 2. Check Camera Permission by attempting initialization
+      // 2. Check Camera Permission
       _cameras = await availableCameras();
-      if (_cameras == null || _cameras!.isEmpty) {
-        setState(() {
-          _hasPermissions = false;
-          _checkingPermissions = false;
-        });
-        return;
-      }
 
-      final frontCamera = _cameras!.firstWhere(
-          (camera) => camera.lensDirection == CameraLensDirection.front,
-          orElse: () => _cameras!.first);
-
-      final tempController = CameraController(
-        frontCamera,
-        ResolutionPreset.low,
-        enableAudio: false,
-      );
-
-      await tempController.initialize();
-      await tempController.dispose(); // Close it after successful check
-
-      // If we reached here, both are granted
       setState(() {
         _hasPermissions = true;
         _checkingPermissions = false;
       });
 
-      _initSpeech();
-      _initCamera(); // This will re-initialize the real controller
+      _initCamera();
       _startSimulationBackend();
     } catch (e) {
       print("Permission Check Error: $e");
@@ -120,18 +96,10 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
     }
   }
 
-  Future<void> _initSpeech() async {
-    // Check for permissions
-    if (await _audioRecorder.hasPermission()) {
-      if (mounted) setState(() {});
-    }
-  }
-
   Future<void> _initCamera() async {
     try {
       _cameras = await availableCameras();
       if (_cameras != null && _cameras!.isNotEmpty) {
-        // Use the front camera if available
         final frontCamera = _cameras!.firstWhere(
             (camera) => camera.lensDirection == CameraLensDirection.front,
             orElse: () => _cameras!.first);
@@ -235,40 +203,108 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
     _startTimer();
   }
 
-  Future<void> _sendAnswerToBackend() async {
-    final answer = _textController.text.trim();
-    if (answer.isEmpty) return;
-
-    _stopTimer();
-
-    setState(() {
-      _chatHistory.add({'isUser': true, 'text': answer});
-      _isGenerating = true;
-      _textController.clear();
-      _isMicOn = false;
-    });
-    _scrollToBottom();
-
-    _stopAndTranscribe();
+  Future<void> _recordAndSend() async {
+    if (_isSending) return;
 
     try {
-      final response = await http.post(
+      if (await _audioRecorder.isRecording()) {
+        // Stop recording and send the audio
+        setState(() => _isRecording = false);
+        await _sendAudioToBackend();
+      } else {
+        // Check permission
+        final hasPermission = await _audioRecorder.hasPermission();
+        if (!hasPermission) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text('Permission micro refusée. Veuillez l\'autoriser.')),
+            );
+          }
+          return;
+        }
+
+        // Start recording
+        String? path;
+        if (!kIsWeb) {
+          final directory = await getTemporaryDirectory();
+          path = '${directory.path}/audio_record.ogg';
+        }
+
+        const config = RecordConfig(
+          encoder: AudioEncoder.opus,
+          bitRate: 32000,
+          sampleRate: 48000,
+        );
+
+        await _audioRecorder.start(config, path: path ?? '');
+        setState(() => _isRecording = true);
+      }
+    } catch (e) {
+      print("Mic Error: $e");
+      if (mounted) {
+        setState(() => _isRecording = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur micro: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _sendAudioToBackend() async {
+    final path = await _audioRecorder.stop();
+    // Wait for file to finish writing to disk
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (path == null) {
+      setState(() => _isSending = false);
+      return;
+    }
+
+    _stopTimer();
+    setState(() => _isSending = true);
+
+    try {
+      final request = http.MultipartRequest(
+        'POST',
         Uri.parse('http://localhost:8088/api/interview/chat'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'message': answer,
-          'roleTitle': widget.roleTitle,
-          'history': _chatHistory,
-          'language': _selectedLanguage,
-        }),
       );
+
+      if (kIsWeb) {
+        final audioResponse = await http.get(Uri.parse(path));
+        request.files.add(http.MultipartFile.fromBytes(
+          'audio',
+          audioResponse.bodyBytes,
+          filename: 'audio.ogg',
+          contentType: MediaType('audio', 'ogg'),
+        ));
+      } else {
+        request.files.add(await http.MultipartFile.fromPath(
+          'audio',
+          path,
+          contentType: MediaType('audio', 'ogg'),
+        ));
+      }
+
+      request.fields['language'] = _selectedLanguage;
+      request.fields['roleTitle'] = widget.roleTitle;
+      request.fields['history'] = jsonEncode(_chatHistory);
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (mounted) {
+          final userText = data['userTranscript'] ?? '(Réponse vocale)';
           setState(() {
+            _chatHistory.add({
+              'isUser': true,
+              'text': userText,
+              'audioUrl': data['audioUrl']
+            });
             _currentQuestion = data['reply'];
             _chatHistory.add({'isUser': false, 'text': _currentQuestion});
-            _isGenerating = false;
+            _isSending = false;
           });
 
           if (data['audioBase64'] != null) {
@@ -280,10 +316,14 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
           _scrollToBottom();
         }
       } else {
-        _fallbackResponse();
+        print("Chat error: ${response.body}");
+        if (mounted) _fallbackResponse();
+        setState(() => _isSending = false);
       }
     } catch (e) {
-      _fallbackResponse();
+      print("Error sending audio: $e");
+      if (mounted) _fallbackResponse();
+      setState(() => _isSending = false);
     }
   }
 
@@ -294,127 +334,9 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
             ? 'Interesting. Could you elaborate a bit more?'
             : 'Intéressant. Pouvez-vous élaborer davantage ?';
         _chatHistory.add({'isUser': false, 'text': _currentQuestion});
-        _isGenerating = false;
+        _isSending = false;
       });
       _startTimer();
-    }
-  }
-
-  Future<void> _toggleMicrophone() async {
-    if (_isTranscribing) return;
-
-    try {
-      if (await _audioRecorder.isRecording()) {
-        setState(() {
-          _isMicOn = false;
-          _isTranscribing = true;
-        });
-        await _stopAndTranscribe();
-      } else {
-        // Explicitly check and request permission
-        final hasPermission = await _audioRecorder.hasPermission();
-        if (!hasPermission) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                  content:
-                      Text('Permission micro refusée. Veuillez l\'autoriser.')),
-            );
-          }
-          return;
-        }
-
-        // Start recording
-        String? path;
-        if (!kIsWeb) {
-          final directory = await getTemporaryDirectory();
-          path = '${directory.path}/audio_record.m4a';
-        }
-
-        const config = RecordConfig(
-          encoder: AudioEncoder.aacLc,
-          bitRate: 128000,
-          sampleRate: 44100,
-        );
-
-        await _audioRecorder.start(config, path: path ?? '');
-        setState(() {
-          _isMicOn = true;
-        });
-      }
-    } catch (e) {
-      print("Mic Toggle Error: $e");
-      if (mounted) {
-        setState(() {
-          _isMicOn = false;
-          _isTranscribing = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur micro: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _stopAndTranscribe() async {
-    final path = await _audioRecorder.stop();
-    if (path == null) {
-      setState(() => _isTranscribing = false);
-      return;
-    }
-
-    setState(() => _isTranscribing = true);
-
-    try {
-      var request = http.MultipartRequest(
-          'POST', Uri.parse('http://localhost:8088/api/interview/transcribe'));
-
-      if (kIsWeb) {
-        // On web, stop() returns a blob URL. Fetch bytes first.
-        final audioResponse = await http.get(Uri.parse(path));
-        request.files.add(http.MultipartFile.fromBytes(
-          'audio',
-          audioResponse.bodyBytes,
-          filename: 'audio.m4a',
-          contentType: MediaType('audio', 'm4a'),
-        ));
-      } else {
-        request.files.add(await http.MultipartFile.fromPath(
-          'audio',
-          path,
-          contentType: MediaType('audio', 'm4a'),
-        ));
-      }
-
-      request.fields['language'] = _selectedLanguage;
-
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (mounted) {
-          setState(() {
-            final newText = data['text']?.toString().trim() ?? '';
-            if (newText.isNotEmpty) {
-              if (_textController.text.isNotEmpty) {
-                _textController.text = '${_textController.text} $newText';
-              } else {
-                _textController.text = newText;
-              }
-            }
-            _isTranscribing = false;
-          });
-          // Auto-send if it's a significant transcription?
-          // For now let the user review and click send
-        }
-      } else {
-        print("Transcription failed: ${response.body}");
-        setState(() => _isTranscribing = false);
-      }
-    } catch (e) {
-      print("Error transcribing: $e");
-      setState(() => _isTranscribing = false);
     }
   }
 
@@ -427,7 +349,6 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
   @override
   void dispose() {
     _timer?.cancel();
-    _textController.dispose();
     _scrollController.dispose();
     _audioRecorder.dispose();
     _cameraController?.dispose();
@@ -793,7 +714,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                                   }
                                   final msg = _chatHistory[index];
                                   return _buildChatBubble(
-                                      msg['isUser'], msg['text']);
+                                      msg['isUser'], msg['text'], msg['audioUrl']);
                                 },
                               ),
                             ),
@@ -922,88 +843,64 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
               padding: const EdgeInsets.all(32.0),
               child: Column(
                 children: [
-                  Container(
-                    constraints: const BoxConstraints(maxWidth: 800),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                          color: _isMicOn
-                              ? AppColors.orange
-                              : (_isTranscribing
-                                  ? Colors.blue
-                                  : (isDark
-                                      ? AppColors.borderDark
-                                      : const Color(0xFFEBE9E4))),
-                          width: 2),
-                    ),
-                    child: Row(
-                      children: [
-                        if (_isMicOn)
-                          const Padding(
-                            padding: EdgeInsets.only(left: 16.0),
-                            child: Icon(Icons.mic, color: AppColors.orange),
+                  // Big Record Button
+                  GestureDetector(
+                    onTap: _recordAndSend,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _isRecording
+                            ? Colors.red
+                            : (_isSending
+                                ? Colors.grey
+                                : AppColors.orange),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (_isRecording ? Colors.red : AppColors.orange)
+                                .withOpacity(0.4),
+                            blurRadius: 20,
+                            spreadRadius: 2,
                           ),
-                        if (_isTranscribing)
-                          const Padding(
-                            padding: EdgeInsets.only(left: 16.0),
-                            child: SizedBox(
-                                width: 20,
-                                height: 20,
+                        ],
+                      ),
+                      child: Center(
+                        child: _isSending
+                            ? const SizedBox(
+                                width: 30,
+                                height: 30,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.blue)),
-                          ),
-                        Expanded(
-                          child: TextField(
-                            controller: _textController,
-                            maxLines: null,
-                            style: const TextStyle(color: Colors.black),
-                            decoration: InputDecoration(
-                              hintText: _isMicOn
-                                  ? 'Enregistrement en cours (Whisper)...'
-                                  : (_isTranscribing
-                                      ? 'Transcription par Whisper...'
-                                      : 'Tapez votre réponse ou utilisez le micro...'),
-                              hintStyle: TextStyle(
-                                  color: isDark
-                                      ? Colors.black.withOpacity(0.4)
-                                      : AppColors.textGray),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 24, vertical: 16),
-                            ),
-                            onSubmitted: (_) => _sendAnswerToBackend(),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: IconButton(
-                            onPressed: _sendAnswerToBackend,
-                            icon: const Icon(Icons.send_rounded,
-                                color: Colors.white, size: 20),
-                            style: IconButton.styleFrom(
-                              backgroundColor:
-                                  AppColors.orange.withOpacity(0.8),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                            ),
-                          ),
-                        ),
-                      ],
+                                  strokeWidth: 3,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Icon(
+                                _isRecording ? Icons.stop : Icons.mic,
+                                size: 36,
+                                color: Colors.white,
+                              ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _isRecording
+                        ? 'Appuyez pour arrêter'
+                        : (_isSending
+                            ? 'Envoi en cours...'
+                            : 'Appuyez pour enregistrer'),
+                    style: TextStyle(
+                      color: isDark ? Colors.white60 : AppColors.textGray,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildControlButton(
-                        icon: _isMicOn ? Icons.mic : Icons.mic_off,
-                        label: _isMicOn ? 'Micro ON' : 'Micro OFF',
-                        isActive: _isMicOn,
-                        onTap: _toggleMicrophone,
-                        isDark: isDark,
-                      ),
-                      const SizedBox(width: 16),
                       _buildControlButton(
                         icon: _isCamOn ? Icons.videocam : Icons.videocam_off,
                         label: _isCamOn ? 'Caméra ON' : 'Caméra OFF',
@@ -1121,7 +1018,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
     );
   }
 
-  Widget _buildChatBubble(bool isUser, String text) {
+  Widget _buildChatBubble(bool isUser, String text, [String? audioUrl]) {
     final isDark = ReactiveMode.isDarkMode(context);
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -1150,18 +1047,56 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
           ],
         ),
         constraints: const BoxConstraints(maxWidth: 450),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isUser
-                ? Colors.white
-                : (isDark ? Colors.white : AppColors.navy),
-            fontSize: 14,
-            height: 1.5,
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              text,
+              style: TextStyle(
+                color: isUser
+                    ? Colors.white
+                    : (isDark ? Colors.white : AppColors.navy),
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+            if (isUser && audioUrl != null) ...[
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: () => _playRecording(audioUrl),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.play_circle_fill,
+                        color: Colors.white, size: 20),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Réécouter',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
+  }
+
+  Future<void> _playRecording(String url) async {
+    final fullUrl = 'http://localhost:8088$url';
+    try {
+      final response = await http.get(Uri.parse(fullUrl));
+      if (response.statusCode == 200) {
+        await _audioPlayer.play(BytesSource(response.bodyBytes));
+      }
+    } catch (e) {
+      print("Error playing recording: $e");
+    }
   }
 
   Widget _buildLoadingBubble() {
