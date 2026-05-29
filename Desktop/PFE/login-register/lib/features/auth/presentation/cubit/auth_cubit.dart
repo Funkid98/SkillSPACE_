@@ -41,6 +41,11 @@ class AuthCubit extends Cubit<AuthState> {
     } else if (user['role'] == 'formateur' || user['role'] == 'trainer') {
       userRole = UserRole.formateur;
     }
+    // Restore auth_provider cookie from user_data if present
+    final authProvider = user['auth_provider'] as String?;
+    if (authProvider != null) {
+      CookieService.setString('auth_provider', authProvider);
+    }
     emit(state.copyWith(
       isSuccess: true,
       role: userRole,
@@ -128,6 +133,7 @@ class AuthCubit extends Cubit<AuthState> {
           'role': user.role,
           'entreprise': user.entreprise,
           'sector': synchronizedSector ?? user.sector,
+          'auth_provider': 'email',
         },
       ));
     } on NeedsVerificationException catch (e) {
@@ -200,6 +206,7 @@ class AuthCubit extends Cubit<AuthState> {
           'role': user.role,
           'entreprise': user.entreprise,
           'sector': synchronizedSector ?? user.sector,
+          'auth_provider': 'email',
         },
       ));
     } on NeedsVerificationException catch (e) {
@@ -247,6 +254,7 @@ class AuthCubit extends Cubit<AuthState> {
           'role': user.role,
           'entreprise': user.entreprise,
           'sector': synchronizedSector ?? user.sector,
+          'auth_provider': 'google',
         },
       ));
     } catch (e) {
@@ -319,6 +327,7 @@ class AuthCubit extends Cubit<AuthState> {
           'role': user.role,
           'entreprise': user.entreprise,
           'sector': synchronizedSector ?? user.sector,
+          'auth_provider': 'github',
         },
       ));
     } catch (e) {
@@ -436,6 +445,7 @@ class AuthCubit extends Cubit<AuthState> {
           'role': user.role,
           'entreprise': user.entreprise,
           'sector': user.sector,
+          'auth_provider': 'email',
         },
       ));
     } catch (e) {
