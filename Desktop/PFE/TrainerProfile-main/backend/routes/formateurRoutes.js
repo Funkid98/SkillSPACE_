@@ -4,7 +4,7 @@ const {
   getProfile, updateProfile, patchProfile, getDashboardData, getFormations,
   getAllFormations, seedDummyData, suggestExpertise, generateBio, validateUrl,
   createFormation, updateFormation, deleteFormation, enhanceFormation,
-  register, login, verifySignupOtp, checkEmailExists, enrollFormation, leaveFormation, getFormationById, updateFormationRating, terminateFormation, rateStudent,
+  register, login, verifySignupOtp, checkEmailExists, enrollFormation, leaveFormation, getFormationById, updateFormationRating, terminateFormation, closeFormation, rateStudent,
   setOtp, verifyOtp, resetPassword, deleteFormateurAccount, googleReauth
 } = require('../controllers/formateurController');
 
@@ -31,6 +31,7 @@ router.post('/formations/item/:id/enroll', enrollFormation);
 router.post('/formations/item/:id/leave', leaveFormation);
 router.post('/formations/item/:id/review', updateFormationRating);
 router.post('/formations/item/:id/terminate', terminateFormation);
+router.post('/formations/item/:id/close', closeFormation);
 router.post('/formations/item/:id/student/:studentId/rate', rateStudent);
 router.get('/all-formations', getAllFormations);
 router.route('/seed/:userId').post(seedDummyData);

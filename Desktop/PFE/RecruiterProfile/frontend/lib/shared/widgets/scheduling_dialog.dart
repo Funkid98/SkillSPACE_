@@ -147,8 +147,9 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
                 hint: 'Choisir une date',
                 icon: Icons.calendar_today_rounded,
                 onTap: _selectDate,
-                validator: (val) =>
-                    val == null || val.isEmpty ? 'Veuillez choisir une date' : null,
+                validator: (val) => val == null || val.isEmpty
+                    ? 'Veuillez choisir une date'
+                    : null,
                 isDark: isDark,
               ),
               const SizedBox(height: 16),
@@ -158,8 +159,9 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
                 hint: 'Choisir l\'heure',
                 icon: Icons.access_time_rounded,
                 onTap: _selectTime,
-                validator: (val) =>
-                    val == null || val.isEmpty ? 'Veuillez choisir l\'heure' : null,
+                validator: (val) => val == null || val.isEmpty
+                    ? 'Veuillez choisir l\'heure'
+                    : null,
                 isDark: isDark,
               ),
               const SizedBox(height: 16),
@@ -252,12 +254,18 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
           readOnly: true,
           onTap: onTap,
           validator: validator,
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: isDark ? Colors.white : AppColors.textDark),
+          style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white : AppColors.textDark),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle:
-                TextStyle(color: isDark ? Colors.white38 : AppColors.textGray.withOpacity(0.5)),
-            prefixIcon: Icon(icon, size: 20, color: isDark ? AppColors.orange : AppColors.navy),
+            hintStyle: TextStyle(
+                color: isDark
+                    ? Colors.white38
+                    : AppColors.textGray.withOpacity(0.5)),
+            prefixIcon: Icon(icon,
+                size: 20, color: isDark ? AppColors.orange : AppColors.navy),
             suffixIcon: Icon(Icons.arrow_drop_down_rounded,
                 color: isDark ? Colors.white60 : AppColors.textGray),
             filled: true,
@@ -282,7 +290,9 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: isDark ? AppColors.orange : AppColors.navy, width: 1.5),
+              borderSide: BorderSide(
+                  color: isDark ? AppColors.orange : AppColors.navy,
+                  width: 1.5),
             ),
           ),
         ),
@@ -313,12 +323,18 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
         TextFormField(
           controller: controller,
           validator: validator,
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: isDark ? Colors.white : AppColors.textDark),
+          style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white : AppColors.textDark),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle:
-                TextStyle(color: isDark ? Colors.white38 : AppColors.textGray.withOpacity(0.5)),
-            prefixIcon: Icon(icon, size: 20, color: isDark ? AppColors.orange : AppColors.navy),
+            hintStyle: TextStyle(
+                color: isDark
+                    ? Colors.white38
+                    : AppColors.textGray.withOpacity(0.5)),
+            prefixIcon: Icon(icon,
+                size: 20, color: isDark ? AppColors.orange : AppColors.navy),
             filled: true,
             fillColor: isDark ? AppColors.bgDark : AppColors.bg,
             contentPadding:
@@ -341,7 +357,9 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: isDark ? AppColors.orange : AppColors.navy, width: 1.5),
+              borderSide: BorderSide(
+                  color: isDark ? AppColors.orange : AppColors.navy,
+                  width: 1.5),
             ),
           ),
         ),

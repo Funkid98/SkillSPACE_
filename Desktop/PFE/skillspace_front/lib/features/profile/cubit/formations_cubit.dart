@@ -30,7 +30,8 @@ class FormationsCubit extends Cubit<FormationsState> {
 
   Future<void> completeFormation(String formationId) async {
     try {
-      final response = await _apiClient.post('/candidat/complete/$formationId', {});
+      final response =
+          await _apiClient.post('/candidat/complete/$formationId', {});
       if (response.statusCode == 200) {
         await fetchFormations();
       }
@@ -39,7 +40,8 @@ class FormationsCubit extends Cubit<FormationsState> {
 
   Future<void> leaveFormation(String formationId) async {
     try {
-      final response = await _apiClient.post('/candidat/leave/$formationId', {});
+      final response =
+          await _apiClient.post('/candidat/leave/$formationId', {});
       if (response.statusCode == 200) {
         await fetchFormations();
       }
@@ -90,11 +92,13 @@ class FormationsCubit extends Cubit<FormationsState> {
       if (response.statusCode == 200) {
         return true;
       } else {
-        if (previousFormations.isNotEmpty) emit(FormationsLoaded(previousFormations));
+        if (previousFormations.isNotEmpty)
+          emit(FormationsLoaded(previousFormations));
         return false;
       }
     } catch (_) {
-      if (previousFormations.isNotEmpty) emit(FormationsLoaded(previousFormations));
+      if (previousFormations.isNotEmpty)
+        emit(FormationsLoaded(previousFormations));
       return false;
     }
   }

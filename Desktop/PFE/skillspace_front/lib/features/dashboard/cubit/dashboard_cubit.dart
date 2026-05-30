@@ -40,13 +40,13 @@ class DashboardCubit extends Cubit<DashboardState> {
       try {
         final freshData = await DashboardData.fetch();
         if (isClosed) return;
-        
+
         // Preserve un-saved skill changes logically if in Loaded state
         // For simplicity, we just completely update the dashboard data
         emit(DashboardLoaded(freshData));
-        
+
         if (freshData.profileViewsCount != -1) {
-           _pollingTimer?.cancel();
+          _pollingTimer?.cancel();
         }
       } catch (_) {}
     });

@@ -299,8 +299,7 @@ class AppLocalizations {
       'step_3_desc':
           'Follow AI-recommended training to fill your gaps and boost your profile.',
       'step_4_title': 'Apply in one click',
-      'step_4_desc':
-          'Easily apply to the job offers that match your profile.',
+      'step_4_desc': 'Easily apply to the job offers that match your profile.',
       'step_5_title': 'Prepare your interviews',
       'step_5_desc':
           'Simulate interviews with AI to arrive confident on the big day.',
@@ -481,8 +480,7 @@ class AppLocalizations {
       'step_3_desc':
           'تابع التدريبات الموصى بها من قبل الذكاء الاصطناعي لسد فجواتك وتعزيز ملفك الشخصي.',
       'step_4_title': 'تقدم بضغطة زر',
-      'step_4_desc':
-          'تقدم بسهولة لعروض العمل التي تناسب ملفك الشخصي.',
+      'step_4_desc': 'تقدم بسهولة لعروض العمل التي تناسب ملفك الشخصي.',
       'step_5_title': 'استعد لمقابلاتك',
       'step_5_desc':
           'قم بمحاكاة المقابلات مع الذكاء الاصطناعي لتكون واثقاً يوم المقابلة.',

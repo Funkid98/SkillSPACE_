@@ -34,7 +34,8 @@ class TrainerCubit extends Cubit<TrainerState> {
         emit(state.copyWith(
           status: TrainerStatus.success,
           dashboardData: dashboardData,
-          profileData: dashboardData.formateur, // Use the profile from the same response
+          profileData:
+              dashboardData.formateur, // Use the profile from the same response
         ));
       }
     } catch (e) {
@@ -90,10 +91,12 @@ class TrainerCubit extends Cubit<TrainerState> {
         await _dashboardService.createFormation(userId, formation);
     if (newFormation != null && state.dashboardData != null) {
       final updatedList = [newFormation, ...state.dashboardData!.formations];
-      
+
       // Update local stats card
-      final updatedStats = Map<String, dynamic>.from(state.dashboardData!.stats);
-      updatedStats['totalFormations'] = (updatedStats['totalFormations'] ?? 0) + 1;
+      final updatedStats =
+          Map<String, dynamic>.from(state.dashboardData!.stats);
+      updatedStats['totalFormations'] =
+          (updatedStats['totalFormations'] ?? 0) + 1;
 
       final updatedDashboard = DashboardData(
         formateur: state.dashboardData!.formateur,
@@ -143,8 +146,10 @@ class TrainerCubit extends Cubit<TrainerState> {
           state.dashboardData!.formations.where((f) => f.id != id).toList();
 
       // Update local stats card
-      final updatedStats = Map<String, dynamic>.from(state.dashboardData!.stats);
-      updatedStats['totalFormations'] = (updatedStats['totalFormations'] ?? 0) - 1;
+      final updatedStats =
+          Map<String, dynamic>.from(state.dashboardData!.stats);
+      updatedStats['totalFormations'] =
+          (updatedStats['totalFormations'] ?? 0) - 1;
 
       final updatedDashboard = DashboardData(
         formateur: state.dashboardData!.formateur,
@@ -185,8 +190,27 @@ class TrainerCubit extends Cubit<TrainerState> {
     }
   }
 
-  Future<void> rateStudent(String formationId, String studentId, double rating) async {
-    final updated = await _dashboardService.rateStudent(formationId, studentId, rating);
+  Future<void> closeFormation(String id) async {
+    final updated = await _dashboardService.closeFormation(id);
+    if (updated != null && state.dashboardData != null) {
+      final updatedList = state.dashboardData!.formations.map((f) {
+        return f.id == id ? updated : f;
+      }).toList();
+
+      final updatedDashboard = DashboardData(
+        formateur: state.dashboardData!.formateur,
+        formations: updatedList,
+        stats: state.dashboardData!.stats,
+      );
+      emit(state.copyWith(dashboardData: updatedDashboard));
+      Fluttertoast.showToast(msg: "Formation fermée !");
+    }
+  }
+
+  Future<void> rateStudent(
+      String formationId, String studentId, double rating) async {
+    final updated =
+        await _dashboardService.rateStudent(formationId, studentId, rating);
     if (updated != null && state.dashboardData != null) {
       final updatedList = state.dashboardData!.formations.map((f) {
         return f.id == formationId ? updated : f;
@@ -201,11 +225,13 @@ class TrainerCubit extends Cubit<TrainerState> {
     }
   }
 
-  Future<void> deleteAccount(String userId, {String? password, String? googleToken}) async {
+  Future<void> deleteAccount(String userId,
+      {String? password, String? googleToken}) async {
     if (isClosed) return;
     emit(state.copyWith(status: TrainerStatus.loading));
     try {
-      await _formateurService.deleteAccount(userId, password: password, googleToken: googleToken);
+      await _formateurService.deleteAccount(userId,
+          password: password, googleToken: googleToken);
     } catch (e) {
       emit(state.copyWith(
         status: TrainerStatus.failure,

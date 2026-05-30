@@ -30,7 +30,9 @@ class CompanyProfile {
       entreprise: json['entreprise'] ?? '',
       poste: json['poste'] ?? '',
       taille: json['taille'] ?? '',
-      anneeCreation: json['anneeCreation'] != null ? int.tryParse(json['anneeCreation'].toString()) ?? 0 : 0,
+      anneeCreation: json['anneeCreation'] != null
+          ? int.tryParse(json['anneeCreation'].toString()) ?? 0
+          : 0,
       siteWeb: json['siteWeb'] ?? '',
       localisation: json['localisation'] ?? '',
       logoUrl: json['logo'] ?? '',

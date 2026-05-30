@@ -115,9 +115,11 @@ class JobOffer {
           else
             mappedType = ContractType.cdi;
 
-          final DateTime? createdAt = json['createdAt'] != null ? DateTime.tryParse(json['createdAt']) : null;
-          final String postedAgo = createdAt != null 
-              ? timeago.format(createdAt, locale: 'fr') 
+          final DateTime? createdAt = json['createdAt'] != null
+              ? DateTime.tryParse(json['createdAt'])
+              : null;
+          final String postedAgo = createdAt != null
+              ? timeago.format(createdAt, locale: 'fr')
               : 'Récemment';
 
           return JobOffer(
@@ -129,7 +131,8 @@ class JobOffer {
             contractType: mappedType,
             salaryRange: json['salary'] ?? 'N/A',
             postedAgo: postedAgo,
-            compatibilityPercent: (json['compatibilityPercent'] as num?)?.round() ?? 0,
+            compatibilityPercent:
+                (json['compatibilityPercent'] as num?)?.round() ?? 0,
             matchingSkills: (json['matchingSkills'] as num?)?.round() ?? 0,
             totalSkills: (json['totalSkills'] as num?)?.round() ?? 0,
             description: json['description'] ?? '',

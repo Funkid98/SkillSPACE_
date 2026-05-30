@@ -218,7 +218,8 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                  content: Text('Permission micro refusée. Veuillez l\'autoriser.')),
+                  content:
+                      Text('Permission micro refusée. Veuillez l\'autoriser.')),
             );
           }
           return;
@@ -300,7 +301,8 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
             _chatHistory.add({
               'isUser': true,
               'text': userText,
-              'audioUrl': data['audioUrl']
+              'audioUrl': data['audioUrl'],
+              'vocalMetrics': data['vocalMetrics']
             });
             _currentQuestion = data['reply'];
             _chatHistory.add({'isUser': false, 'text': _currentQuestion});
@@ -713,8 +715,8 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                                     return _buildLoadingBubble();
                                   }
                                   final msg = _chatHistory[index];
-                                  return _buildChatBubble(
-                                      msg['isUser'], msg['text'], msg['audioUrl']);
+                                  return _buildChatBubble(msg['isUser'],
+                                      msg['text'], msg['audioUrl']);
                                 },
                               ),
                             ),
@@ -854,13 +856,12 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                         shape: BoxShape.circle,
                         color: _isRecording
                             ? Colors.red
-                            : (_isSending
-                                ? Colors.grey
-                                : AppColors.orange),
+                            : (_isSending ? Colors.grey : AppColors.orange),
                         boxShadow: [
                           BoxShadow(
-                            color: (_isRecording ? Colors.red : AppColors.orange)
-                                .withOpacity(0.4),
+                            color:
+                                (_isRecording ? Colors.red : AppColors.orange)
+                                    .withOpacity(0.4),
                             blurRadius: 20,
                             spreadRadius: 2,
                           ),
@@ -1067,8 +1068,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.play_circle_fill,
-                        color: Colors.white, size: 20),
+                    Icon(Icons.play_circle_fill, color: Colors.white, size: 20),
                     const SizedBox(width: 4),
                     Text(
                       'Réécouter',

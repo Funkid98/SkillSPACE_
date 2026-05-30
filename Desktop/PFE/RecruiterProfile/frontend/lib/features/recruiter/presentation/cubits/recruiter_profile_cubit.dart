@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/company_profile_model.dart';
 import '../../data/repositories/recruiter_repository.dart';
+
 abstract class RecruiterProfileState {}
 
 class RecruiterProfileInitial extends RecruiterProfileState {}
@@ -20,7 +21,8 @@ class RecruiterProfileError extends RecruiterProfileState {
 class RecruiterProfileCubit extends Cubit<RecruiterProfileState> {
   final RecruiterRepository repository;
 
-  RecruiterProfileCubit({required this.repository}) : super(RecruiterProfileInitial());
+  RecruiterProfileCubit({required this.repository})
+      : super(RecruiterProfileInitial());
 
   void loadProfile() async {
     emit(RecruiterProfileLoading());
@@ -49,7 +51,8 @@ class RecruiterProfileCubit extends Cubit<RecruiterProfileState> {
   Future<void> deleteAccount({String? password, String? googleToken}) async {
     emit(RecruiterProfileLoading());
     try {
-      await repository.deleteAccount(password: password, googleToken: googleToken);
+      await repository.deleteAccount(
+          password: password, googleToken: googleToken);
       // On success, state transitions to initial since we navigate away
     } catch (e) {
       emit(RecruiterProfileError(e.toString().replaceAll('Exception: ', '')));

@@ -10,9 +10,9 @@
  *   2. Authorization: Bearer <token> ← manual header (server-to-server / legacy)
  */
 
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const { COOKIE_NAME } = require('../helpers/cookieHelper');
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+const { COOKIE_NAME } = require("../helpers/cookieHelper");
 
 exports.protect = async (req, res, next) => {
   try {
@@ -24,26 +24,29 @@ exports.protect = async (req, res, next) => {
     }
 
     // 2. Fallback: Authorization header (server-to-server, Postman, legacy clients)
-    if (!token && req.headers.authorization &&
-        req.headers.authorization.startsWith('Bearer ')) {
-      token = req.headers.authorization.split(' ')[1];
+    if (
+      !token &&
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer ")
+    ) {
+      token = req.headers.authorization.split(" ")[1];
     }
 
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: 'Non autorisé. Veuillez vous connecter.',
+        message: "Non autorisé. Veuillez vous connecter.",
       });
     }
 
     // Verify & decode
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decoded.id).select('-password');
+    req.user = await User.findById(decoded.id).select("-password");
 
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        message: 'Utilisateur non trouvé.',
+        message: "Utilisateur non trouvé.",
       });
     }
 
@@ -51,7 +54,7 @@ exports.protect = async (req, res, next) => {
   } catch (error) {
     res.status(401).json({
       success: false,
-      message: 'Token invalide ou expiré. Veuillez vous reconnecter.',
+      message: "Token invalide ou expiré. Veuillez vous reconnecter.",
     });
   }
 };

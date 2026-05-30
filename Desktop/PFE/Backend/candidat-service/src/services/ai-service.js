@@ -1,13 +1,13 @@
-const Groq = require('groq-sdk')
+const Groq = require("groq-sdk");
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const extractSkillsFromText = async (cvText) => {
   const response = await groq.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
+    model: "llama-3.3-70b-versatile",
     messages: [
       {
-        role: 'system',
+        role: "system",
         content: `You are a CV analyzer. Extract all information from the CV.
         Return ONLY this JSON, no extra text, no markdown:
         {
@@ -22,40 +22,47 @@ const extractSkillsFromText = async (cvText) => {
           "education": "highest degree",
           "experience_years": 0,
           "languages": ["French", "English"]
-        }`
+        }`,
       },
       {
-        role: 'user',
-        content: `Analyze this CV:\n\n${cvText}`
-      }
+        role: "user",
+        content: `Analyze this CV:\n\n${cvText}`,
+      },
     ],
     temperature: 0.2,
-    response_format: { type: 'json_object' },
-  })
+    response_format: { type: "json_object" },
+  });
 
-  const content = response.choices[0].message.content
-  const clean = content.replace(/```json|```/g, '').trim()
-  return JSON.parse(clean)
-}
+  const content = response.choices[0].message.content;
+  const clean = content.replace(/```json|```/g, "").trim();
+  return JSON.parse(clean);
+};
 
 const matchCvWithJob = async (cvText, jobDescription, candidateSkills = []) => {
   // Build a structured skill list with explicit percent proficiency for the AI
-  const skillsWithLevel = candidateSkills.map(s => {
-    const name = typeof s === 'string' ? s : s.name;
-    const percent = typeof s === 'string' ? 33 : (s.percent || 33);
-    const level = percent >= 80 ? 'Advanced' : percent >= 40 ? 'Intermediate' : 'Beginner';
-    return `${name}: ${percent}% (${level})`;
-  }).join('\n');
+  const skillsWithLevel = candidateSkills
+    .map((s) => {
+      const name = typeof s === "string" ? s : s.name;
+      const percent = typeof s === "string" ? 33 : s.percent || 33;
+      const level =
+        percent >= 80
+          ? "Advanced"
+          : percent >= 40
+            ? "Intermediate"
+            : "Beginner";
+      return `${name}: ${percent}% (${level})`;
+    })
+    .join("\n");
 
   const skillsSection = skillsWithLevel
     ? `\n\nCANDIDATE SKILL PROFICIENCY (use these exact scores in your compatibility analysis):\n${skillsWithLevel}`
-    : '';
+    : "";
 
   const response = await groq.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
+    model: "llama-3.3-70b-versatile",
     messages: [
       {
-        role: 'system',
+        role: "system",
         content: `You are an expert technical recruiter. Your analysis and compatibility score must be based EXCLUSIVELY on the required skills (Skills_Required) of the job posting, ignoring everything else.
 
         IMPORTANT: The candidate has precise skill proficiency levels (0% to 100%). You MUST calculate the compatibility score exactly as follows:
@@ -74,35 +81,35 @@ const matchCvWithJob = async (cvText, jobDescription, candidateSkills = []) => {
         2. recommendation: (MUST be in French) Specific training recommendations for missing or insufficient skills.
         3. score: Compatibility score (0-100) calculated EXCLUSIVELY using the formula described above.
         4. matched_skills: List of skill names from the candidate that match the job's Skills_Required.
-        5. missing_skills: EXACT list of skills the candidate is missing or underqualified in, based EXCLUSIVELY on the Skills_Required.`
+        5. missing_skills: EXACT list of skills the candidate is missing or underqualified in, based EXCLUSIVELY on the Skills_Required.`,
       },
       {
-        role: 'user',
-        content: `CANDIDATE PROFILE:\n${cvText}${skillsSection}\n\nJOB POSTING:\n${jobDescription}`
-      }
+        role: "user",
+        content: `CANDIDATE PROFILE:\n${cvText}${skillsSection}\n\nJOB POSTING:\n${jobDescription}`,
+      },
     ],
     temperature: 0.1,
-    response_format: { type: 'json_object' },
-  })
+    response_format: { type: "json_object" },
+  });
 
-  const content = response.choices[0].message.content
-  const clean = content.replace(/```json|```/g, '').trim()
+  const content = response.choices[0].message.content;
+  const clean = content.replace(/```json|```/g, "").trim();
   try {
-    const result = JSON.parse(clean)
-    result.status = 'COMPLETED'
-    return result
+    const result = JSON.parse(clean);
+    result.status = "COMPLETED";
+    return result;
   } catch (err) {
-    console.error('Groq Match Parse Error:', err.message, 'Content:', content)
-    return { status: 'FAILED', error: err.message }
+    console.error("Groq Match Parse Error:", err.message, "Content:", content);
+    return { status: "FAILED", error: err.message };
   }
-}
+};
 
 const generateQuiz = async (skill, level) => {
   const response = await groq.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
+    model: "llama-3.3-70b-versatile",
     messages: [
       {
-        role: 'system',
+        role: "system",
         content: `You are a technical quiz generator using the Dreyfus Skill Acquisition Model.
         
         Generate questions adapted to the "${level}" Dreyfus stage:
@@ -137,27 +144,27 @@ const generateQuiz = async (skill, level) => {
               "dreyfus_stage_tested": "Beginner" | "Intermediate" | "Advanced"
             }
           ]
-        }`
+        }`,
       },
       {
-        role: 'user',
+        role: "user",
         content: `Generate a 5-question quiz for the skill "${skill}" at "${level}" level.
-                  Q5 must be a problem-solving scenario.`
-      }
+                  Q5 must be a problem-solving scenario.`,
+      },
     ],
     temperature: 0.7,
-    response_format: { type: 'json_object' },
-  })
+    response_format: { type: "json_object" },
+  });
 
-  const content = response.choices[0].message.content
-  const clean = content.replace(/```json|```/g, '').trim()
+  const content = response.choices[0].message.content;
+  const clean = content.replace(/```json|```/g, "").trim();
   try {
-    return JSON.parse(clean)
+    return JSON.parse(clean);
   } catch (err) {
-    console.error('Quiz Gen Error:', err.message, '\\nContent:', content)
-    throw new Error('Failed to generate quiz')
+    console.error("Quiz Gen Error:", err.message, "\\nContent:", content);
+    throw new Error("Failed to generate quiz");
   }
-}
+};
 const evaluateQuiz = async (skill, claimedLevel, qna) => {
   // The AI already returns a computed score, but we keep a deterministic fallback.
   // This helper can be used elsewhere to recalculate the score from raw answers if needed.
@@ -177,12 +184,12 @@ const evaluateQuiz = async (skill, claimedLevel, qna) => {
     return score; // Returns 0‑100
   };
 
-  const qnaText = JSON.stringify(qna, null, 2)
+  const qnaText = JSON.stringify(qna, null, 2);
   const response = await groq.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
+    model: "llama-3.3-70b-versatile",
     messages: [
       {
-        role: 'system',
+        role: "system",
         content: `You are a technical recruiter evaluating candidates using 
         the Dreyfus Skill Acquisition Model (Dreyfus & Dreyfus, Berkeley 1980).
         Applied in a simplified 3-stage framework adapted for technical recruitment.
@@ -262,25 +269,30 @@ const evaluateQuiz = async (skill, claimedLevel, qna) => {
               "correct_answer": "string"
             }
           ]
-        }`
+        }`,
       },
       {
-        role: 'user',
-        content: `Evaluate the candidate's level based on these answers.`
-      }
+        role: "user",
+        content: `Evaluate the candidate's level based on these answers.`,
+      },
     ],
     temperature: 0.2,
-    response_format: { type: 'json_object' },
-  })
+    response_format: { type: "json_object" },
+  });
 
-  const content = response.choices[0].message.content
+  const content = response.choices[0].message.content;
   try {
-    return JSON.parse(content)
+    return JSON.parse(content);
   } catch (err) {
-    console.error('Groq Quiz Eval Parse Error:', err.message, 'Content:', content)
-    return { determined_level: claimedLevel, feedback: "Analysis failed." }
+    console.error(
+      "Groq Quiz Eval Parse Error:",
+      err.message,
+      "Content:",
+      content,
+    );
+    return { determined_level: claimedLevel, feedback: "Analysis failed." };
   }
-}
+};
 
 /**
  * Generates deeply personalized course recommendations.
@@ -291,26 +303,37 @@ const evaluateQuiz = async (skill, claimedLevel, qna) => {
  * @param {Array}    wrongTopics      - List of topics/questions the user got wrong (from answers_analysis)
  * @param {Array}    internalFormations - Formations fetched from internal DB
  */
-const getCourseRecommendationsAI = async (skill, score, claimedLevel, wrongTopics, internalFormations) => {
-
+const getCourseRecommendationsAI = async (
+  skill,
+  score,
+  claimedLevel,
+  wrongTopics,
+  internalFormations,
+) => {
   // Derive achieved level from score
-  let achievedLevel = 'Beginner';
-  if (score >= 80) achievedLevel = 'Advanced';
-  else if (score >= 40) achievedLevel = 'Intermediate';
+  let achievedLevel = "Beginner";
+  if (score >= 80) achievedLevel = "Advanced";
+  else if (score >= 40) achievedLevel = "Intermediate";
 
   // Build a nuanced skill gap description
-  const gapDescription = buildGapDescription(skill, score, claimedLevel, achievedLevel, wrongTopics);
+  const gapDescription = buildGapDescription(
+    skill,
+    score,
+    claimedLevel,
+    achievedLevel,
+    wrongTopics,
+  );
 
   // Build internal formations list for AI (only relevant level range)
   const internalJson = JSON.stringify(
-    internalFormations.map(f => ({
+    internalFormations.map((f) => ({
       id: f._id,
       title: f.title,
-      level: f.level,          // 'Débutant' | 'Intermédiaire' | 'Avancé'
-      description: f.description || '',
-      tags: (f.tags || []).join(', '),
-      category: f.category || '',
-    }))
+      level: f.level, // 'Débutant' | 'Intermédiaire' | 'Avancé'
+      description: f.description || "",
+      tags: (f.tags || []).join(", "),
+      category: f.category || "",
+    })),
   );
 
   const promptText = `
@@ -320,7 +343,7 @@ const getCourseRecommendationsAI = async (skill, score, claimedLevel, wrongTopic
 - Quiz score: ${score}/100
 - Achieved level (from score): ${achievedLevel}
 - Skill gap analysis: ${gapDescription}
-- Topics they struggled with: ${wrongTopics.length > 0 ? wrongTopics.join('; ') : 'None identified'}
+- Topics they struggled with: ${wrongTopics.length > 0 ? wrongTopics.join("; ") : "None identified"}
 
 ## Task
 You are a learning advisor. Your job is to recommend the MOST PERSONALIZED courses for this exact learner profile.
@@ -334,7 +357,7 @@ CRITICAL RULES:
 4. For external formations: generate highly specific courses targeting EXACTLY the weak topics found.
 
 ## Available Internal Formations
-${internalJson || '[]'}
+${internalJson || "[]"}
 
 ## Instructions
 Select up to 3 internal formations that best address the learner's SPECIFIC gaps.
@@ -370,57 +393,76 @@ Example: If the topic is "Context API", the url MUST be: https://www.udemy.com/c
 - NEVER return "example.com" or "course-link-here". If unsure, use a search results link as shown above.`;
 
   const response = await groq.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
+    model: "llama-3.3-70b-versatile",
     messages: [
       {
-        role: 'system',
-        content: `You are a highly specialized learning advisor. You MUST tailor every recommendation to the learner's exact skill gap, score, and wrong topics. Return ONLY valid JSON with no extra text or markdown.`
+        role: "system",
+        content: `You are a highly specialized learning advisor. You MUST tailor every recommendation to the learner's exact skill gap, score, and wrong topics. Return ONLY valid JSON with no extra text or markdown.`,
       },
       {
-        role: 'user',
-        content: promptText
-      }
+        role: "user",
+        content: promptText,
+      },
     ],
     temperature: 0.3,
   });
 
   const content = response.choices[0].message.content;
-  const clean = content.replace(/```json|```/g, '').trim();
+  const clean = content.replace(/```json|```/g, "").trim();
   try {
     return JSON.parse(clean);
   } catch (err) {
-    console.error('Groq Course Recommendation Parse Error:', err.message, 'Content:', content);
+    console.error(
+      "Groq Course Recommendation Parse Error:",
+      err.message,
+      "Content:",
+      content,
+    );
     return { internal: [], external: [] };
   }
-}
+};
 
 /**
  * Builds a human-readable gap description based on score context.
  * A 55% Beginner ≠ 55% Intermediate — this captures that difference.
  */
-function buildGapDescription(skill, score, claimedLevel, achievedLevel, wrongTopics) {
+function buildGapDescription(
+  skill,
+  score,
+  claimedLevel,
+  achievedLevel,
+  wrongTopics,
+) {
   const levelMap = { Beginner: 1, Intermediate: 2, Advanced: 3 };
   const claimedRank = levelMap[claimedLevel] || 1;
   const achievedRank = levelMap[achievedLevel] || 1;
 
   if (claimedRank > achievedRank) {
-    return `The learner claimed ${claimedLevel} but only achieved ${achievedLevel} level (${score}%). ` +
+    return (
+      `The learner claimed ${claimedLevel} but only achieved ${achievedLevel} level (${score}%). ` +
       `This means they have significant gaps in ${skill} concepts that should be at ${achievedLevel} level. ` +
       `Recommend courses that consolidate ${achievedLevel}-level ${skill} fundamentals, ` +
-      `especially around: ${wrongTopics.slice(0, 3).join(', ') || 'core concepts'}.`;
+      `especially around: ${wrongTopics.slice(0, 3).join(", ") || "core concepts"}.`
+    );
   } else if (claimedRank === achievedRank) {
     if (score >= 70) {
-      return `The learner is solid at ${achievedLevel} level (${score}%) and is ready to advance. ` +
-        `Recommend courses that bridge ${achievedLevel} to ${achievedLevel === 'Beginner' ? 'Intermediate' : 'Advanced'} level, ` +
-        `particularly covering: ${wrongTopics.slice(0, 3).join(', ') || 'advanced topics'}.`;
+      return (
+        `The learner is solid at ${achievedLevel} level (${score}%) and is ready to advance. ` +
+        `Recommend courses that bridge ${achievedLevel} to ${achievedLevel === "Beginner" ? "Intermediate" : "Advanced"} level, ` +
+        `particularly covering: ${wrongTopics.slice(0, 3).join(", ") || "advanced topics"}.`
+      );
     } else {
-      return `The learner is at ${achievedLevel} level but scored only ${score}%, indicating gaps. ` +
+      return (
+        `The learner is at ${achievedLevel} level but scored only ${score}%, indicating gaps. ` +
         `Recommend courses to reinforce ${achievedLevel}-level ${skill}, ` +
-        `focusing on: ${wrongTopics.slice(0, 3).join(', ') || 'weak areas'}.`;
+        `focusing on: ${wrongTopics.slice(0, 3).join(", ") || "weak areas"}.`
+      );
     }
   } else {
-    return `The learner exceeded their ${claimedLevel} expectation and is at ${achievedLevel} (${score}%). ` +
-      `Recommend advanced ${achievedLevel}-level courses to leverage their strong foundation in ${skill}.`;
+    return (
+      `The learner exceeded their ${claimedLevel} expectation and is at ${achievedLevel} (${score}%). ` +
+      `Recommend advanced ${achievedLevel}-level courses to leverage their strong foundation in ${skill}.`
+    );
   }
 }
 
@@ -428,19 +470,19 @@ const generateCoachAdvice = async (candidate) => {
   const profileSummary = `
   - Prenom: ${candidate.prenom}
   - Nom: ${candidate.nom}
-  - Job Title: ${candidate.jobtitle || 'Not specified'}
-  - Skills: ${(candidate.skills || []).map(s => typeof s === 'string' ? s : s.name).join(', ')}
-  - Bio: ${candidate.bio || 'Empty'}
-  - Projects: ${(candidate.projects || []).join(', ')}
-  - Localisation: ${candidate.localisation || 'Not specified'}
-  - Secteur: ${candidate.sector || 'Not specified'}
+  - Job Title: ${candidate.jobtitle || "Not specified"}
+  - Skills: ${(candidate.skills || []).map((s) => (typeof s === "string" ? s : s.name)).join(", ")}
+  - Bio: ${candidate.bio || "Empty"}
+  - Projects: ${(candidate.projects || []).join(", ")}
+  - Localisation: ${candidate.localisation || "Not specified"}
+  - Secteur: ${candidate.sector || "Not specified"}
   `;
 
   const response = await groq.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
+    model: "llama-3.3-70b-versatile",
     messages: [
       {
-        role: 'system',
+        role: "system",
         content: `You are an expert AI Career Coach. Your goal is to analyze a candidate's profile, find what's missing, and provide a unique, motivating advice for the day.
         
         Analyze these areas:
@@ -451,27 +493,35 @@ const generateCoachAdvice = async (candidate) => {
         
         Return ONLY a JSON object with:
         1. advice: A short (1-2 sentences), highly motivational and unique advice for today, in French. Avoid generic phrases.
-        `
+        `,
       },
       {
-        role: 'user',
-        content: `Today's Date: ${new Date().toLocaleDateString('fr-FR')}
-        Analyze this candidate profile and give coach advice:\n${profileSummary}`
-      }
+        role: "user",
+        content: `Today's Date: ${new Date().toLocaleDateString("fr-FR")}
+        Analyze this candidate profile and give coach advice:\n${profileSummary}`,
+      },
     ],
     temperature: 0.7,
-    response_format: { type: 'json_object' },
-  })
+    response_format: { type: "json_object" },
+  });
 
-  const content = response.choices[0].message.content
+  const content = response.choices[0].message.content;
   try {
-    return JSON.parse(content)
+    return JSON.parse(content);
   } catch (err) {
-    console.error('Groq Coach Advice Parse Error:', err.message)
+    console.error("Groq Coach Advice Parse Error:", err.message);
     return {
-      advice: "Continuez à persévérer, chaque effort vous rapproche de votre succès !"
-    }
+      advice:
+        "Continuez à persévérer, chaque effort vous rapproche de votre succès !",
+    };
   }
-}
+};
 
-module.exports = { extractSkillsFromText, matchCvWithJob, generateQuiz, evaluateQuiz, getCourseRecommendationsAI, generateCoachAdvice }
+module.exports = {
+  extractSkillsFromText,
+  matchCvWithJob,
+  generateQuiz,
+  evaluateQuiz,
+  getCourseRecommendationsAI,
+  generateCoachAdvice,
+};

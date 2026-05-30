@@ -133,10 +133,28 @@ class DashboardService {
     }
   }
 
-  Future<FormationModel?> rateStudent(String formationId, String studentId, double rating) async {
+  Future<FormationModel?> closeFormation(String id) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/formations/item/$formationId/student/$studentId/rate'),
+        Uri.parse('$baseUrl/formations/item/$id/close'),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return FormationModel.fromJson(data['formation']);
+      }
+      return null;
+    } catch (e) {
+      print('Error closing formation: $e');
+      return null;
+    }
+  }
+
+  Future<FormationModel?> rateStudent(
+      String formationId, String studentId, double rating) async {
+    try {
+      final response = await http.post(
+        Uri.parse(
+            '$baseUrl/formations/item/$formationId/student/$studentId/rate'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'rating': rating}),
       );

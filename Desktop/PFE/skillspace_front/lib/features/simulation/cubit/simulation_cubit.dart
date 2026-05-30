@@ -10,19 +10,23 @@ class SimulationCubit extends Cubit<SimulationState> {
   SimulationCubit() : super(SimulationInitial());
 
   Future<void> fetchAcceptedOffers() async {
+    if (isClosed) return;
     emit(SimulationLoading());
     try {
       final response = await _apiClient.get('/candidat/accepted-offers');
 
+      if (isClosed) return;
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         emit(SimulationLoaded(data));
       } else if (response.statusCode == 401) {
         emit(const SimulationError('Non authentifié'));
       } else {
-        emit(const SimulationError('Impossible de charger vos offres acceptées'));
+        emit(const SimulationError(
+            'Impossible de charger vos offres acceptées'));
       }
     } catch (e) {
+      if (isClosed) return;
       emit(SimulationError('Erreur réseau : $e'));
     }
   }

@@ -14,12 +14,14 @@ class RecruiterRepository {
       final data = jsonDecode(response.body);
       return CompanyProfile.fromJson(data);
     } else {
-      throw Exception('Failed to load recruiter profile: ${response.statusCode}');
+      throw Exception(
+          'Failed to load recruiter profile: ${response.statusCode}');
     }
   }
 
   Future<CompanyProfile> updateProfile(CompanyProfile profile) async {
-    final response = await apiClient.put('/recruiter/profile', profile.toJson());
+    final response =
+        await apiClient.put('/recruiter/profile', profile.toJson());
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return CompanyProfile.fromJson(data);
@@ -29,7 +31,8 @@ class RecruiterRepository {
   }
 
   Future<String> uploadLogo(List<int> bytes, String filename) async {
-    final response = await apiClient.uploadFile('/recruiter/upload', bytes, filename, fieldName: 'logo');
+    final response = await apiClient
+        .uploadFile('/recruiter/upload', bytes, filename, fieldName: 'logo');
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return data['url'];
@@ -38,13 +41,17 @@ class RecruiterRepository {
     }
   }
 
-  Future<List<RecruiterOfferWithCandidates>> getGroupedMatchingCandidates() async {
+  Future<List<RecruiterOfferWithCandidates>>
+      getGroupedMatchingCandidates() async {
     final response = await apiClient.get('/candidat/grouped-matches');
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
-      return data.map((item) => RecruiterOfferWithCandidates.fromJson(item)).toList();
+      return data
+          .map((item) => RecruiterOfferWithCandidates.fromJson(item))
+          .toList();
     } else {
-      throw Exception('Failed to load matching candidates: ${response.statusCode}');
+      throw Exception(
+          'Failed to load matching candidates: ${response.statusCode}');
     }
   }
 
@@ -53,10 +60,13 @@ class RecruiterRepository {
     if (password != null) requestBody['password'] = password;
     if (googleToken != null) requestBody['googleToken'] = googleToken;
 
-    final response = await apiClient.delete('/recruiter/profile/delete', body: requestBody);
+    final response =
+        await apiClient.delete('/recruiter/profile/delete', body: requestBody);
     if (response.statusCode != 200 && response.statusCode != 201) {
       final body = jsonDecode(response.body);
-      throw Exception(body['message'] ?? body['error'] ?? 'Failed to delete recruiter account');
+      throw Exception(body['message'] ??
+          body['error'] ??
+          'Failed to delete recruiter account');
     }
   }
 }

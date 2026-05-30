@@ -86,9 +86,12 @@ class FormateurModel {
       bio: json['bio'] ?? '',
       profilePicture: json['profilePicture'] ?? '',
       profileCompleteness: json['profileCompleteness'] ?? 0,
-      expertise: json['expertise'] != null ? List<String>.from(json['expertise']) : [],
-      certifications: json['certifications'] != null 
-          ? (json['certifications'] as List).map((i) => Certification.fromJson(i)).toList()
+      expertise:
+          json['expertise'] != null ? List<String>.from(json['expertise']) : [],
+      certifications: json['certifications'] != null
+          ? (json['certifications'] as List)
+              .map((i) => Certification.fromJson(i))
+              .toList()
           : [],
       linkedIn: json['socialLinks']?['linkedIn'] ?? '',
       portfolio: json['socialLinks']?['portfolio'] ?? '',

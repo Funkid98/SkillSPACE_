@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/app_colors.dart';
 import '../../../core/l10n/l10n_cubit.dart';
+
 class FloatingLanguageSwitcher extends StatelessWidget {
   const FloatingLanguageSwitcher({super.key});
 

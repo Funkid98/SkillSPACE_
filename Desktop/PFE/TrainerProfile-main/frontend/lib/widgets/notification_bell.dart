@@ -133,7 +133,8 @@ class _NotificationBellState extends State<NotificationBell> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Utilisez ce lien pour rejoindre l\'appel à l\'heure prévue :',
+              Text(
+                  'Utilisez ce lien pour rejoindre l\'appel à l\'heure prévue :',
                   style: TextStyle(
                       fontSize: 13,
                       color: isDark ? Colors.white60 : AppColors.textGray)),
@@ -400,12 +401,16 @@ class _NotificationBellState extends State<NotificationBell> {
                           children: [
                             Icon(Icons.notifications_none_rounded,
                                 size: 48,
-                                color: isDark ? Colors.white30 : AppColors.textGray),
+                                color: isDark
+                                    ? Colors.white30
+                                    : AppColors.textGray),
                             const SizedBox(height: 12),
                             Text(
                               'Aucune notification',
                               style: TextStyle(
-                                  color: isDark ? Colors.white60 : AppColors.textGray,
+                                  color: isDark
+                                      ? Colors.white60
+                                      : AppColors.textGray,
                                   fontSize: 15),
                             ),
                           ],
@@ -462,8 +467,7 @@ class _NotificationBellState extends State<NotificationBell> {
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(
                                           color: type == 'APPLICATION'
-                                              ? AppColors.navy
-                                                  .withOpacity(0.1)
+                                              ? AppColors.navy.withOpacity(0.1)
                                               : type == 'INTERVIEW_SCHEDULED'
                                                   ? AppColors.success
                                                       .withOpacity(0.1)
@@ -476,8 +480,7 @@ class _NotificationBellState extends State<NotificationBell> {
                                               : type == 'INTERVIEW_SCHEDULED'
                                                   ? Icons
                                                       .event_available_rounded
-                                                  : type ==
-                                                              'APPLICATION_REJECTED' ||
+                                                  : type == 'APPLICATION_REJECTED' ||
                                                           type == 'REJECTION'
                                                       ? Icons.cancel_outlined
                                                       : Icons.notifications,
@@ -485,8 +488,7 @@ class _NotificationBellState extends State<NotificationBell> {
                                               ? AppColors.navy
                                               : type == 'INTERVIEW_SCHEDULED'
                                                   ? AppColors.success
-                                                  : type ==
-                                                              'APPLICATION_REJECTED' ||
+                                                  : type == 'APPLICATION_REJECTED' ||
                                                           type == 'REJECTION'
                                                       ? AppColors.error
                                                       : AppColors.textGray,

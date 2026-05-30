@@ -309,9 +309,22 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                               label: l10n.website,
                               controller: _websiteController,
                               icon: Icons.link,
-                              validator: (v) => v == null || v.isEmpty
-                                  ? l10n.requiredField
-                                  : null)),
+                              validator: (v) {
+                                if (v == null || v.isEmpty) {
+                                  return l10n.requiredField;
+                                }
+                                final uri = Uri.tryParse(v);
+                                if (uri == null ||
+                                    !uri.hasScheme ||
+                                    (!uri.scheme.startsWith('http') &&
+                                        !uri.scheme.startsWith('https')) ||
+                                    !uri.hasAuthority ||
+                                    uri.host.isEmpty ||
+                                    !uri.host.contains('.')) {
+                                  return 'URL invalide (ex: https://example.com)';
+                                }
+                                return null;
+                              })),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -519,7 +532,8 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                           color: Colors.red, fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(width: 16),
-                if (CookieService.getString('auth_provider') != 'google' && CookieService.getString('auth_provider') != 'github') ...[
+                if (CookieService.getString('auth_provider') != 'google' &&
+                    CookieService.getString('auth_provider') != 'github') ...[
                   OutlinedButton(
                     onPressed: () {
                       final authState = context.read<AuthCubit>().state;
@@ -532,9 +546,10 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                           builder: (ctx) => ChangePasswordDialog(email: email),
                         );
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                            content: Text('Email non disponible'),
-                            backgroundColor: Colors.red));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Email non disponible'),
+                                backgroundColor: Colors.red));
                       }
                     },
                     style: OutlinedButton.styleFrom(

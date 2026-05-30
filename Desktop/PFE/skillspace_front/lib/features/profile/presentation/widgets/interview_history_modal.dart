@@ -57,7 +57,8 @@ class _InterviewHistoryModalState extends State<InterviewHistoryModal> {
       }
       final user = jsonDecode(userDataStr);
       final candidateId = user['id'] ?? user['_id'];
-      print('InterviewHistoryModal: Fetching history for candidateId = $candidateId');
+      print(
+          'InterviewHistoryModal: Fetching history for candidateId = $candidateId');
 
       final response = await http.get(
         Uri.parse('http://localhost:8088/api/interview/history/$candidateId'),
@@ -65,14 +66,16 @@ class _InterviewHistoryModalState extends State<InterviewHistoryModal> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print('InterviewHistoryModal: Received response: success=${data['success']}');
+        print(
+            'InterviewHistoryModal: Received response: success=${data['success']}');
         if (data['success']) {
           if (mounted) {
             setState(() {
               _history = data['history'] ?? [];
               _isLoading = false;
             });
-            print('InterviewHistoryModal: Loaded ${_history.length} history items.');
+            print(
+                'InterviewHistoryModal: Loaded ${_history.length} history items.');
           }
         } else {
           throw Exception("Failed to load history");
@@ -83,7 +86,8 @@ class _InterviewHistoryModalState extends State<InterviewHistoryModal> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = "Une erreur est survenue lors de la récupération de l'historique.";
+          _error =
+              "Une erreur est survenue lors de la récupération de l'historique.";
           _isLoading = false;
         });
       }
@@ -213,8 +217,8 @@ class _InterviewHistoryModalState extends State<InterviewHistoryModal> {
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withOpacity(0.05) : AppColors.bgAlt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-            color: isDark ? AppColors.borderDark : AppColors.border),
+        border:
+            Border.all(color: isDark ? AppColors.borderDark : AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,7 +237,8 @@ class _InterviewHistoryModalState extends State<InterviewHistoryModal> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppColors.orange.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -252,7 +257,9 @@ class _InterviewHistoryModalState extends State<InterviewHistoryModal> {
           const SizedBox(height: 12),
           Row(
             children: [
-              Icon(Icons.calendar_today, size: 14, color: isDark ? Colors.white54 : AppColors.textGray),
+              Icon(Icons.calendar_today,
+                  size: 14,
+                  color: isDark ? Colors.white54 : AppColors.textGray),
               const SizedBox(width: 6),
               Text(
                 formattedDate,
@@ -262,7 +269,9 @@ class _InterviewHistoryModalState extends State<InterviewHistoryModal> {
                 ),
               ),
               const SizedBox(width: 16),
-              Icon(Icons.psychology, size: 14, color: isDark ? Colors.white54 : AppColors.textGray),
+              Icon(Icons.psychology,
+                  size: 14,
+                  color: isDark ? Colors.white54 : AppColors.textGray),
               const SizedBox(width: 6),
               Text(
                 emotion,
@@ -283,7 +292,8 @@ class _InterviewHistoryModalState extends State<InterviewHistoryModal> {
                   context,
                   PageRouteBuilder(
                     transitionDuration: const Duration(milliseconds: 400),
-                    reverseTransitionDuration: const Duration(milliseconds: 400),
+                    reverseTransitionDuration:
+                        const Duration(milliseconds: 400),
                     pageBuilder: (context, animation, secondaryAnimation) =>
                         SimulationResultPage(
                       chatHistory: const [],
@@ -317,7 +327,8 @@ class _InterviewHistoryModalState extends State<InterviewHistoryModal> {
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: isDark ? AppColors.borderDark : AppColors.border),
+                  side: BorderSide(
+                      color: isDark ? AppColors.borderDark : AppColors.border),
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),

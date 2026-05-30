@@ -99,13 +99,9 @@ class _AppSidebarState extends State<AppSidebar> {
           border: Border(
             right: isRtl
                 ? BorderSide.none
-                : const BorderSide(
-                    color: Color(0x1AFFFFFF),
-                    width: 1),
+                : const BorderSide(color: Color(0x1AFFFFFF), width: 1),
             left: isRtl
-                ? const BorderSide(
-                    color: Color(0x1AFFFFFF),
-                    width: 1)
+                ? const BorderSide(color: Color(0x1AFFFFFF), width: 1)
                 : BorderSide.none,
           ),
           boxShadow: [
@@ -178,7 +174,8 @@ class _AppSidebarState extends State<AppSidebar> {
                               borderRadius: BorderRadius.circular(10),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.orange.withValues(alpha: 0.45),
+                                  color:
+                                      AppColors.orange.withValues(alpha: 0.45),
                                   blurRadius: 10,
                                   offset: const Offset(0, 3),
                                 ),
@@ -671,7 +668,8 @@ class _MobileDrawer extends StatelessWidget {
                                 color: AppColors.error.withValues(alpha: 0.05),
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
-                                  color: AppColors.error.withValues(alpha: 0.15),
+                                  color:
+                                      AppColors.error.withValues(alpha: 0.15),
                                 ),
                               ),
                               child: Row(
@@ -680,18 +678,21 @@ class _MobileDrawer extends StatelessWidget {
                                     width: 34,
                                     height: 34,
                                     decoration: BoxDecoration(
-                                      color: AppColors.error.withValues(alpha: 0.1),
+                                      color: AppColors.error
+                                          .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Icon(Icons.logout_rounded,
-                                        color: AppColors.error.withValues(alpha: 0.85),
+                                        color: AppColors.error
+                                            .withValues(alpha: 0.85),
                                         size: 18),
                                   ),
                                   const SizedBox(width: 14),
                                   Text(
                                     l10n.logout,
                                     style: TextStyle(
-                                      color: AppColors.error.withValues(alpha: 0.85),
+                                      color: AppColors.error
+                                          .withValues(alpha: 0.85),
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -979,9 +980,8 @@ class _NavItemState extends State<_NavItem> {
                     widget.tab.label(context),
                     style: TextStyle(
                       fontSize: 13.5,
-                      fontWeight: widget.isActive
-                          ? FontWeight.w700
-                          : FontWeight.w500,
+                      fontWeight:
+                          widget.isActive ? FontWeight.w700 : FontWeight.w500,
                       color: widget.isActive
                           ? Colors.white
                           : _hovered

@@ -1,11 +1,11 @@
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 
 let _transporter = null;
 const getTransporter = () => {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) return null;
   if (!_transporter) {
     _transporter = nodemailer.createTransport({
-      service: 'gmail',
+      service: "gmail",
       auth: {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_PASS,
@@ -19,7 +19,7 @@ const sendVerificationEmail = async (toEmail, otp) => {
   const mailOptions = {
     from: `"SkillSpace" <${process.env.GMAIL_FROM}>`,
     to: toEmail,
-    subject: ' Vérifiez votre compte SkillSpace',
+    subject: " Vérifiez votre compte SkillSpace",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 32px; background: #f5f3ee; border-radius: 16px;">
         <div style="text-align: center; margin-bottom: 24px;">

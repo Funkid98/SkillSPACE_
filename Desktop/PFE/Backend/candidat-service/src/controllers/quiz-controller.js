@@ -1,19 +1,25 @@
-const { generateQuiz, evaluateQuiz, getCourseRecommendationsAI } = require('../services/ai-service');
-const User = require('../models/candidat');
-const { runBackgroundMatchForCandidate } = require('../services/background-matcher');
+const {
+  generateQuiz,
+  evaluateQuiz,
+  getCourseRecommendationsAI,
+} = require("../services/ai-service");
+const User = require("../models/candidat");
+const {
+  runBackgroundMatchForCandidate,
+} = require("../services/background-matcher");
 
 const generateQuizHandler = async (req, res) => {
   try {
     const { skill, level } = req.body;
     if (!skill || !level) {
-      return res.status(400).json({ message: 'Skill and level are required' });
+      return res.status(400).json({ message: "Skill and level are required" });
     }
 
     const quiz = await generateQuiz(skill, level);
     res.status(200).json(quiz);
   } catch (error) {
-    console.error('Error generating quiz:', error);
-    res.status(500).json({ message: 'Server error generating quiz' });
+    console.error("Error generating quiz:", error);
+    res.status(500).json({ message: "Server error generating quiz" });
   }
 };
 
@@ -23,7 +29,9 @@ const evaluateQuizHandler = async (req, res) => {
     const userId = req.userId;
 
     if (!skill || !claimedLevel || !qna) {
-      return res.status(400).json({ message: 'Skill, claimedLevel, and qna are required' });
+      return res
+        .status(400)
+        .json({ message: "Skill, claimedLevel, and qna are required" });
     }
 
     const result = await evaluateQuiz(skill, claimedLevel, qna);
@@ -34,7 +42,10 @@ const evaluateQuizHandler = async (req, res) => {
       for (let i = 0; i < Math.min(4, result.answers_analysis.length); i++) {
         if (result.answers_analysis[i].is_correct === true) score += 15;
       }
-      if (result.answers_analysis[4] && result.answers_analysis[4].is_correct === true) {
+      if (
+        result.answers_analysis[4] &&
+        result.answers_analysis[4].is_correct === true
+      ) {
         score += 40;
       }
     } else {
@@ -47,38 +58,39 @@ const evaluateQuizHandler = async (req, res) => {
     // Beginner quiz:  only 100/100 promotes to Intermediate
     // Intermediate quiz: only 100/100 promotes to Advanced
     // Advanced quiz: 80+ confirms, otherwise demote
-    let determinedLevel = 'Beginner';
-    let levelMatch = 'confirmed';
+    let determinedLevel = "Beginner";
+    let levelMatch = "confirmed";
 
-    if (claimedLevel === 'Beginner') {
+    if (claimedLevel === "Beginner") {
       if (score === 100) {
-        determinedLevel = 'Intermediate';
-        levelMatch = 'underrated';
+        determinedLevel = "Intermediate";
+        levelMatch = "underrated";
       } else {
-        determinedLevel = 'Beginner';
-        levelMatch = 'confirmed';
+        determinedLevel = "Beginner";
+        levelMatch = "confirmed";
       }
-    } else if (claimedLevel === 'Intermediate') {
+    } else if (claimedLevel === "Intermediate") {
       if (score === 100) {
-        determinedLevel = 'Advanced';
-        levelMatch = 'underrated';
+        determinedLevel = "Advanced";
+        levelMatch = "underrated";
       } else if (score >= 40) {
-        determinedLevel = 'Intermediate';
-        levelMatch = 'confirmed';
+        determinedLevel = "Intermediate";
+        levelMatch = "confirmed";
       } else {
-        determinedLevel = 'Beginner';
-        levelMatch = 'overrated';
+        determinedLevel = "Beginner";
+        levelMatch = "overrated";
       }
-    } else { // Advanced
+    } else {
+      // Advanced
       if (score >= 80) {
-        determinedLevel = 'Advanced';
-        levelMatch = 'confirmed';
+        determinedLevel = "Advanced";
+        levelMatch = "confirmed";
       } else if (score >= 40) {
-        determinedLevel = 'Intermediate';
-        levelMatch = 'overrated';
+        determinedLevel = "Intermediate";
+        levelMatch = "overrated";
       } else {
-        determinedLevel = 'Beginner';
-        levelMatch = 'critical_mismatch';
+        determinedLevel = "Beginner";
+        levelMatch = "critical_mismatch";
       }
     }
 
@@ -88,16 +100,16 @@ const evaluateQuizHandler = async (req, res) => {
     // ── Map raw score to the correct percent range for the determined level ──
     // Badge system: 0-39 = Débutant, 40-79 = Intermédiaire, 80-100 = Avancé
     let mappedPercent = 0;
-    if (levelMatch === 'underrated') {
+    if (levelMatch === "underrated") {
       // The candidate just got promoted by scoring 100 in the lower level.
       // They enter the new level at its minimum threshold.
-      if (determinedLevel === 'Intermediate') mappedPercent = 40;
-      else if (determinedLevel === 'Advanced') mappedPercent = 80;
+      if (determinedLevel === "Intermediate") mappedPercent = 40;
+      else if (determinedLevel === "Advanced") mappedPercent = 80;
     } else {
-      if (determinedLevel === 'Beginner') {
+      if (determinedLevel === "Beginner") {
         // Map 0-100 raw → 0-39 percent range
         mappedPercent = Math.floor((score / 100) * 39);
-      } else if (determinedLevel === 'Intermediate') {
+      } else if (determinedLevel === "Intermediate") {
         // Map 0-100 raw → 40-79 percent range
         mappedPercent = 40 + Math.floor((score / 100) * 39);
       } else {
@@ -110,7 +122,7 @@ const evaluateQuizHandler = async (req, res) => {
     // Update user skill in database
     const user = await User.findById(userId);
     if (user) {
-      const skillIndex = user.skills.findIndex(s => s.name === skill);
+      const skillIndex = user.skills.findIndex((s) => s.name === skill);
       if (skillIndex > -1) {
         user.skills[skillIndex].percent = mappedPercent;
       } else {
@@ -119,14 +131,18 @@ const evaluateQuizHandler = async (req, res) => {
       await user.save();
 
       // Trigger Re-analysis
-      console.log(`[Quiz] Skill ${skill}: raw=${score}, level=${determinedLevel}, stored=${mappedPercent}%. Triggering re-analysis for ${user.prenom}`);
-      runBackgroundMatchForCandidate(user._id).catch(e => console.error("BG match error after quiz:", e));
+      console.log(
+        `[Quiz] Skill ${skill}: raw=${score}, level=${determinedLevel}, stored=${mappedPercent}%. Triggering re-analysis for ${user.prenom}`,
+      );
+      runBackgroundMatchForCandidate(user._id).catch((e) =>
+        console.error("BG match error after quiz:", e),
+      );
     }
 
     res.status(200).json({ ...result, updated_score: mappedPercent });
   } catch (error) {
-    console.error('Error evaluating quiz:', error);
-    res.status(500).json({ message: 'Server error evaluating quiz' });
+    console.error("Error evaluating quiz:", error);
+    res.status(500).json({ message: "Server error evaluating quiz" });
   }
 };
 
@@ -134,18 +150,18 @@ const recommendCoursesHandler = async (req, res) => {
   try {
     const { skill, score, claimedLevel, answersAnalysis } = req.body;
     if (!skill || score === undefined) {
-      return res.status(400).json({ message: 'Skill and score are required' });
+      return res.status(400).json({ message: "Skill and score are required" });
     }
 
     // Derive achieved level from final weighted score
-    let achievedLevel = 'Beginner';
-    if (score >= 80) achievedLevel = 'Advanced';
-    else if (score >= 40) achievedLevel = 'Intermediate';
+    let achievedLevel = "Beginner";
+    if (score >= 80) achievedLevel = "Advanced";
+    else if (score >= 40) achievedLevel = "Intermediate";
 
     // Extract wrong topics from answers_analysis for targeted recommendations
     const wrongTopics = [];
     if (Array.isArray(answersAnalysis)) {
-      answersAnalysis.forEach(ans => {
+      answersAnalysis.forEach((ans) => {
         if (ans.is_correct === false && ans.question) {
           // Distill the topic from the question text (first ~60 chars)
           wrongTopics.push(ans.question.substring(0, 80));
@@ -155,24 +171,27 @@ const recommendCoursesHandler = async (req, res) => {
 
     // Map achieved level to French for DB query
     const levelFrMap = {
-      Beginner: ['Débutant', 'Intermédiaire'],        // beginners also benefit from intro-intermediate
-      Intermediate: ['Intermédiaire', 'Avancé'],       // intermediates need intermediate + advanced
-      Advanced: ['Avancé', 'Intermédiaire'],           // advanced users need advanced (+ intermediate for gaps)
+      Beginner: ["Débutant", "Intermédiaire"], // beginners also benefit from intro-intermediate
+      Intermediate: ["Intermédiaire", "Avancé"], // intermediates need intermediate + advanced
+      Advanced: ["Avancé", "Intermédiaire"], // advanced users need advanced (+ intermediate for gaps)
     };
-    const relevantLevels = levelFrMap[achievedLevel] || ['Débutant'];
+    const relevantLevels = levelFrMap[achievedLevel] || ["Débutant"];
 
     let availableInternalFormations = [];
     try {
-      const axios = require('axios');
+      const axios = require("axios");
       // Fetch ALL formations for this skill from the trainer service
-      const response = await axios.get(`http://127.0.0.1:5004/api/formateur/all-formations`, {
-        params: { query: skill }
-      });
+      const response = await axios.get(
+        `http://127.0.0.1:8088/api/formateur/all-formations`,
+        {
+          params: { query: skill },
+        },
+      );
       const allFormations = response.data || [];
 
       // Pre-filter by relevant levels
-      availableInternalFormations = allFormations.filter(f =>
-        relevantLevels.includes(f.level)
+      availableInternalFormations = allFormations.filter((f) =>
+        relevantLevels.includes(f.level),
       );
 
       // If no exact level match, widen the search to include ALL internal formations for this skill
@@ -181,9 +200,14 @@ const recommendCoursesHandler = async (req, res) => {
         availableInternalFormations = allFormations;
       }
 
-      console.log(`[Recommend] ${skill} (${score}% - ${achievedLevel}): ${availableInternalFormations.length} internal formations in scope (levels: ${relevantLevels.join(', ')})`);
+      console.log(
+        `[Recommend] ${skill} (${score}% - ${achievedLevel}): ${availableInternalFormations.length} internal formations in scope (levels: ${relevantLevels.join(", ")})`,
+      );
     } catch (err) {
-      console.error('Error fetching internal formations from formateur-service:', err.message);
+      console.error(
+        "Error fetching internal formations from formateur-service:",
+        err.message,
+      );
     }
 
     // Ask AI to pick the best formations using rich personalization context
@@ -192,15 +216,15 @@ const recommendCoursesHandler = async (req, res) => {
       score,
       claimedLevel || achievedLevel,
       wrongTopics,
-      availableInternalFormations
+      availableInternalFormations,
     );
 
     // Map AI-selected internal IDs back to full formation objects
     let finalInternal = [];
     if (aiResult.internal && Array.isArray(aiResult.internal)) {
-      aiResult.internal.forEach(aiMatch => {
+      aiResult.internal.forEach((aiMatch) => {
         const fullFormation = availableInternalFormations.find(
-          f => String(f._id) === String(aiMatch._id)
+          (f) => String(f._id) === String(aiMatch._id),
         );
         if (fullFormation) {
           finalInternal.push({
@@ -214,15 +238,19 @@ const recommendCoursesHandler = async (req, res) => {
     res.status(200).json({
       level_determined: achievedLevel,
       internal_formations: finalInternal,
-      external_formations: (aiResult.external || []).map(e => ({
+      external_formations: (aiResult.external || []).map((e) => ({
         ...e,
-        ai_reason: e.why,  // expose the "why" as ai_reason for frontend consistency
+        ai_reason: e.why, // expose the "why" as ai_reason for frontend consistency
       })),
     });
   } catch (error) {
-    console.error('Error recommending courses:', error);
-    res.status(500).json({ message: 'Server error recommending courses' });
+    console.error("Error recommending courses:", error);
+    res.status(500).json({ message: "Server error recommending courses" });
   }
 };
 
-module.exports = { generateQuizHandler, evaluateQuizHandler, recommendCoursesHandler };
+module.exports = {
+  generateQuizHandler,
+  evaluateQuizHandler,
+  recommendCoursesHandler,
+};

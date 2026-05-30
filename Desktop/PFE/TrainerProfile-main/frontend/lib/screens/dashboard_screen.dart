@@ -540,7 +540,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildFormationsGrid(DashboardData dashboardData) {
-    final formations = dashboardData.formations;
+    final formations = List<FormationModel>.from(dashboardData.formations);
+    // Sort: active (0) > fermée (1) > terminé (2)
+    formations.sort((a, b) {
+      int rankA = a.status == 'active' ? 0 : (a.status == 'fermée' ? 1 : 2);
+      int rankB = b.status == 'active' ? 0 : (b.status == 'fermée' ? 1 : 2);
+      return rankA.compareTo(rankB);
+    });
+
     return AnimationLimiter(
       child: Wrap(
         spacing: 24,
@@ -558,6 +565,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   width: 380,
                   onEdit: () => _showFormationDialog(f),
                   onDelete: () => _confirmDelete(f),
+                  onClose: () => _confirmClose(f),
                   onTerminate: () => _confirmTerminate(f),
                   onRateStudent: (studentId, rating) => context
                       .read<TrainerCubit>()
@@ -1364,6 +1372,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
             child:
                 const Text('Confirmer', style: TextStyle(color: Colors.green)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmClose(FormationModel formation) {
+    final trainerCubit = context.read<TrainerCubit>();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Fermer la formation ?'),
+        content: Text(
+            'Voulez-vous fermer "${formation.title}" ? Les candidats ne pourront plus s\'y inscrire.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Annuler')),
+          TextButton(
+            onPressed: () async {
+              await trainerCubit.closeFormation(formation.id!);
+              if (!dialogContext.mounted) return;
+              Navigator.pop(dialogContext);
+            },
+            child:
+                const Text('Confirmer', style: TextStyle(color: Colors.orange)),
           ),
         ],
       ),

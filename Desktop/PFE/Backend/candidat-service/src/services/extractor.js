@@ -1,13 +1,13 @@
-const pdfParse = require('pdf-parse');
-const mammoth = require('mammoth');
+const pdfParse = require("pdf-parse");
+const mammoth = require("mammoth");
 
 //Extract text from a PDF buffer.
 
 async function extractFromPdf(buffer) {
   // Handle both function and object versions of the library
-  const parser = typeof pdfParse === 'function' ? pdfParse : pdfParse.default;
-  if (typeof parser !== 'function') {
-    throw new Error('pdf-parse is not a function. Version mismatch?');
+  const parser = typeof pdfParse === "function" ? pdfParse : pdfParse.default;
+  if (typeof parser !== "function") {
+    throw new Error("pdf-parse is not a function. Version mismatch?");
   }
   const data = await parser(buffer);
   return data.text;
@@ -23,9 +23,9 @@ async function extractFromDocx(buffer) {
 // Detect file type by extension and extract text.
 
 async function extractText(buffer, originalName) {
-  const ext = originalName.split('.').pop().toLowerCase();
-  if (ext === 'pdf') return extractFromPdf(buffer);
-  if (ext === 'docx') return extractFromDocx(buffer);
+  const ext = originalName.split(".").pop().toLowerCase();
+  if (ext === "pdf") return extractFromPdf(buffer);
+  if (ext === "docx") return extractFromDocx(buffer);
   throw new Error(`Unsupported file type: .${ext}`);
 }
 

@@ -125,7 +125,7 @@ class _RecruiterSidebarState extends State<RecruiterSidebar> {
             ],
           ),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return Stack(
@@ -174,9 +174,11 @@ class _RecruiterSidebarState extends State<RecruiterSidebar> {
                                   children: [
                                     if (profile.logoUrl.isNotEmpty)
                                       Padding(
-                                        padding: const EdgeInsets.only(right: 12),
+                                        padding:
+                                            const EdgeInsets.only(right: 12),
                                         child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                           child: Image.network(
                                             profile.logoUrl,
                                             width: 32,
@@ -208,7 +210,9 @@ class _RecruiterSidebarState extends State<RecruiterSidebar> {
                               } else {
                                 nameWidget = Text('SkillSpace',
                                     style: AppTextStyles.navBrand.copyWith(
-                                      color: isDark ? Colors.white : AppColors.navy,
+                                      color: isDark
+                                          ? Colors.white
+                                          : AppColors.navy,
                                     ));
                               }
                               return Row(
@@ -225,7 +229,8 @@ class _RecruiterSidebarState extends State<RecruiterSidebar> {
                             final index = entry.key;
                             final tab = entry.value;
                             return AnimatedReveal(
-                              delay: Duration(milliseconds: 100 + (index * 100)),
+                              delay:
+                                  Duration(milliseconds: 100 + (index * 100)),
                               direction: RevealDirection.fromLeft,
                               child: _NavItem(
                                 tab: tab,
@@ -241,46 +246,10 @@ class _RecruiterSidebarState extends State<RecruiterSidebar> {
                           child: ThemeToggle(),
                         ),
                         const SizedBox(height: 12),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
-                          child: Material(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
-                            child: InkWell(
-                              onTap: () =>
-                                  _showLogoutConfirmation(context, widget.onLogout),
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 12),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: isDark
-                                        ? AppColors.error.withValues(alpha: 0.2)
-                                        : AppColors.error.withValues(alpha: 0.15),
-                                  ),
-                                  color: AppColors.error.withValues(alpha: 0.05),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.logout_rounded,
-                                        size: 17,
-                                        color: AppColors.error.withValues(alpha: 0.8)),
-                                    const SizedBox(width: 10),
-                                    Text(
-                                      l10n.logout,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.error.withValues(alpha: 0.8),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
+                        _AnimatedLogoutButton(
+                          label: l10n.logout,
+                          onTap: () =>
+                              _showLogoutConfirmation(context, widget.onLogout),
                         ),
                       ],
                     ),
@@ -506,7 +475,7 @@ class _LogoutButton extends StatelessWidget {
   }
 }
 
-class _NavItem extends StatelessWidget {
+class _NavItem extends StatefulWidget {
   final RecruiterTab tab;
   final bool isActive;
   final VoidCallback onTap;
@@ -518,43 +487,191 @@ class _NavItem extends StatelessWidget {
   });
 
   @override
+  State<_NavItem> createState() => _NavItemState();
+}
+
+class _NavItemState extends State<_NavItem> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
         child: GestureDetector(
-          onTap: onTap,
+          onTap: widget.onTap,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            transform: Matrix4.translationValues(
+              _isHovered ? 6 : 0,
+              0,
+              0,
+            ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isActive
+              color: widget.isActive
                   ? (isDark
-                      ? AppColors.orange.withOpacity(0.1)
-                      : AppColors.iconBg)
-                  : Colors.transparent,
+                      ? AppColors.orange.withOpacity(0.15)
+                      : AppColors.orange.withOpacity(0.1))
+                  : (_isHovered
+                      ? (isDark
+                          ? Colors.white.withOpacity(0.05)
+                          : Colors.black.withOpacity(0.03))
+                      : Colors.transparent),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: widget.isActive
+                    ? AppColors.orange.withOpacity(0.3)
+                    : (_isHovered
+                        ? (isDark
+                            ? Colors.white.withOpacity(0.1)
+                            : Colors.black.withOpacity(0.05))
+                        : Colors.transparent),
+                width: 1,
+              ),
+              boxShadow: widget.isActive || _isHovered
+                  ? [
+                      BoxShadow(
+                        color: widget.isActive
+                            ? AppColors.orange.withOpacity(0.2)
+                            : Colors.black.withOpacity(0.02),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      )
+                    ]
+                  : [],
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                if (widget.isActive)
+                  Positioned(
+                    left: -14,
+                    top: 2,
+                    bottom: 2,
+                    child: Container(
+                      width: 4,
+                      decoration: BoxDecoration(
+                          color: AppColors.orange,
+                          borderRadius: BorderRadius.circular(4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.orange.withOpacity(0.5),
+                              blurRadius: 6,
+                            )
+                          ]),
+                    ),
+                  ),
+                Row(
+                  children: [
+                    Icon(
+                      widget.tab.icon,
+                      size: 20,
+                      color: widget.isActive
+                          ? AppColors.orange
+                          : (_isHovered
+                              ? (isDark ? Colors.white : AppColors.textDark)
+                              : (isDark ? Colors.white60 : AppColors.textGray)),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      widget.tab.label(context),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight:
+                            widget.isActive ? FontWeight.w700 : FontWeight.w500,
+                        color: widget.isActive
+                            ? AppColors.orange
+                            : (_isHovered
+                                ? (isDark ? Colors.white : AppColors.textDark)
+                                : (isDark
+                                    ? Colors.white60
+                                    : AppColors.textGray)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AnimatedLogoutButton extends StatefulWidget {
+  final VoidCallback onTap;
+  final String label;
+
+  const _AnimatedLogoutButton({required this.onTap, required this.label});
+
+  @override
+  State<_AnimatedLogoutButton> createState() => _AnimatedLogoutButtonState();
+}
+
+class _AnimatedLogoutButtonState extends State<_AnimatedLogoutButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _isHovered
+                    ? AppColors.error.withOpacity(0.5)
+                    : AppColors.error.withOpacity(0.2),
+              ),
+              color: _isHovered
+                  ? AppColors.error.withOpacity(0.15)
+                  : AppColors.error.withOpacity(0.05),
+              boxShadow: _isHovered
+                  ? [
+                      BoxShadow(
+                        color: AppColors.error.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      )
+                    ]
+                  : [],
             ),
             child: Row(
               children: [
-                Icon(
-                  tab.icon,
-                  size: 20,
-                  color: isActive
-                      ? AppColors.orange
-                      : (isDark ? Colors.white60 : AppColors.textGray),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  transform:
+                      Matrix4.translationValues(_isHovered ? 4 : 0, 0, 0),
+                  child: Icon(Icons.logout_rounded,
+                      size: 17,
+                      color: _isHovered
+                          ? AppColors.error
+                          : AppColors.error.withOpacity(0.8)),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Text(
-                  tab.label(context),
+                  widget.label,
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                    color: isActive
-                        ? (isDark ? AppColors.orange : AppColors.textDark)
-                        : (isDark ? Colors.white60 : AppColors.textGray),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _isHovered
+                        ? AppColors.error
+                        : AppColors.error.withOpacity(0.8),
                   ),
                 ),
               ],

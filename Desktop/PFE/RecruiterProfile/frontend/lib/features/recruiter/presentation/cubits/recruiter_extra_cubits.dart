@@ -118,15 +118,17 @@ class RecruiterCandidatesCubit extends Cubit<RecruiterCandidatesState> {
 
   List<String> _savedCandidateIds = [];
 
-  RecruiterCandidatesCubit({required this.repository}) : super(RecruiterCandidatesInitial());
+  RecruiterCandidatesCubit({required this.repository})
+      : super(RecruiterCandidatesInitial());
 
   void loadCandidates({bool isAutoRefresh = false}) async {
     if (!isAutoRefresh) emit(RecruiterCandidatesLoading());
     try {
-      _savedCandidateIds = CookieService.getStringList('saved_candidates') ?? [];
+      _savedCandidateIds =
+          CookieService.getStringList('saved_candidates') ?? [];
 
       var rawGroups = await repository.getGroupedMatchingCandidates();
-      
+
       _fullGroups = rawGroups.map((group) {
         final syncedCandidates = group.candidates.map((c) {
           if (_savedCandidateIds.contains(c.id)) {
@@ -134,11 +136,12 @@ class RecruiterCandidatesCubit extends Cubit<RecruiterCandidatesState> {
           }
           return c;
         }).toList();
-        return RecruiterOfferWithCandidates(offer: group.offer, candidates: syncedCandidates);
+        return RecruiterOfferWithCandidates(
+            offer: group.offer, candidates: syncedCandidates);
       }).toList();
 
       filterCandidates(_lastQuery);
-      
+
       // Check if we need to continue polling
       _checkPolling();
     } catch (e) {
@@ -149,7 +152,8 @@ class RecruiterCandidatesCubit extends Cubit<RecruiterCandidatesState> {
   void _checkPolling() {
     bool needsPolling = false;
     for (var group in _fullGroups) {
-      if (group.candidates.any((c) => c.status == 'ANALYSING' || c.matchScore == 0)) {
+      if (group.candidates
+          .any((c) => c.status == 'ANALYSING' || c.matchScore == 0)) {
         needsPolling = true;
         break;
       }
@@ -157,7 +161,8 @@ class RecruiterCandidatesCubit extends Cubit<RecruiterCandidatesState> {
 
     if (needsPolling) {
       _refreshTimer?.cancel();
-      _refreshTimer = Timer(const Duration(seconds: 10), () => loadCandidates(isAutoRefresh: true));
+      _refreshTimer = Timer(const Duration(seconds: 10),
+          () => loadCandidates(isAutoRefresh: true));
     } else {
       _refreshTimer?.cancel();
       _refreshTimer = null;
@@ -176,33 +181,39 @@ class RecruiterCandidatesCubit extends Cubit<RecruiterCandidatesState> {
       emit(RecruiterCandidatesLoaded([]));
       return;
     }
-    
+
     final q = query.trim().toLowerCase();
-    
-    final filtered = _fullGroups.map((group) {
-        final filteredCandidates = group.candidates.where((c) {
-          if (_showSavedOnly && !c.isSaved) return false;
 
-          if (q.isEmpty) return true;
+    final filtered = _fullGroups
+        .map((group) {
+          final filteredCandidates = group.candidates.where((c) {
+            if (_showSavedOnly && !c.isSaved) return false;
 
-          final nameMatch = c.name.toLowerCase().contains(q);
-          final roleMatch = c.role.toLowerCase().contains(q);
-          final skillMatch = c.skills.any((s) => s.toLowerCase().contains(q));
-          return nameMatch || roleMatch || skillMatch;
-        }).toList();
+            if (q.isEmpty) return true;
 
-        final offerMatch = group.offer.title.toLowerCase().contains(q);
+            final nameMatch = c.name.toLowerCase().contains(q);
+            final roleMatch = c.role.toLowerCase().contains(q);
+            final skillMatch = c.skills.any((s) => s.toLowerCase().contains(q));
+            return nameMatch || roleMatch || skillMatch;
+          }).toList();
 
-        // If filtering by saved only, don't show empty groups just because offer matches query.
-        if ((offerMatch && !_showSavedOnly && filteredCandidates.isEmpty) || filteredCandidates.isNotEmpty) {
+          final offerMatch = group.offer.title.toLowerCase().contains(q);
+
+          // If filtering by saved only, don't show empty groups just because offer matches query.
+          if ((offerMatch && !_showSavedOnly && filteredCandidates.isEmpty) ||
+              filteredCandidates.isNotEmpty) {
             return RecruiterOfferWithCandidates(
                 offer: group.offer,
-                candidates: filteredCandidates.isNotEmpty ? filteredCandidates : (_showSavedOnly ? [] : group.candidates)
-            );
-        }
-        return null;
-    }).whereType<RecruiterOfferWithCandidates>().where((g) => g.candidates.isNotEmpty || (!_showSavedOnly && q.isEmpty)).toList();
-    
+                candidates: filteredCandidates.isNotEmpty
+                    ? filteredCandidates
+                    : (_showSavedOnly ? [] : group.candidates));
+          }
+          return null;
+        })
+        .whereType<RecruiterOfferWithCandidates>()
+        .where((g) => g.candidates.isNotEmpty || (!_showSavedOnly && q.isEmpty))
+        .toList();
+
     emit(RecruiterCandidatesLoaded(filtered));
   }
 
@@ -228,7 +239,8 @@ class RecruiterCandidatesCubit extends Cubit<RecruiterCandidatesState> {
           if (c.id == candidateId) {
             final newIsSaved = !c.isSaved;
             if (newIsSaved) {
-              if (!_savedCandidateIds.contains(candidateId)) _savedCandidateIds.add(candidateId);
+              if (!_savedCandidateIds.contains(candidateId))
+                _savedCandidateIds.add(candidateId);
             } else {
               _savedCandidateIds.remove(candidateId);
             }
@@ -236,11 +248,12 @@ class RecruiterCandidatesCubit extends Cubit<RecruiterCandidatesState> {
           }
           return c;
         }).toList();
-        return RecruiterOfferWithCandidates(offer: group.offer, candidates: newCandidates);
+        return RecruiterOfferWithCandidates(
+            offer: group.offer, candidates: newCandidates);
       }
       return group;
     }).toList();
-    
+
     CookieService.setStringList('saved_candidates', _savedCandidateIds);
 
     filterCandidates(_lastQuery);

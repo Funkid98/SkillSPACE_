@@ -41,7 +41,7 @@ class MeshGradientBackground extends StatelessWidget {
             height: 400,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isDark 
+              color: isDark
                   ? const Color(0xFF3B82F6).withOpacity(0.08)
                   : const Color(0xFF60A5FA).withOpacity(0.12),
             ),

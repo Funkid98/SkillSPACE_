@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_theme/reactive_theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/app_colors.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../cubit/formations_cubit.dart';
@@ -311,7 +312,9 @@ class CandidateFormationsPage extends StatelessWidget {
                                       ),
                                     ),
                                   ] else ...[
-                                    const SizedBox(height: 24),
+                                    // ── Session Info Block ─────────────────────
+                                    _buildSessionInfoBlock(context, f, isDark),
+                                    const SizedBox(height: 16),
                                     SizedBox(
                                       width: double.infinity,
                                       child: OutlinedButton(
@@ -385,6 +388,139 @@ class CandidateFormationsPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildSessionInfoBlock(BuildContext context, dynamic f, bool isDark) {
+    final rawDate = f['date'];
+    final time = f['time'] ?? '';
+    final duration = f['duration'] ?? '';
+    final meetLink = f['meetLink'] ?? '';
+
+    String formattedDate = '';
+    if (rawDate != null) {
+      try {
+        final dt = DateTime.parse(rawDate.toString()).toLocal();
+        formattedDate =
+            '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+      } catch (_) {
+        formattedDate = rawDate.toString();
+      }
+    }
+
+    // Only show this block if there's at least one piece of info
+    final hasInfo = formattedDate.isNotEmpty ||
+        time.isNotEmpty ||
+        duration.isNotEmpty ||
+        meetLink.isNotEmpty;
+    if (!hasInfo) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.blueAccent.withOpacity(0.08)
+                : Colors.blue.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isDark
+                  ? Colors.blueAccent.withOpacity(0.25)
+                  : Colors.blue.withOpacity(0.15),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.event_note_rounded,
+                      size: 16,
+                      color: isDark ? Colors.blueAccent : Colors.blue[700]),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Informations de la session',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: isDark ? Colors.blueAccent : Colors.blue[700],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (formattedDate.isNotEmpty || time.isNotEmpty)
+                _buildSessionRow(
+                  Icons.calendar_today_rounded,
+                  formattedDate.isNotEmpty && time.isNotEmpty
+                      ? '$formattedDate à $time'
+                      : formattedDate.isNotEmpty
+                          ? formattedDate
+                          : time,
+                  isDark,
+                ),
+              if (duration.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                _buildSessionRow(Icons.timer_outlined, duration, isDark),
+              ],
+              if (meetLink.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _launchUrl(meetLink),
+                    icon: const Icon(Icons.videocam_rounded, size: 16),
+                    label: const Text(
+                      'Rejoindre la séance',
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          isDark ? Colors.blueAccent : Colors.blue[600],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSessionRow(IconData icon, String text, bool isDark) {
+    return Row(
+      children: [
+        Icon(icon,
+            size: 14, color: isDark ? Colors.white54 : AppColors.textGray),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark ? Colors.white70 : AppColors.textDark,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri != null && await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 }
 

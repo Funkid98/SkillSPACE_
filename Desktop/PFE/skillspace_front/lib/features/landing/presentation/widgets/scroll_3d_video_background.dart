@@ -38,6 +38,8 @@ class _Scroll3DVideoBackgroundState extends State<Scroll3DVideoBackground> {
       await _controller.setLooping(true);
       await _controller.play();
 
+      if (!mounted) return;
+
       setState(() {
         _isInitialized = true;
         _isLoading = false;

@@ -149,7 +149,8 @@ class _SimulationResultPageState extends State<SimulationResultPage>
       );
     }
 
-    final score = _evaluationData!['score'] ?? 0;
+    final score =
+        _evaluationData!['globalScore'] ?? _evaluationData!['score'] ?? 0;
     final scoreRatio = score / 100.0;
     final emoState = _evaluationData!['emotionalState'] ?? 'Neutre';
     final analysis = _evaluationData!['analysis'] ?? {};

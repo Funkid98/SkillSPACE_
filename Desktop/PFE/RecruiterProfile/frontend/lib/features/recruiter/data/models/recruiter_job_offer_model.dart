@@ -29,7 +29,11 @@ class RecruiterJobOffer {
       recruiter: json['recruiter'] ?? '',
       title: json['title'] ?? '',
       location: json['location'] ?? '',
-      type: (json['type'] == 'Full-time' ? 'CDI' : (json['type'] == 'Part-time' || json['type'] == 'Contract' ? 'CDD' : (json['type'] ?? 'CDI'))),
+      type: (json['type'] == 'Full-time'
+          ? 'CDI'
+          : (json['type'] == 'Part-time' || json['type'] == 'Contract'
+              ? 'CDD'
+              : (json['type'] ?? 'CDI'))),
       status: 'Active',
       description: json['description'] ?? '',
       requirements: List<String>.from(json['requirements'] ?? []),
@@ -47,6 +51,7 @@ class RecruiterJobOffer {
       'requirements': requirements,
     };
   }
+
   RecruiterJobOffer copyWith({
     String? id,
     String? title,
@@ -135,8 +140,14 @@ class CandidateMatch {
 
   factory CandidateMatch.fromJson(Map<String, dynamic> json) {
     final name = json['name'] ?? 'Candidat';
-    final initials = json['initials'] ?? name.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase();
-    
+    final initials = json['initials'] ??
+        name
+            .split(' ')
+            .map((e) => e.isNotEmpty ? e[0] : '')
+            .take(2)
+            .join()
+            .toUpperCase();
+
     return CandidateMatch(
       id: json['_id'] ?? json['id'] ?? '',
       name: name,
@@ -153,6 +164,7 @@ class CandidateMatch {
     );
   }
 }
+
 class RecruiterOfferWithCandidates {
   final RecruiterJobOffer offer;
   final List<CandidateMatch> candidates;

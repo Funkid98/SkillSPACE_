@@ -33,6 +33,12 @@ class _FormationsScreenState extends State<FormationsScreen> {
     if (data != null) {
       setState(() {
         _formations = data.formations;
+        // Sort: active (0) > fermée (1) > terminé (2)
+        _formations.sort((a, b) {
+          int rankA = a.status == 'active' ? 0 : (a.status == 'fermée' ? 1 : 2);
+          int rankB = b.status == 'active' ? 0 : (b.status == 'fermée' ? 1 : 2);
+          return rankA.compareTo(rankB);
+        });
         _isLoading = false;
       });
     } else {
@@ -89,8 +95,31 @@ class _FormationsScreenState extends State<FormationsScreen> {
                     children: _formations
                         .map((f) => FormationCard(
                               formation: f,
-                              width:
-                                  380, // Slightly wider for a grid feel on desktop
+                              width: 380,
+                              onEdit: () {
+                                // existing logic (not implemented here yet)
+                              },
+                              onDelete: () async {
+                                if (f.id != null) {
+                                  final success = await _dashboardService
+                                      .deleteFormation(f.id!);
+                                  if (success) _loadFormations();
+                                }
+                              },
+                              onClose: () async {
+                                if (f.id != null) {
+                                  final updated = await _dashboardService
+                                      .closeFormation(f.id!);
+                                  if (updated != null) _loadFormations();
+                                }
+                              },
+                              onTerminate: () async {
+                                if (f.id != null) {
+                                  final updated = await _dashboardService
+                                      .terminateFormation(f.id!);
+                                  if (updated != null) _loadFormations();
+                                }
+                              },
                             ))
                         .toList(),
                   ),

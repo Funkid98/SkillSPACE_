@@ -189,7 +189,8 @@ class _ProfileContent extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (CookieService.getString('auth_provider') != 'google' && CookieService.getString('auth_provider') != 'github') ...[
+                if (CookieService.getString('auth_provider') != 'google' &&
+                    CookieService.getString('auth_provider') != 'github') ...[
                   const SizedBox(width: 16),
                   Expanded(
                     child: Container(

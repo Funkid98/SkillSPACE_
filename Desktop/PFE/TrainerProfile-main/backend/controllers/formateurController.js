@@ -589,13 +589,9 @@ const validateUrl = async (req, res) => {
 const createFormation = async (req, res) => {
   try {
     const { userId } = req.params;
-    console.log(`[CreateFormation] Request for User: ${userId}`);
-    console.log(`[CreateFormation] Body:`, JSON.stringify(req.body, null, 2));
-
     const formateur = await Formateur.findById(userId);
 
     if (!formateur) {
-      console.error(`[CreateFormation] Trainer ${userId} not found`);
       return res.status(404).json({ message: 'Profil formateur non trouvé' });
     }
 
@@ -645,10 +641,8 @@ const createFormation = async (req, res) => {
     const newFormation = new Formation(formationData);
 
     const saved = await newFormation.save();
-    console.log(`[CreateFormation] Success: ${saved._id}`);
     res.status(201).json(saved);
   } catch (error) {
-    console.error(`[CreateFormation] Error:`, error);
     res.status(500).json({
       message: 'Erreur lors de la création de la formation',
       error: error.message,
@@ -735,7 +729,8 @@ const enhanceFormation = async (req, res) => {
 const getAllFormations = async (req, res) => {
   try {
     const { query, level } = req.query;
-    let filter = {};
+    // Only recommend formations that are actively open for enrollment
+    let filter = { status: 'active' };
 
     if (query) {
       const regexQuery = new RegExp(query, 'i');
@@ -757,10 +752,12 @@ const getAllFormations = async (req, res) => {
 
     res.status(200).json(formations);
   } catch (error) {
-    console.error('Error fetching all formations:', error);
     res.status(500).json({ message: 'Erreur lors de la récupération des formations', error: error.message });
   }
 };
+
+// @desc    Get a formation by ID
+// @route   GET /api/formateur/formations/item/:id
 const getFormationById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -773,6 +770,9 @@ const getFormationById = async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de la récupération', error: error.message });
   }
 };
+
+// @desc    Enroll a student in a formation
+// @route   POST /api/formateur/formations/item/:id/enroll
 const enrollFormation = async (req, res) => {
   try {
     const { id } = req.params;
@@ -797,6 +797,9 @@ const enrollFormation = async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de l\'inscription', error: error.message });
   }
 };
+
+// @desc    Leave a formation
+// @route   POST /api/formateur/formations/item/:id/leave
 const leaveFormation = async (req, res) => {
   try {
     const { id } = req.params;
@@ -820,11 +823,13 @@ const leaveFormation = async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de la désinscription', error: error.message });
   }
 };
+
+// @desc    Update a formation rating
+// @route   POST /api/formateur/formations/item/:id/review
 const updateFormationRating = async (req, res) => {
   try {
     const { id } = req.params;
     const { rating, review, studentName } = req.body;
-    console.log(`[RatingUpdate] ID: ${id}, Rating: ${rating}, Student: ${studentName}`);
 
     const formation = await Formation.findById(id);
     if (!formation) {
@@ -903,6 +908,27 @@ const terminateFormation = async (req, res) => {
     res.status(200).json({ message: 'Formation terminée avec succès', formation: updated });
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la clôture de la formation', error: error.message });
+  }
+};
+
+// @desc    Close a formation (mark as fermée - no new enrollments)
+// @route   POST /api/formateur/formations/item/:id/close
+const closeFormation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updated = await Formation.findByIdAndUpdate(
+      id,
+      { status: 'fermée' },
+      { returnDocument: 'after' }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Formation non trouvée' });
+    }
+
+    res.status(200).json({ message: 'Formation fermée avec succès', formation: updated });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la fermeture de la formation', error: error.message });
   }
 };
 
@@ -1037,6 +1063,8 @@ const deleteFormateurAccount = async (req, res) => {
   }
 };
 
+// @desc    Re-authenticate via Google for account deletion
+// @route   POST /api/formateur/profile/google-reauth/:userId
 const googleReauth = async (req, res) => {
     return deleteFormateurAccount(req, res);
 };
@@ -1046,6 +1074,6 @@ module.exports = {
   getAllFormations, seedDummyData, suggestExpertise, generateBio, validateUrl,
   createFormation, updateFormation, deleteFormation, enhanceFormation,
   register, login, verifySignupOtp, checkEmailExists, enrollFormation, leaveFormation, 
-  getFormationById, updateFormationRating, terminateFormation, rateStudent,
+  getFormationById, updateFormationRating, terminateFormation, closeFormation, rateStudent,
   setOtp, verifyOtp, resetPassword, deleteFormateurAccount, googleReauth
 };

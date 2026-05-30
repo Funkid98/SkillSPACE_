@@ -6,7 +6,8 @@ class RecruiterLocalizations {
   RecruiterLocalizations(this.locale);
 
   static RecruiterLocalizations of(BuildContext context) {
-    return Localizations.of<RecruiterLocalizations>(context, RecruiterLocalizations)!;
+    return Localizations.of<RecruiterLocalizations>(
+        context, RecruiterLocalizations)!;
   }
 
   static const _localizedValues = {
@@ -761,7 +762,8 @@ class RecruiterLocalizations {
   String get requiredField => translate('required_field');
 }
 
-class RecruiterLocalizationsDelegate extends LocalizationsDelegate<RecruiterLocalizations> {
+class RecruiterLocalizationsDelegate
+    extends LocalizationsDelegate<RecruiterLocalizations> {
   const RecruiterLocalizationsDelegate();
 
   @override

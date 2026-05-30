@@ -12,6 +12,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   ProfileCubit({this.initialUserData}) : super(ProfileInitial());
 
   Future<void> loadProfile() async {
+    if (isClosed) return;
     emit(ProfileLoading());
     try {
       // ProfileService.getProfile() uses ApiClient (BrowserClient + withCredentials)
@@ -20,9 +21,11 @@ class ProfileCubit extends Cubit<ProfileState> {
       final merged = initialUserData != null
           ? _mergeInitialData(data, initialUserData!)
           : data;
+      if (isClosed) return;
       emit(ProfileLoaded(merged, isSaved: true));
     } catch (e) {
       if (kDebugMode) print('Error loading profile: $e');
+      if (isClosed) return;
       emit(ProfileError('Erreur de chargement du profil'));
     }
   }

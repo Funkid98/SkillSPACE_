@@ -7,9 +7,9 @@ import '../../../../core/utils/app_toast.dart';
 class ChangePasswordDialog extends StatefulWidget {
   final String email;
   final String apiUrl; // e.g. 'http://localhost:8088/api/auth'
-  
+
   const ChangePasswordDialog({
-    super.key, 
+    super.key,
     required this.email,
     this.apiUrl = 'http://localhost:8088/api/auth',
   });
@@ -46,7 +46,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': widget.email}),
       );
-      
+
       if (res.statusCode == 200 || res.statusCode == 201) {
         setState(() {
           _step = 1;
@@ -75,7 +75,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': widget.email, 'otp': _otp}),
       );
-      
+
       if (res.statusCode == 200 || res.statusCode == 201) {
         setState(() {
           _step = 2;
@@ -108,9 +108,10 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
       final res = await http.post(
         Uri.parse('${widget.apiUrl}/reset-password'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': widget.email, 'otp': _otp, 'newPassword': pass}),
+        body: jsonEncode(
+            {'email': widget.email, 'otp': _otp, 'newPassword': pass}),
       );
-      
+
       if (res.statusCode == 200 || res.statusCode == 201) {
         AppToast.showSuccess(context, 'Mot de passe mis à jour avec succès');
         Navigator.pop(context);
@@ -134,7 +135,11 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(
-        _step == 0 ? 'Envoi du code...' : _step == 1 ? 'Vérification' : 'Nouveau mot de passe',
+        _step == 0
+            ? 'Envoi du code...'
+            : _step == 1
+                ? 'Vérification'
+                : 'Nouveau mot de passe',
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
       content: SizedBox(
@@ -145,19 +150,24 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
             if (_isLoading)
               const Padding(
                 padding: EdgeInsets.all(20.0),
-                child: Center(child: CircularProgressIndicator(color: AppColors.orange)),
+                child: Center(
+                    child: CircularProgressIndicator(color: AppColors.orange)),
               ),
             if (!_isLoading && _step == 1) ...[
-              const Text('Un code de vérification a été envoyé à votre adresse email.', textAlign: TextAlign.center),
+              const Text(
+                  'Un code de vérification a été envoyé à votre adresse email.',
+                  textAlign: TextAlign.center),
               const SizedBox(height: 20),
               TextField(
                 keyboardType: TextInputType.number,
                 maxLength: 4,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 decoration: InputDecoration(
                   hintText: '0000',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
                 onChanged: (val) {
                   _otp = val;
@@ -173,7 +183,8 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                 obscureText: true,
                 decoration: InputDecoration(
                   labelText: 'Nouveau mot de passe',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -182,7 +193,8 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                 obscureText: true,
                 decoration: InputDecoration(
                   labelText: 'Confirmer le mot de passe',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
               ),
             ]
@@ -199,9 +211,11 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
             onPressed: _resetPassword,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.navy,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text('Mettre à jour', style: TextStyle(color: Colors.white)),
+            child: const Text('Mettre à jour',
+                style: TextStyle(color: Colors.white)),
           ),
       ],
     );

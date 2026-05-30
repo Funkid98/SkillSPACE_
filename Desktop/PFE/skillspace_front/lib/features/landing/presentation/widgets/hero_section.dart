@@ -40,7 +40,8 @@ class HeroSection extends StatelessWidget {
           : Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(flex: 5, child: _HeroText(onDiscoverTap: onDiscoverTap)),
+                Expanded(
+                    flex: 5, child: _HeroText(onDiscoverTap: onDiscoverTap)),
                 const SizedBox(width: 48),
                 Expanded(flex: 5, child: _HeroImage()),
               ],
@@ -84,7 +85,8 @@ class _HeroText extends StatelessWidget {
             textAlign: align,
             text: TextSpan(
               style: AppTextStyles.heroTitleLight.copyWith(
-                fontSize: isMobile ? 36 : (Responsive.isTablet(context) ? 48 : 60),
+                fontSize:
+                    isMobile ? 36 : (Responsive.isTablet(context) ? 48 : 60),
               ),
               children: [
                 TextSpan(text: l10n.heroTitle1),
@@ -527,6 +529,7 @@ class _SatisfactionBadgeState extends State<_SatisfactionBadge>
       );
     });
   }
+
   @override
   void initState() {
     super.initState();
@@ -575,8 +578,8 @@ class _SatisfactionBadgeState extends State<_SatisfactionBadge>
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutBack,
-        transform: Matrix4.translationValues(
-            _runAwayOffset.dx, _runAwayOffset.dy, 0),
+        transform:
+            Matrix4.translationValues(_runAwayOffset.dx, _runAwayOffset.dy, 0),
         child: GlassmorphicContainer(
           width: 120,
           height: 80,

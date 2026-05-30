@@ -8,6 +8,8 @@ import '../../../../core/app_colors.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../shared/widgets/animated_reveal.dart';
+import '../cubits/recruiter_profile_cubit.dart';
+import '../../data/models/company_profile_model.dart';
 
 class RecruiterOffersPage extends StatelessWidget {
   const RecruiterOffersPage({super.key});
@@ -70,7 +72,37 @@ class RecruiterOffersPage extends StatelessWidget {
                   ],
                 ),
                 OutlinedButton.icon(
-                  onPressed: () => _showNewOfferDialog(context, l10n),
+                  onPressed: () {
+                    final profileState =
+                        context.read<RecruiterProfileCubit>().state;
+                    if (profileState is! RecruiterProfileLoaded ||
+                        !_isProfileComplete(profileState.profile)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Row(
+                            children: [
+                              Icon(Icons.warning_amber_rounded,
+                                  color: Colors.white, size: 18),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Veuillez compléter votre profil d\'entreprise avant de publier une offre.',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ],
+                          ),
+                          backgroundColor: AppColors.orange,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          duration: const Duration(seconds: 4),
+                        ),
+                      );
+                      return;
+                    }
+                    _showNewOfferDialog(context, l10n);
+                  },
                   icon: const Icon(Icons.add, size: 18),
                   label: Text(l10n.newOffer),
                   style: OutlinedButton.styleFrom(
@@ -117,6 +149,27 @@ class RecruiterOffersPage extends StatelessWidget {
 
   void _showNewOfferDialog(BuildContext context, RecruiterLocalizations l10n) {
     _showOfferForm(context, l10n);
+  }
+
+  bool _isProfileComplete(CompanyProfile profile) {
+    final websiteValid = () {
+      if (profile.siteWeb.isEmpty) return false;
+      final uri = Uri.tryParse(profile.siteWeb);
+      return uri != null &&
+          uri.hasScheme &&
+          (uri.scheme == 'http' || uri.scheme == 'https') &&
+          uri.hasAuthority &&
+          uri.host.isNotEmpty &&
+          uri.host.contains('.');
+    }();
+
+    return profile.entreprise.isNotEmpty &&
+        profile.taille.isNotEmpty &&
+        profile.secteur.isNotEmpty &&
+        profile.anneeCreation > 0 &&
+        websiteValid &&
+        profile.localisation.isNotEmpty &&
+        profile.logoUrl.isNotEmpty;
   }
 
   void _showOfferForm(BuildContext context, RecruiterLocalizations l10n,

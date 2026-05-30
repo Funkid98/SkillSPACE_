@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 const {
   register,
@@ -12,27 +12,27 @@ const {
   githubSignIn,
   checkEmailExists,
   verifySignupOtp,
-} = require('../controllers/authController');
+} = require("../controllers/authController");
 
-const { protect } = require('../middleware/authMiddleware');
+const { protect } = require("../middleware/authMiddleware");
 
 // ── Public routes ─────────────────────────────────────────────────────────────
-router.get('/exists/:email', checkEmailExists);
-router.post('/register', register);
-router.post('/verify-signup', verifySignupOtp);
-router.post('/login', login);
-router.post('/forgot-password', forgotPassword);
-router.post('/verify-otp', verifyOtp);
-router.post('/reset-password', resetPassword);
+router.get("/exists/:email", checkEmailExists);
+router.post("/register", register);
+router.post("/verify-signup", verifySignupOtp);
+router.post("/login", login);
+router.post("/forgot-password", forgotPassword);
+router.post("/verify-otp", verifyOtp);
+router.post("/reset-password", resetPassword);
 
 // ── OAuth routes ──────────────────────────────────────────────────────────────
-router.post('/google', googleSignIn);
-router.post('/github', githubSignIn);
+router.post("/google", googleSignIn);
+router.post("/github", githubSignIn);
 
 // GitHub OAuth browser callback — shows code to the user
-router.get('/github/callback', async (req, res) => {
+router.get("/github/callback", async (req, res) => {
   const { code } = req.query;
-  if (!code) return res.status(400).send('<h2>❌ Erreur: code manquant</h2>');
+  if (!code) return res.status(400).send("<h2>❌ Erreur: code manquant</h2>");
 
   res.send(`
     <!DOCTYPE html>
@@ -64,7 +64,7 @@ router.get('/github/callback', async (req, res) => {
 // ── Protected routes ──────────────────────────────────────────────────────────
 // GET  /api/auth/me      — session restore; Flutter calls this on startup
 // POST /api/auth/logout  — clears the HttpOnly cookie
-router.get('/me', protect, getMe);
-router.post('/logout', logout);   // no protect needed — just clears the cookie
+router.get("/me", protect, getMe);
+router.post("/logout", logout); // no protect needed — just clears the cookie
 
 module.exports = router;

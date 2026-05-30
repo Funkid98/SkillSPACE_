@@ -33,22 +33,23 @@ class JobOffersCubit extends Cubit<JobOffersState> {
         _pollingTimer?.cancel();
         return;
       }
-      
+
       if (state is JobOffersLoaded) {
         final current = state as JobOffersLoaded;
         final hasAnalysing = _allOffers.any((o) => o.status == 'ANALYSING');
-        
+
         if (hasAnalysing) {
-           try {
-             final freshOffers = await JobOffer.fetchAll();
-             if (isClosed) return;
-             
-             // Check if we actually got valid data before updating
-             if (freshOffers.isNotEmpty) {
-                 _allOffers = freshOffers;
-                 _applyFilters(current.searchQuery, current.selectedContract, freshOffers);
-             }
-           } catch (_) {}
+          try {
+            final freshOffers = await JobOffer.fetchAll();
+            if (isClosed) return;
+
+            // Check if we actually got valid data before updating
+            if (freshOffers.isNotEmpty) {
+              _allOffers = freshOffers;
+              _applyFilters(
+                  current.searchQuery, current.selectedContract, freshOffers);
+            }
+          } catch (_) {}
         } else {
           _pollingTimer?.cancel();
         }

@@ -8,6 +8,7 @@ class FormationCard extends StatefulWidget {
   final FormationModel formation;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onClose;
   final VoidCallback? onTerminate;
   final Function(String studentId, double rating)? onRateStudent;
   final double width;
@@ -17,6 +18,7 @@ class FormationCard extends StatefulWidget {
     required this.formation,
     this.onEdit,
     this.onDelete,
+    this.onClose,
     this.onTerminate,
     this.onRateStudent,
     this.width = 340,
@@ -33,6 +35,7 @@ class _FormationCardState extends State<FormationCard> {
   Widget build(BuildContext context) {
     final isDark = ReactiveMode.isDarkMode(context);
     final isTerminated = widget.formation.status == 'terminé';
+    final isClosed = widget.formation.status == 'fermée';
 
     return MouseRegion(
         onEnter: (_) => setState(() => _isHovered = true),
@@ -99,18 +102,20 @@ class _FormationCardState extends State<FormationCard> {
                         right: 16,
                         child: Row(
                           children: [
-                            if (isTerminated)
+                            if (isTerminated || isClosed)
                               Container(
                                 margin: const EdgeInsets.only(right: 8),
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.green.withOpacity(0.9),
+                                  color: isTerminated
+                                      ? Colors.green.withOpacity(0.9)
+                                      : Colors.orange.withOpacity(0.9),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Text(
-                                  'TERMINÉ',
-                                  style: TextStyle(
+                                child: Text(
+                                  isTerminated ? 'TERMINÉ' : 'FERMÉE',
+                                  style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold),
@@ -154,10 +159,14 @@ class _FormationCardState extends State<FormationCard> {
                           child: Icon(
                               isTerminated
                                   ? Icons.check_circle_outline
-                                  : Icons.school_outlined,
+                                  : (isClosed
+                                      ? Icons.lock_outline
+                                      : Icons.school_outlined),
                               color: isTerminated
                                   ? Colors.green
-                                  : const Color(0xFFF97316),
+                                  : (isClosed
+                                      ? Colors.orange
+                                      : const Color(0xFFF97316)),
                               size: 28),
                         ),
                       ),
@@ -284,63 +293,85 @@ class _FormationCardState extends State<FormationCard> {
                         if (!isTerminated) ...[
                           Row(
                             children: [
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: widget.onEdit,
-                                  icon:
-                                      const Icon(Icons.edit_outlined, size: 16),
-                                  label: const Text('Modifier'),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: isDark
-                                        ? Colors.white
-                                        : const Color(0xFF1E293B),
-                                    side: BorderSide(
-                                        color: isDark
-                                            ? Colors.white24
-                                            : Colors.grey[200]!),
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(12)),
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 12),
+                              if (!isClosed) ...[
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: widget.onEdit,
+                                    icon: const Icon(Icons.edit_outlined,
+                                        size: 16),
+                                    label: const Text('Modifier'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: isDark
+                                          ? Colors.white
+                                          : const Color(0xFF1E293B),
+                                      side: BorderSide(
+                                          color: isDark
+                                              ? Colors.white24
+                                              : Colors.grey[200]!),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12)),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12),
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: widget.onTerminate,
-                                  icon: const Icon(Icons.check_circle_outline,
-                                      size: 16),
-                                  label: const Text('Terminer'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
-                                    foregroundColor: Colors.white,
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(12)),
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 12),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: widget.onClose,
+                                    icon: const Icon(Icons.lock_outline,
+                                        size: 16),
+                                    label: const Text('Fermer'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.orange,
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12)),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12),
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              InkWell(
-                                onTap: widget.onDelete,
-                                borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? Colors.red.withOpacity(0.1)
-                                        : const Color(0xFFFEF2F2),
-                                    borderRadius: BorderRadius.circular(12),
+                                const SizedBox(width: 8),
+                              ],
+                              if (isClosed)
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: widget.onTerminate,
+                                    icon: const Icon(Icons.check_circle_outline,
+                                        size: 16),
+                                    label: const Text('Terminer la formation'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12)),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12),
+                                    ),
                                   ),
-                                  child: const Icon(Icons.delete_outline,
-                                      color: Color(0xFFEF4444), size: 20),
                                 ),
-                              ),
+                              if (!isClosed)
+                                InkWell(
+                                  onTap: widget.onDelete,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? Colors.red.withOpacity(0.1)
+                                          : const Color(0xFFFEF2F2),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(Icons.delete_outline,
+                                        color: Color(0xFFEF4444), size: 20),
+                                  ),
+                                ),
                             ],
                           ),
                         ] else ...[

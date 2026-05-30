@@ -150,8 +150,9 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
                 icon: Icons.calendar_today_rounded,
                 onTap: _selectDate,
                 isDark: isDark,
-                validator: (val) =>
-                    val == null || val.isEmpty ? 'Veuillez choisir une date' : null,
+                validator: (val) => val == null || val.isEmpty
+                    ? 'Veuillez choisir une date'
+                    : null,
               ),
               const SizedBox(height: 16),
               _buildPickerField(
@@ -161,8 +162,9 @@ class _SchedulingDialogState extends State<SchedulingDialog> {
                 icon: Icons.access_time_rounded,
                 onTap: _selectTime,
                 isDark: isDark,
-                validator: (val) =>
-                    val == null || val.isEmpty ? 'Veuillez choisir l\'heure' : null,
+                validator: (val) => val == null || val.isEmpty
+                    ? 'Veuillez choisir l\'heure'
+                    : null,
               ),
               const SizedBox(height: 16),
               _buildTextField(

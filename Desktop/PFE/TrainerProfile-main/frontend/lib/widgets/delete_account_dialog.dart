@@ -98,8 +98,8 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
             if (_isLoading)
               const Padding(
                 padding: EdgeInsets.all(20.0),
-                child: Center(
-                    child: CircularProgressIndicator(color: Colors.red)),
+                child:
+                    Center(child: CircularProgressIndicator(color: Colors.red)),
               )
             else ...[
               const Text(
@@ -132,8 +132,8 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
                 ),
                 label: const Text('Vérifier avec Google'),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 12, horizontal: 20),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),
                 ),
@@ -146,8 +146,7 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
         if (!_isLoading)
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child:
-                const Text('Annuler', style: TextStyle(color: Colors.grey)),
+            child: const Text('Annuler', style: TextStyle(color: Colors.grey)),
           ),
         if (!_isLoading)
           ElevatedButton(

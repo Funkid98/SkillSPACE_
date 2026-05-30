@@ -31,7 +31,7 @@ class ApiClient {
   Future<http.Response> post(String endpoint, Map<String, dynamic> body) async {
     final url = Uri.parse('${_getBaseUrl(endpoint)}$endpoint');
     try {
-      final response = await _client.post(url, headers: _headers(), body: jsonEncode(body));
+      final response = await _client.post(url, headers: _headers(), body: jsonEncode(body)).timeout(const Duration(seconds: 10));
       return _handleResponse(response);
     } catch (e) {
       throw Exception('Erreur de connexion réseau: $e');
@@ -41,7 +41,7 @@ class ApiClient {
   Future<http.Response> put(String endpoint, Map<String, dynamic> body) async {
     final url = Uri.parse('${_getBaseUrl(endpoint)}$endpoint');
     try {
-      final response = await _client.put(url, headers: _headers(), body: jsonEncode(body));
+      final response = await _client.put(url, headers: _headers(), body: jsonEncode(body)).timeout(const Duration(seconds: 10));
       return _handleResponse(response);
     } catch (e) {
       throw Exception('Erreur de connexion réseau: $e');
@@ -51,7 +51,7 @@ class ApiClient {
   Future<http.Response> get(String endpoint) async {
     final url = Uri.parse('${_getBaseUrl(endpoint)}$endpoint');
     try {
-      final response = await _client.get(url, headers: _headers());
+      final response = await _client.get(url, headers: _headers()).timeout(const Duration(seconds: 10));
       return _handleResponse(response);
     } catch (e) {
       throw Exception('Erreur de connexion réseau: $e');
@@ -61,7 +61,7 @@ class ApiClient {
   Future<http.Response> delete(String endpoint, {Map<String, dynamic>? body}) async {
     final url = Uri.parse('${_getBaseUrl(endpoint)}$endpoint');
     try {
-      final response = await _client.delete(url, headers: _headers(), body: body != null ? jsonEncode(body) : null);
+      final response = await _client.delete(url, headers: _headers(), body: body != null ? jsonEncode(body) : null).timeout(const Duration(seconds: 10));
       return _handleResponse(response);
     } catch (e) {
       throw Exception('Erreur de connexion réseau: $e');
@@ -82,7 +82,7 @@ class ApiClient {
         ..files.add(http.MultipartFile.fromBytes(fieldName, bytes, filename: filename));
 
       // Re-use withCredentials by sending through BrowserClient
-      final streamedResponse = await _client.send(request);
+      final streamedResponse = await _client.send(request).timeout(const Duration(seconds: 60));
       final response = await http.Response.fromStream(streamedResponse);
       return _handleResponse(response);
     } catch (e) {

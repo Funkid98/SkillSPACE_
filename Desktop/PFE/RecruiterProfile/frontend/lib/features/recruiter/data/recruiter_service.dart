@@ -95,11 +95,14 @@ class RecruiterService {
             value: totalApplications.toString(),
             change: '+0 cette semaine',
             isPositive: true,
-            iconKey: 'vues', // Keeping 'vues' icon for continuity but changing label
+            iconKey:
+                'vues', // Keeping 'vues' icon for continuity but changing label
           ),
           RecruiterStat(
             label: 'Taux de conversion',
-            value: totalApplications > 0 ? '${((totalApplications / activeOffersCount) * 10).toStringAsFixed(1)}%' : '0%',
+            value: totalApplications > 0
+                ? '${((totalApplications / activeOffersCount) * 10).toStringAsFixed(1)}%'
+                : '0%',
             change: '+0% ce mois',
             isPositive: true,
             iconKey: 'conversion',

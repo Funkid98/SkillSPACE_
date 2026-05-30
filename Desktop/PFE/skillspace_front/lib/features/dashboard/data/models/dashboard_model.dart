@@ -68,8 +68,6 @@ class UpcomingInterview {
   });
 }
 
-
-
 class DashboardData {
   final String userName;
   final DashboardStats stats;
@@ -79,7 +77,6 @@ class DashboardData {
   final int profileViewsCount;
   final int profileViewsPercentChange;
   final String coachAdvice;
-
 
   const DashboardData({
     required this.userName,
@@ -106,7 +103,8 @@ class DashboardData {
     // Extract real user data
     final prenom = data['prenom'] ?? '';
     final nom = data['nom'] ?? '';
-    final userName = prenom.isNotEmpty ? prenom : (nom.isNotEmpty ? nom : 'Candidat');
+    final userName =
+        prenom.isNotEmpty ? prenom : (nom.isNotEmpty ? nom : 'Candidat');
     final completionPercent = data['completion_percent'] ?? 30;
 
     // Map skills from backend ({name, percent} objects)
@@ -131,22 +129,31 @@ class DashboardData {
       final offersRes = await apiClient.get('/candidat/matching-offers');
       if (offersRes.statusCode == 200) {
         final List offersData = jsonDecode(offersRes.body);
-        
-        final highMatchOffers = offersData.where((o) => ((o['compatibilityPercent'] as num?)?.round() ?? 0) >= 80).toList();
+
+        final highMatchOffers = offersData
+            .where((o) =>
+                ((o['compatibilityPercent'] as num?)?.round() ?? 0) >= 80)
+            .toList();
         offresMatcheesReal = highMatchOffers.length;
-        
+
         hasAnalysing = offersData.any((o) => o['status'] == 'ANALYSING');
 
         // Sort by match score descending to show best offers first
-        offersData.sort((a, b) => ((b['compatibilityPercent'] as num?)?.round() ?? 0).compareTo((a['compatibilityPercent'] as num?)?.round() ?? 0));
+        offersData.sort((a, b) =>
+            ((b['compatibilityPercent'] as num?)?.round() ?? 0)
+                .compareTo((a['compatibilityPercent'] as num?)?.round() ?? 0));
 
-        realOffers = offersData.take(4).map((o) => RecentOffer(
-          title: o['title'] ?? 'Sans titre',
-          company: o['company'] ?? 'Non spécifié',
-          city: o['location'] ?? 'Remote',
-          compatibilityPercent: (o['compatibilityPercent'] as num?)?.round() ?? 0,
-          status: o['status'] ?? 'COMPLETED',
-        )).toList();
+        realOffers = offersData
+            .take(4)
+            .map((o) => RecentOffer(
+                  title: o['title'] ?? 'Sans titre',
+                  company: o['company'] ?? 'Non spécifié',
+                  city: o['location'] ?? 'Remote',
+                  compatibilityPercent:
+                      (o['compatibilityPercent'] as num?)?.round() ?? 0,
+                  status: o['status'] ?? 'COMPLETED',
+                ))
+            .toList();
       }
     } catch (_) {}
 
@@ -163,7 +170,9 @@ class DashboardData {
             company: i['company'] ?? 'Entreprise',
             rawDate: i['interviewDate'] ?? 'Date à définir',
             rawTime: i['interviewTime'] ?? 'Heure à définir',
-            format: status == 'INTERVIEW_PLANNED' ? 'Entretien en direct' : 'Simulation IA',
+            format: status == 'INTERVIEW_PLANNED'
+                ? 'Entretien en direct'
+                : 'Simulation IA',
             meetingLink: i['meetingLink'],
             applicationStatus: status,
           );
@@ -172,8 +181,8 @@ class DashboardData {
     } catch (_) {}
 
     // Fetch Coach Advice
-    String realCoachAdvice = 'Analysez votre profil pour obtenir des conseils personnalisés.';
-
+    String realCoachAdvice =
+        'Analysez votre profil pour obtenir des conseils personnalisés.';
 
     try {
       final coachRes = await apiClient.get('/candidat/coach-advice');
@@ -201,7 +210,9 @@ class DashboardData {
       recentOffers: realOffers,
       skills: skills,
       upcomingInterviews: realInterviews,
-      profileViewsCount: hasAnalysing ? -1 : 0, // Hack to pass analysing state to Cubit without rewriting whole model
+      profileViewsCount: hasAnalysing
+          ? -1
+          : 0, // Hack to pass analysing state to Cubit without rewriting whole model
       profileViewsPercentChange: 0,
       coachAdvice: realCoachAdvice,
     );

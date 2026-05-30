@@ -60,7 +60,6 @@ class FormateurService {
     }
   }
 
-
   Future<List<String>> suggestExpertise(
       String query, List<String> existing) async {
     try {
@@ -120,7 +119,8 @@ class FormateurService {
     }
   }
 
-  Future<void> deleteAccount(String userId, {String? password, String? googleToken}) async {
+  Future<void> deleteAccount(String userId,
+      {String? password, String? googleToken}) async {
     final requestBody = <String, dynamic>{};
     if (password != null) requestBody['password'] = password;
     if (googleToken != null) requestBody['googleToken'] = googleToken;
@@ -133,7 +133,9 @@ class FormateurService {
 
     if (response.statusCode != 200 && response.statusCode != 201) {
       final body = json.decode(response.body);
-      throw Exception(body['message'] ?? body['error'] ?? 'Échec de la suppression du compte');
+      throw Exception(body['message'] ??
+          body['error'] ??
+          'Échec de la suppression du compte');
     }
   }
 }

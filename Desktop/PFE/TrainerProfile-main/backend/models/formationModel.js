@@ -31,7 +31,7 @@ const formationSchema = new mongoose.Schema({
   time: { type: String, required: true },
   status: {
     type: String,
-    enum: ['active', 'terminé'],
+    enum: ['active', 'fermée', 'terminé'],
     default: 'active'
   },
 }, {

@@ -1,4 +1,4 @@
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 
 // Lazy transporter — only created when GMAIL_USER & GMAIL_PASS are set
 let _transporter = null;
@@ -6,7 +6,7 @@ const getTransporter = () => {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) return null;
   if (!_transporter) {
     _transporter = nodemailer.createTransport({
-      service: 'gmail',
+      service: "gmail",
       auth: {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_PASS,
@@ -20,7 +20,7 @@ const sendOtpEmail = async (toEmail, otp) => {
   const mailOptions = {
     from: `"SkillSpace" <${process.env.GMAIL_FROM}>`,
     to: toEmail,
-    subject: ' Code de réinitialisation SkillSpace',
+    subject: " Code de réinitialisation SkillSpace",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 32px; background: #f5f3ee; border-radius: 16px;">
         <div style="text-align: center; margin-bottom: 24px;">
@@ -39,7 +39,10 @@ const sendOtpEmail = async (toEmail, otp) => {
   };
 
   const transporter = getTransporter();
-  if (!transporter) { console.warn('[Email] GMAIL_USER/GMAIL_PASS not set — skipping OTP email.'); return; }
+  if (!transporter) {
+    console.warn("[Email] GMAIL_USER/GMAIL_PASS not set — skipping OTP email.");
+    return;
+  }
   await transporter.sendMail(mailOptions);
 };
 
@@ -47,7 +50,7 @@ const sendVerificationEmail = async (toEmail, otp) => {
   const mailOptions = {
     from: `"SkillSpace" <${process.env.GMAIL_FROM}>`,
     to: toEmail,
-    subject: ' Vérifiez votre compte SkillSpace',
+    subject: " Vérifiez votre compte SkillSpace",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 32px; background: #f5f3ee; border-radius: 16px;">
         <div style="text-align: center; margin-bottom: 24px;">
@@ -66,7 +69,12 @@ const sendVerificationEmail = async (toEmail, otp) => {
   };
 
   const transporter = getTransporter();
-  if (!transporter) { console.warn('[Email] GMAIL_USER/GMAIL_PASS not set — skipping verification email.'); return; }
+  if (!transporter) {
+    console.warn(
+      "[Email] GMAIL_USER/GMAIL_PASS not set — skipping verification email.",
+    );
+    return;
+  }
   await transporter.sendMail(mailOptions);
 };
 
@@ -74,7 +82,7 @@ const sendLoginSuccessEmail = async (toEmail, firstName) => {
   const mailOptions = {
     from: `"SkillSpace Security" <${process.env.GMAIL_FROM}>`,
     to: toEmail,
-    subject: 'Nouvelle connexion à votre compte SkillSpace',
+    subject: "Nouvelle connexion à votre compte SkillSpace",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 32px; background: #f5f3ee; border-radius: 16px;">
         <div style="text-align: center; margin-bottom: 24px;">
@@ -97,10 +105,15 @@ const sendLoginSuccessEmail = async (toEmail, firstName) => {
 
   try {
     const transporter = getTransporter();
-    if (!transporter) { console.warn('[Email] GMAIL_USER/GMAIL_PASS not set — skipping login notification.'); return; }
+    if (!transporter) {
+      console.warn(
+        "[Email] GMAIL_USER/GMAIL_PASS not set — skipping login notification.",
+      );
+      return;
+    }
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error('Error sending login notification email:', error);
+    console.error("Error sending login notification email:", error);
   }
 };
 

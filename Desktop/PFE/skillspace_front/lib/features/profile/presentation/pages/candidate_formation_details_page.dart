@@ -35,8 +35,8 @@ class _CandidateFormationDetailsPageState
           ? {'aiReason': widget.aiReason!}
           : <String, dynamic>{};
 
-      final response = await _apiClient.post(
-          '/candidat/enroll/$formationId', body);
+      final response =
+          await _apiClient.post('/candidat/enroll/$formationId', body);
 
       if (response.statusCode == 200) {
         if (mounted) {
@@ -90,10 +90,11 @@ class _CandidateFormationDetailsPageState
       appBar: AppBar(
         backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
         elevation: 0,
-        iconTheme: IconThemeData(color: isDark ? Colors.white : AppColors.textDark),
+        iconTheme:
+            IconThemeData(color: isDark ? Colors.white : AppColors.textDark),
         title: Text('Détails de la formation',
             style: TextStyle(
-                color: isDark ? Colors.white : AppColors.textDark, 
+                color: isDark ? Colors.white : AppColors.textDark,
                 fontWeight: FontWeight.bold)),
       ),
       body: SingleChildScrollView(
@@ -105,17 +106,17 @@ class _CandidateFormationDetailsPageState
               width: double.infinity,
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.surfaceDark : Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: isDark ? AppColors.borderDark : AppColors.border),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  )
-                ]
-              ),
+                  color: isDark ? AppColors.surfaceDark : Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                      color: isDark ? AppColors.borderDark : AppColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    )
+                  ]),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -160,15 +161,20 @@ class _CandidateFormationDetailsPageState
                   Row(
                     children: [
                       Icon(Icons.person,
-                          size: 18, color: isDark ? Colors.white60 : AppColors.textGray),
+                          size: 18,
+                          color: isDark ? Colors.white60 : AppColors.textGray),
                       const SizedBox(width: 8),
                       Text('Par $trainer',
                           style: TextStyle(
                               fontSize: 15,
-                              color: isDark ? Colors.white70 : AppColors.textGray,
+                              color:
+                                  isDark ? Colors.white70 : AppColors.textGray,
                               fontWeight: FontWeight.w600)),
                       const SizedBox(width: 16),
-                      Container(width: 1, height: 16, color: isDark ? Colors.white24 : AppColors.border),
+                      Container(
+                          width: 1,
+                          height: 16,
+                          color: isDark ? Colors.white24 : AppColors.border),
                       const SizedBox(width: 16),
                       Row(
                         children: [
@@ -189,7 +195,8 @@ class _CandidateFormationDetailsPageState
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white60 : AppColors.textGray,
+                              color:
+                                  isDark ? Colors.white60 : AppColors.textGray,
                             ),
                           ),
                         ],
@@ -200,12 +207,14 @@ class _CandidateFormationDetailsPageState
                   Row(
                     children: [
                       Icon(Icons.timer,
-                          size: 18, color: isDark ? Colors.white60 : AppColors.textGray),
+                          size: 18,
+                          color: isDark ? Colors.white60 : AppColors.textGray),
                       const SizedBox(width: 8),
                       Text('$duration heures',
                           style: TextStyle(
                               fontSize: 15,
-                              color: isDark ? Colors.white70 : AppColors.textGray,
+                              color:
+                                  isDark ? Colors.white70 : AppColors.textGray,
                               fontWeight: FontWeight.w600)),
                     ],
                   ),
@@ -226,16 +235,21 @@ class _CandidateFormationDetailsPageState
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.white.withOpacity(0.03) : AppColors.navy.withOpacity(0.05),
+                        color: isDark
+                            ? Colors.white.withOpacity(0.03)
+                            : AppColors.navy.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(16),
-                        border:
-                            Border.all(color: isDark ? Colors.white.withOpacity(0.08) : AppColors.navy.withOpacity(0.1)),
+                        border: Border.all(
+                            color: isDark
+                                ? Colors.white.withOpacity(0.08)
+                                : AppColors.navy.withOpacity(0.1)),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Icon(Icons.auto_awesome,
-                              color: isDark ? AppColors.orange : AppColors.navy, size: 24),
+                              color: isDark ? AppColors.orange : AppColors.navy,
+                              size: 24),
                           const SizedBox(width: 16),
                           Expanded(
                             child: Column(
@@ -244,13 +258,17 @@ class _CandidateFormationDetailsPageState
                                 Text('Pourquoi cette formation ?',
                                     style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: isDark ? AppColors.orange : AppColors.navy,
+                                        color: isDark
+                                            ? AppColors.orange
+                                            : AppColors.navy,
                                         fontSize: 16)),
                                 const SizedBox(height: 8),
                                 Text(widget.aiReason!,
                                     style: TextStyle(
                                         fontSize: 14,
-                                        color: isDark ? Colors.white70 : AppColors.textDark,
+                                        color: isDark
+                                            ? Colors.white70
+                                            : AppColors.textDark,
                                         height: 1.5)),
                               ],
                             ),
@@ -280,8 +298,7 @@ class _CandidateFormationDetailsPageState
                                   color: Colors.white, strokeWidth: 2))
                           : const Text('S\'inscrire à la formation',
                               style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold)),
+                                  fontSize: 16, fontWeight: FontWeight.bold)),
                     ),
                   )
                 ],
