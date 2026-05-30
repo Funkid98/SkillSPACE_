@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart' hide Animation;
 import 'package:http/http.dart' as http;
+import '../../../../core/api_constants.dart';
 import 'package:reactive_theme/reactive_theme.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
@@ -160,7 +161,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
     });
     try {
       final response = await http.post(
-        Uri.parse('/api/interview/start'),
+        Uri.parse('${ApiConstants.baseUrl}/api/interview/start'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'role': widget.roleTitle,
@@ -267,7 +268,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
     try {
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse('/api/interview/chat'),
+        Uri.parse('${ApiConstants.baseUrl}/api/interview/chat'),
       );
 
       if (kIsWeb) {
@@ -1088,7 +1089,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
   }
 
   Future<void> _playRecording(String url) async {
-    final fullUrl = url; // relative URL — served via Nginx on same origin
+    final fullUrl = '${ApiConstants.baseUrl}$url';
     try {
       final response = await http.get(Uri.parse(fullUrl));
       if (response.statusCode == 200) {

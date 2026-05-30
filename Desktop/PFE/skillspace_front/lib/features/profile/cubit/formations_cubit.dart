@@ -92,13 +92,15 @@ class FormationsCubit extends Cubit<FormationsState> {
       if (response.statusCode == 200) {
         return true;
       } else {
-        if (previousFormations.isNotEmpty)
+        if (previousFormations.isNotEmpty) {
           emit(FormationsLoaded(previousFormations));
+        }
         return false;
       }
     } catch (_) {
-      if (previousFormations.isNotEmpty)
+      if (previousFormations.isNotEmpty) {
         emit(FormationsLoaded(previousFormations));
+      }
       return false;
     }
   }

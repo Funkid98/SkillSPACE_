@@ -186,25 +186,19 @@ class _FormationsScreenState extends State<FormationsScreen> {
                               width: 380,
                               onEdit: () {},
                               onDelete: () async {
-                                if (f.id != null) {
-                                  final success = await _dashboardService
-                                      .deleteFormation(f.id!);
-                                  if (success) _loadFormations();
-                                }
+                                final success = await _dashboardService
+                                    .deleteFormation(f.id!);
+                                if (success) _loadFormations();
                               },
                               onClose: () async {
-                                if (f.id != null) {
-                                  final updated = await _dashboardService
-                                      .closeFormation(f.id!);
-                                  if (updated != null) _loadFormations();
-                                }
+                                final updated = await _dashboardService
+                                    .closeFormation(f.id!);
+                                if (updated != null) _loadFormations();
                               },
                               onTerminate: () async {
-                                if (f.id != null) {
-                                  final updated = await _dashboardService
-                                      .terminateFormation(f.id!);
-                                  if (updated != null) _loadFormations();
-                                }
+                                final updated = await _dashboardService
+                                    .terminateFormation(f.id!);
+                                if (updated != null) _loadFormations();
                               },
                             ))
                         .toList(),

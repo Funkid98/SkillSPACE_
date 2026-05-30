@@ -353,8 +353,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   Widget _buildNavItem(
-      BuildContext context, int index, String title, IconData icon,
-      {Color? color}) {
+      BuildContext context, int index, String title, IconData icon) {
     bool isDashboardActive = _selectedIndex == 0 || _selectedIndex == 2;
     bool isSelected = false;
 

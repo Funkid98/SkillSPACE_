@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../../../core/api_constants.dart';
 import 'package:reactive_theme/reactive_theme.dart';
 import 'package:pfe/core/network/cookie_service.dart';
 import 'package:intl/intl.dart';
@@ -61,7 +62,7 @@ class _InterviewHistoryModalState extends State<InterviewHistoryModal> {
           'InterviewHistoryModal: Fetching history for candidateId = $candidateId');
 
       final response = await http.get(
-        Uri.parse('/api/interview/history/$candidateId'),
+        Uri.parse('${ApiConstants.baseUrl}/api/interview/history/$candidateId'),
       );
 
       if (response.statusCode == 200) {

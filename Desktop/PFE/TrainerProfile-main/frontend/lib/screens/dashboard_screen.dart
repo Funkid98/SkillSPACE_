@@ -1469,7 +1469,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: const Text('Annuler')),
           TextButton(
             onPressed: () async {
-              await trainerCubit.closeFormation(formation.id!);
+              await trainerCubit.closeFormation(formation.id);
               if (!dialogContext.mounted) return;
               Navigator.pop(dialogContext);
             },

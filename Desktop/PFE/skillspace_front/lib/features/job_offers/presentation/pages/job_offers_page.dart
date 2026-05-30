@@ -10,6 +10,7 @@ import '../../../../shared/widgets/animated_reveal.dart';
 import '../../../../core/utils/responsive.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../../core/api_constants.dart';
 
 class JobOffersPage extends StatelessWidget {
   const JobOffersPage({super.key});
@@ -273,7 +274,7 @@ class _JobCardState extends State<_JobCard> {
     try {
       final response = await http.get(
         Uri.parse(
-            '/api/formateur/formations/item/$formationId'),
+            '${ApiConstants.baseUrl}/api/formateur/formations/item/$formationId'),
       );
 
       if (response.statusCode == 200) {
@@ -315,7 +316,7 @@ class _JobCardState extends State<_JobCard> {
     try {
       final response = await http.get(
         Uri.parse(
-            '/api/formateur/all-formations?query=${Uri.encodeComponent(skillName)}'),
+            '${ApiConstants.baseUrl}/api/formateur/all-formations?query=${Uri.encodeComponent(skillName)}'),
       );
 
       if (response.statusCode == 200) {
@@ -374,7 +375,7 @@ class _JobCardState extends State<_JobCard> {
     setState(() => _isLoadingFormation = true);
     try {
       final response = await http.get(
-        Uri.parse('/api/formateur/all-formations'),
+        Uri.parse('${ApiConstants.baseUrl}/api/formateur/all-formations'),
       );
 
       if (response.statusCode == 200) {

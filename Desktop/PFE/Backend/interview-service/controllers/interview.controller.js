@@ -174,8 +174,8 @@ exports.chatWithAI = async (req, res) => {
           avgPauseMs:
             gaps.length > 0
               ? Math.round(
-                  (gaps.reduce((s, g) => s + g, 0) / gaps.length) * 1000,
-                )
+                (gaps.reduce((s, g) => s + g, 0) / gaps.length) * 1000,
+              )
               : 0,
           longPauses: gaps.filter((g) => g > 0.5).length,
           pauseRate:
@@ -185,7 +185,7 @@ exports.chatWithAI = async (req, res) => {
           avgConfidence: Math.round(
             (words.reduce((s, w) => s + (w.probability || 0), 0) /
               words.length) *
-              100,
+            100,
           ),
         };
       }
@@ -221,23 +221,23 @@ exports.chatWithAI = async (req, res) => {
     // Construct the detailed system prompt
     const systemPrompt = `You are Thomas Lefebvre, an experienced hiring manager conducting a realistic job interview.
 
-**Role & Context:**
-* Position Context: ${roleTitle}
-* Goal: You are recruiting the candidate for the company specified in the Position Context.
-* Candidate level: Junior/Mid-level
+    **Role & Context:**
+    * Position Context: ${roleTitle}
+    * Goal: You are recruiting the candidate for the company specified in the Position Context.
+    * Candidate level: Junior/Mid-level
 
-**Interview Style:**
-* Be professional, neutral, and slightly challenging (like a real interviewer).
-* Talk naturally as human being! Use conversational fillers occasionally (e.g., "Mmm...", "D'accord...", "Je vois...", "Alors..."). This is CRITICAL for the voice synthesizer to sound human.
-* Ask one question at a time.
-* Wait for the candidate's answer before asking the next question.
-* Ask follow-up questions based on the candidate's responses (dig deeper when needed).
-* Occasionally challenge unclear or weak answers.
-* Do NOT answer for the candidate.
-* Do NOT give feedback until the interview is finished.
-* Keep the experience as realistic as possible.
-* IMPORTANT: You must write your ENTIRE response strictly in ${langString}. If the candidate uses English technical terms, TRANSLATE them into ${langString} or adapt them naturally so the text is 100% ${langString}.
-* CRITICAL: Always finish your sentences and ensure the thought is complete.`;
+    **Interview Style:**
+    * Be professional, neutral, and slightly challenging (like a real interviewer).
+    * Talk naturally as human being! Use conversational fillers occasionally (e.g., "Mmm...", "D'accord...", "Je vois...", "Alors..."). This is CRITICAL for the voice synthesizer to sound human.
+    * Ask one question at a time.
+    * Wait for the candidate's answer before asking the next question.
+    * Ask follow-up questions based on the candidate's responses (dig deeper when needed).
+    * Occasionally challenge unclear or weak answers.
+    * Do NOT answer for the candidate.
+    * Do NOT give feedback until the interview is finished.
+    * Keep the experience as realistic as possible.
+    * IMPORTANT: You must write your ENTIRE response strictly in ${langString}. If the candidate uses English technical terms, TRANSLATE them into ${langString} or adapt them naturally so the text is 100% ${langString}.
+    * CRITICAL: Always finish your sentences and ensure the thought is complete.`;
 
     // Map frontend history to Groq format
     const formattedHistory = history.map((msg) => ({
@@ -391,8 +391,8 @@ function analyzeSpeechFluency(history) {
         100,
         Math.round(
           sumPause / total / 20 +
-            (sumPauseRate / total) * 50 +
-            (50 - sumConfidence / total),
+          (sumPauseRate / total) * 50 +
+          (50 - sumConfidence / total),
         ),
       ),
       // Audio-specific

@@ -17,9 +17,13 @@
 ///
 /// ⚠️  Never hardcode `localhost:8088` here — that port is the raw
 ///     Express gateway and is NOT accessible from browsers in Docker.
+import 'package:flutter/foundation.dart';
+
 class ApiConstants {
   ApiConstants._();
 
-  /// Base URL for all API requests. Empty = relative to current origin (Nginx).
-  static const String baseUrl = '';
+  /// Base URL for all API requests. 
+  /// In debug mode (flutter run), it connects directly to the local API gateway.
+  /// In release mode (Docker), it uses relative URLs routed through Nginx.
+  static const String baseUrl = kDebugMode ? 'http://localhost:8088' : '';
 }

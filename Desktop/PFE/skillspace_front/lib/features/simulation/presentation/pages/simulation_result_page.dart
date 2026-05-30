@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../../../core/api_constants.dart';
 import 'package:reactive_theme/reactive_theme.dart';
 import '../../../../core/app_colors.dart';
 import 'package:pfe/core/network/cookie_service.dart';
@@ -62,7 +63,7 @@ class _SimulationResultPageState extends State<SimulationResultPage>
       }
 
       final response = await http.post(
-        Uri.parse('/api/interview/finish'),
+        Uri.parse('${ApiConstants.baseUrl}/api/interview/finish'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'history': widget.chatHistory,

@@ -2,18 +2,18 @@ import 'dart:convert';
 // BrowserClient lives in package:http/browser_client.dart and is the only
 // http.Client implementation that exposes withCredentials on Flutter Web.
 // This file is only ever compiled for the web target (dart.library.html).
+import 'package:flutter/foundation.dart';
 import 'package:http/browser_client.dart';
 import 'package:http/http.dart' as http;
 
 class ApiClient {
   // Empty string = relative URL → resolved against Nginx origin (port 80).
-  // Nginx routes /api/*, /recruiter/*, /candidat/*, etc. to api-gateway:8080.
-  // Do NOT use 'http://localhost:8088' — that bypasses Nginx and fails in Docker.
-  static const String baseUrl         = '';
-  static const String candidatBaseUrl = '';
-  static const String recruiterBaseUrl= '';
-  static const String offerBaseUrl    = '';
-  static const String trainerBaseUrl  = '';
+  // In debug mode (flutter run), it connects directly to the local API gateway.
+  static const String baseUrl         = kDebugMode ? 'http://localhost:8088' : '';
+  static const String candidatBaseUrl = kDebugMode ? 'http://localhost:8088' : '';
+  static const String recruiterBaseUrl= kDebugMode ? 'http://localhost:8088' : '';
+  static const String offerBaseUrl    = kDebugMode ? 'http://localhost:8088' : '';
+  static const String trainerBaseUrl  = kDebugMode ? 'http://localhost:8088' : '';
 
   // BrowserClient is required so the browser automatically attaches the
   // HttpOnly 'skillspace_token' cookie on every cross-origin request.
