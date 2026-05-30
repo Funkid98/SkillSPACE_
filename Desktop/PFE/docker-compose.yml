@@ -46,6 +46,8 @@ services:
       - "5001"
     env_file:
       - ./Backend/login-register-services/.env
+    environment:
+      - INTERNAL_GATEWAY_URL=http://api-gateway:8080
     restart: always
 
   # ───────── CANDIDAT SERVICE ────
@@ -57,6 +59,8 @@ services:
       - "5000"
     env_file:
       - ./Backend/candidat-service/.env
+    environment:
+      - INTERNAL_GATEWAY_URL=http://api-gateway:8080
     restart: always
 
   # ───────── RECRUITER SERVICE ───
@@ -68,6 +72,8 @@ services:
       - "5002"
     env_file:
       - ./Backend/recruter-service/.env
+    environment:
+      - INTERNAL_GATEWAY_URL=http://api-gateway:8080
     restart: always
 
   # ───────── OFFER SERVICE ───────

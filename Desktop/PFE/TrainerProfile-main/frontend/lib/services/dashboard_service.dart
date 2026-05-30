@@ -16,7 +16,7 @@ class DashboardData {
 }
 
 class DashboardService {
-  final String baseUrl = 'http://localhost:8088/api/formateur';
+  final String baseUrl = '/api/formateur';
 
   Future<DashboardData?> getDashboardData(String userId) async {
     try {

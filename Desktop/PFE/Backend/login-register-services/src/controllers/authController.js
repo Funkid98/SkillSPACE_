@@ -13,8 +13,8 @@ const client = new OAuth2Client(
   "1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com",
 );
 
-const RECRUITER_SERVICE_URL = "http://127.0.0.1:8088/recruiter";
-const TRAINER_SERVICE_URL = "http://127.0.0.1:8088/api/formateur";
+const RECRUITER_SERVICE_URL = (process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088") + "/recruiter";
+const TRAINER_SERVICE_URL = (process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088") + "/api/formateur";
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 

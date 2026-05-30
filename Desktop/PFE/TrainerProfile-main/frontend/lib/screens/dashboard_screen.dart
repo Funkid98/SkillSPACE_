@@ -97,6 +97,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
 
         final dashboardData = state.dashboardData!;
+        final profileCompleteness = state.profileData?.profileCompleteness ?? 0;
+        final isProfileComplete = profileCompleteness >= 80;
 
         return Scaffold(
           backgroundColor: Colors.transparent,
@@ -114,6 +116,80 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // ── Profile Incomplete Banner ────────────────────────
+                    if (!isProfileComplete)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 24),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFFF3E0), Color(0xFFFFE0B2)],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                                color: const Color(0xFFFFB74D), width: 1.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color:
+                                    const Color(0xFFFF9800).withOpacity(0.12),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color:
+                                      const Color(0xFFFF9800).withOpacity(0.15),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.warning_amber_rounded,
+                                    color: Color(0xFFE65100), size: 24),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Profil incomplet',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFFE65100),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Complétez votre profil à 80% minimum pour accéder à toutes les fonctionnalités. Progression : $profileCompleteness%',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 13,
+                                        color: const Color(0xFF8D4A00),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: LinearProgressIndicator(
+                                        value: profileCompleteness / 100,
+                                        minHeight: 7,
+                                        backgroundColor: Colors.orange.shade100,
+                                        valueColor:
+                                            const AlwaysStoppedAnimation<Color>(
+                                                Color(0xFFE65100)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     FadeInDown(
                         duration: const Duration(milliseconds: 1200),
                         child: _buildHeader(dashboardData)),

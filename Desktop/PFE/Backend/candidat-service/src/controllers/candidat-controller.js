@@ -145,7 +145,7 @@ const getRecentCandidatesBySector = async (req, res) => {
 
     let recruiterOffers = [];
     try {
-      const offerRes = await axios.get("http://127.0.0.1:8088/api/offers");
+      const offerRes = await axios.get((process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088") + "/api/offers");
       recruiterOffers = offerRes.data.filter(
         (o) => o.recruiter && o.recruiter.toString() === recruiterId.toString(),
       );
@@ -307,7 +307,7 @@ const getMatchingOffersForCandidate = async (req, res) => {
 
     let allOffers = [];
     try {
-      const offerRes = await axios.get("http://127.0.0.1:8088/api/offers", {
+      const offerRes = await axios.get((process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088") + "/api/offers", {
         timeout: 5000,
       });
       allOffers = offerRes.data;
@@ -567,7 +567,7 @@ const getMatchingCandidatesGroupedByOffer = async (req, res) => {
     // 1. Fetch all offers for this recruiter from offer-service
     let recruiterOffers = [];
     try {
-      const offerRes = await axios.get("http://127.0.0.1:8088/api/offers", {
+      const offerRes = await axios.get((process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088") + "/api/offers", {
         timeout: 5000,
       });
       recruiterOffers = offerRes.data.filter(
@@ -913,7 +913,7 @@ const applyToOffer = async (req, res) => {
 
     // Notify Recruiter Service
     try {
-      await axios.post("http://127.0.0.1:8088/recruiter/internal/notify", {
+      await axios.post((process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088") + "/recruiter/internal/notify", {
         recruiterId: recruiterId,
         senderId: candidateId,
         senderName: `${candidate.prenom} ${candidate.nom}`,
@@ -1128,7 +1128,7 @@ const enrollFormation = async (req, res) => {
     // Check if formation is active
     try {
       const response = await axios.get(
-        `http://127.0.0.1:8088/api/formateur/formations/item/${formationId}`,
+        `${process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088"}/api/formateur/formations/item/${formationId}`,
       );
       if (!response.data || response.data.status !== "active") {
         return res
@@ -1161,7 +1161,7 @@ const enrollFormation = async (req, res) => {
     // Increment student count on trainer service (fire and forget)
     try {
       await axios.post(
-        `http://127.0.0.1:8088/api/formateur/formations/item/${formationId}/enroll`,
+        `${process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088"}/api/formateur/formations/item/${formationId}/enroll`,
         {
           userName: `${user.prenom} ${user.nom}`,
         },
@@ -1196,7 +1196,7 @@ const getEnrolledFormations = async (req, res) => {
       enrolled.map(async (enrollment) => {
         try {
           const response = await axios.get(
-            `http://127.0.0.1:8088/api/formateur/formations/item/${enrollment.formationId}`,
+            `${process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088"}/api/formateur/formations/item/${enrollment.formationId}`,
           );
           if (response.data) {
             return {
@@ -1266,7 +1266,7 @@ const completeFormation = async (req, res) => {
     // 2. Fetch formation details to get skills (tags)
     try {
       const response = await axios.get(
-        `http://127.0.0.1:8088/api/formateur/formations/item/${formationId}`,
+        `${process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088"}/api/formateur/formations/item/${formationId}`,
       );
       const formation = response.data;
 
@@ -1340,7 +1340,7 @@ const submitReview = async (req, res) => {
     // Forward rating and review to trainer service to update average and save feedback
     try {
       const response = await axios.post(
-        `http://127.0.0.1:8088/api/formateur/formations/item/${formationId}/review`,
+        `${process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088"}/api/formateur/formations/item/${formationId}/review`,
         {
           rating: rating,
           review: review || "",
@@ -1411,7 +1411,7 @@ const getAcceptedOffers = async (req, res) => {
     let allOffers = [];
     try {
       const { default: axios } = require("axios"); // if not required globally
-      const offerRes = await axios.get("http://127.0.0.1:8088/api/offers", {
+      const offerRes = await axios.get((process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088") + "/api/offers", {
         timeout: 5000,
       });
       allOffers = offerRes.data;
@@ -1483,7 +1483,7 @@ const leaveFormation = async (req, res) => {
     // Decrement student count on trainer service
     try {
       await axios.post(
-        `http://127.0.0.1:8088/api/formateur/formations/item/${formationId}/leave`,
+        `${process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088"}/api/formateur/formations/item/${formationId}/leave`,
         {
           userName: `${user.prenom} ${user.nom}`,
         },

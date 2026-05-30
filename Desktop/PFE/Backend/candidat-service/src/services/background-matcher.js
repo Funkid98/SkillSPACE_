@@ -101,7 +101,7 @@ const handleCandidateTask = async (candidateId) => {
   // Fetch all active offers
   let allOffers = [];
   try {
-    const res = await axios.get("http://127.0.0.1:8088/api/offers", {
+    const res = await axios.get((process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088") + "/api/offers", {
       timeout: 10000,
     });
     allOffers = res.data;
@@ -224,7 +224,7 @@ const handleOfferTask = async (offerId, offerData) => {
   if (!offer) {
     try {
       const res = await axios.get(
-        `http://127.0.0.1:8088/api/offers/${offerId}`,
+        `${process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088"}/api/offers/${offerId}`,
         { timeout: 10000 },
       );
       offer = res.data;

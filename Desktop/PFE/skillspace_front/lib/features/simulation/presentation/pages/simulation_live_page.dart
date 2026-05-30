@@ -160,7 +160,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
     });
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:8088/api/interview/start'),
+        Uri.parse('/api/interview/start'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'role': widget.roleTitle,
@@ -267,7 +267,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
     try {
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://localhost:8088/api/interview/chat'),
+        Uri.parse('/api/interview/chat'),
       );
 
       if (kIsWeb) {
@@ -1088,7 +1088,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
   }
 
   Future<void> _playRecording(String url) async {
-    final fullUrl = 'http://localhost:8088$url';
+    final fullUrl = url; // relative URL — served via Nginx on same origin
     try {
       final response = await http.get(Uri.parse(fullUrl));
       if (response.statusCode == 200) {

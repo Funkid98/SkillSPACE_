@@ -182,7 +182,7 @@ const recommendCoursesHandler = async (req, res) => {
       const axios = require("axios");
       // Fetch ALL formations for this skill from the trainer service
       const response = await axios.get(
-        `http://127.0.0.1:8088/api/formateur/all-formations`,
+        `${process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088"}/api/formateur/all-formations`,
         {
           params: { query: skill },
         },

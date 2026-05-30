@@ -492,7 +492,7 @@ const contactCandidate = async (req, res) => {
 
     // Notify Candidat Service
     try {
-      await axios.post("http://127.0.0.1:8088/candidat/internal/notify", {
+      await axios.post((process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088") + "/candidat/internal/notify", {
         candidateId: candidateId,
         senderId: recruiterId,
         senderName: recruiter.entreprise || "Un recruteur",
@@ -571,7 +571,7 @@ const handleApplicationDecision = async (req, res) => {
     // Call Candidat Service to update application status
     try {
       await axios.post(
-        "http://127.0.0.1:8088/candidat/internal/application/update",
+        (process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088") + "/candidat/internal/application/update",
         {
           candidateId: notification.senderId,
           offerId: notification.offerId,
