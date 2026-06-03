@@ -235,10 +235,15 @@ class _TrainerPublicProfilePageState extends State<TrainerPublicProfilePage>
                           child: CircleAvatar(
                             radius: 52,
                             backgroundColor: Colors.white.withOpacity(0.15),
-                            backgroundImage: profilePicture != null
-                                ? NetworkImage(profilePicture)
+                            backgroundImage: profilePicture != null &&
+                                    profilePicture.isNotEmpty
+                                ? (profilePicture.startsWith('http')
+                                    ? NetworkImage(profilePicture)
+                                    : MemoryImage(base64Decode(profilePicture))
+                                        as ImageProvider)
                                 : null,
-                            child: profilePicture == null
+                            child: (profilePicture == null ||
+                                    profilePicture.isEmpty)
                                 ? const Icon(Icons.person_rounded,
                                     size: 54, color: Colors.white70)
                                 : null,
@@ -739,7 +744,7 @@ class _TrainerPublicProfilePageState extends State<TrainerPublicProfilePage>
     // Prioritize high-resolution fullFile if it's an image.
     // Fall back to thumbnail if fullFile is missing or if it's a PDF (since Image.memory can't render PDF bytes).
     String? displayImage = thumbnail;
-    
+
     final bool isPdf = fileType == 'pdf';
 
     if (fullFile != null && fullFile.isNotEmpty && !isPdf) {
@@ -757,44 +762,25 @@ class _TrainerPublicProfilePageState extends State<TrainerPublicProfilePage>
           mainAxisSize: MainAxisSize.min,
           children: [
             Flexible(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: InteractiveViewer(
-                  panEnabled: true,
-                  minScale: 1.0,
-                  maxScale: 4.0,
-                  child: Image.memory(
-                    base64Decode(displayImage!),
-                    width: double.infinity,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) =>
-                        const Icon(Icons.broken_image, size: 64),
+              child: Container(
+                constraints:
+                    const BoxConstraints(maxWidth: 500, maxHeight: 400),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: InteractiveViewer(
+                    panEnabled: true,
+                    minScale: 1.0,
+                    maxScale: 4.0,
+                    child: Image.memory(
+                      base64Decode(displayImage!),
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.broken_image, size: 64),
+                    ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            if (isPdf && fullFile != null && fullFile.isNotEmpty) ...[
-              ElevatedButton.icon(
-                onPressed: () async {
-                  final uri = Uri.parse('data:application/pdf;base64,$fullFile');
-                  if (await canLaunchUrl(uri)) {
-                    await launchUrl(uri);
-                  }
-                },
-                icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white),
-                label: const Text('Ouvrir le PDF HD',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.orange,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Container(

@@ -17,7 +17,7 @@ class Scroll3DVideoBackground extends StatefulWidget {
 }
 
 class _Scroll3DVideoBackgroundState extends State<Scroll3DVideoBackground> {
-  late VideoPlayerController _controller;
+  VideoPlayerController? _controller;
   bool _isInitialized = false;
   bool _isLoading = true;
   String? _error;
@@ -31,14 +31,20 @@ class _Scroll3DVideoBackgroundState extends State<Scroll3DVideoBackground> {
   Future<void> _initVideo() async {
     try {
       _controller = VideoPlayerController.asset('assets/scrollvideo.mp4');
-      await _controller.initialize();
-      if (!mounted) return;
+      await _controller!.initialize();
+      if (!mounted) {
+        _controller?.dispose();
+        return;
+      }
 
-      await _controller.setVolume(0.0);
-      await _controller.setLooping(true);
-      await _controller.play();
+      await _controller!.setVolume(0.0);
+      await _controller!.setLooping(true);
+      await _controller!.play();
 
-      if (!mounted) return;
+      if (!mounted) {
+        _controller?.dispose();
+        return;
+      }
 
       setState(() {
         _isInitialized = true;
@@ -57,7 +63,10 @@ class _Scroll3DVideoBackgroundState extends State<Scroll3DVideoBackground> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    if (_isInitialized) {
+      _controller?.pause();
+    }
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -72,16 +81,16 @@ class _Scroll3DVideoBackgroundState extends State<Scroll3DVideoBackground> {
               opacity: 0.75, // was 0.4, raise it so video is more visible
               child: Container(
                 color: Colors.black, // pure black base instead of navy bleed
-                child: _isInitialized
+                child: _isInitialized && _controller != null
                     ? ValueListenableBuilder(
-                        valueListenable: _controller,
+                        valueListenable: _controller!,
                         builder: (context, VideoPlayerValue value, child) {
                           return FittedBox(
                             fit: BoxFit.cover,
                             child: SizedBox(
                               width: value.size.width,
                               height: value.size.height,
-                              child: VideoPlayer(_controller),
+                              child: VideoPlayer(_controller!),
                             ),
                           );
                         },

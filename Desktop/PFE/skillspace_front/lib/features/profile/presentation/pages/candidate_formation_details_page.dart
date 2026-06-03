@@ -8,7 +8,7 @@ import '../../../../core/app_colors.dart';
 import '../../../../core/utils/responsive.dart';
 import 'trainer_public_profile_page.dart';
 
-class CandidateFormationDetailsPage extends StatefulWidget {
+class CandidateFormationDetailsPage extends StatelessWidget {
   final dynamic formation;
   final String? aiReason;
 
@@ -19,12 +19,33 @@ class CandidateFormationDetailsPage extends StatefulWidget {
   });
 
   @override
-  State<CandidateFormationDetailsPage> createState() =>
-      _CandidateFormationDetailsPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => FormationsCubit(),
+      child: _CandidateFormationDetailsView(
+        formation: formation,
+        aiReason: aiReason,
+      ),
+    );
+  }
 }
 
-class _CandidateFormationDetailsPageState
-    extends State<CandidateFormationDetailsPage> {
+class _CandidateFormationDetailsView extends StatefulWidget {
+  final dynamic formation;
+  final String? aiReason;
+
+  const _CandidateFormationDetailsView({
+    required this.formation,
+    this.aiReason,
+  });
+
+  @override
+  State<_CandidateFormationDetailsView> createState() =>
+      _CandidateFormationDetailsViewState();
+}
+
+class _CandidateFormationDetailsViewState
+    extends State<_CandidateFormationDetailsView> {
   bool _isEnrolling = false;
 
   @override

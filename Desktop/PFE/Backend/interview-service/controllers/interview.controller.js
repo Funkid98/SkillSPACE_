@@ -578,6 +578,7 @@ exports.finishSimulation = async (req, res) => {
     - The improvements array must have EXACTLY 4 items.
     - All text responses MUST be in French.
     - CRITICAL: Base your emotionalState, speechAnalysis (confidence, stress, calmness, uncertainty), and personality (extraversion, emotionalStability) primarily on the VOCAL METRICS above, not just the transcript text. Example: long pauses + low confidence + slow WPM → high stress, low confidence. Fast WPM + high confidence + few pauses → confident, calm.
+    - STRICT GRADING: If the candidate gives nonsensical, bizarre, irrelevant, or "troll" answers, you MUST heavily penalize the globalScore, score, and all skill scores, pushing them close to 0-20. Do NOT give a default passing score (like 60-70) for bad or irrelevant answers Else continue with the analysis we agreed on.
     - Provide ONLY raw JSON without markdown formatting like \`\`\`json.
 
     Transcript:
@@ -609,6 +610,15 @@ exports.finishSimulation = async (req, res) => {
         evaluationData.speechAnalysis.metrics = speechMetrics;
       } else {
         evaluationData.speechAnalysis = { metrics: speechMetrics };
+      }
+
+      // Hardcap the score if the candidate hasn't spoken enough words
+      if (candidateWordCount < 100) {
+        evaluationData.globalScore = Math.min(evaluationData.globalScore || 0, 50);
+        evaluationData.score = Math.min(evaluationData.score || 0, 50);
+        if (evaluationData.starAnalysis) {
+          evaluationData.starAnalysis.overallScore = Math.min(evaluationData.starAnalysis.overallScore || 0, 50);
+        }
       }
     } catch (e) {
       console.error("Failed to parse AI evaluation:", e);
