@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pfe/core/network/api_client.dart';
 import 'package:reactive_theme/reactive_theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/app_colors.dart';
+import '../../../../core/api_constants.dart';
 import 'scheduling_dialog.dart';
 
 class NotificationBell extends StatefulWidget {
@@ -182,6 +184,411 @@ class _NotificationBellState extends State<NotificationBell> {
           ],
         );
       },
+    );
+  }
+
+  // ── Candidate Profile & CV ────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>?> _fetchCandidateProfile(String candidateId) async {
+    try {
+      final response = await _apiClient.get('/candidat/internal/$candidateId');
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  void _showCandidateProfileModal(String candidateId, String candidateName) {
+    final isDark = ReactiveMode.isDarkMode(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx2, setModalState) {
+            bool isLoadingProfile = true;
+            Map<String, dynamic>? profile;
+
+            // Load profile when modal opens
+            Future.microtask(() async {
+              final data = await _fetchCandidateProfile(candidateId);
+              if (ctx2.mounted) {
+                setModalState(() {
+                  profile = data;
+                  isLoadingProfile = false;
+                });
+              }
+            });
+
+            return DraggableScrollableSheet(
+              initialChildSize: 0.75,
+              maxChildSize: 0.92,
+              minChildSize: 0.4,
+              builder: (_, scrollCtrl) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.surfaceDark : Colors.white,
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(28)),
+                  ),
+                  child: Column(
+                    children: [
+                      // Handle bar
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12, bottom: 8),
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withOpacity(0.15)
+                                : Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      // Header
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 8),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [AppColors.navy, AppColors.orange],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  candidateName.isNotEmpty
+                                      ? candidateName[0].toUpperCase()
+                                      : '?',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    candidateName,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w900,
+                                      color: isDark
+                                          ? Colors.white
+                                          : AppColors.textDark,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Profil du candidat',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: isDark
+                                          ? Colors.white54
+                                          : AppColors.textGray,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.pop(ctx2),
+                              icon: Icon(Icons.close_rounded,
+                                  color: isDark
+                                      ? Colors.white54
+                                      : AppColors.textGray),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      // Body
+                      Expanded(
+                        child: isLoadingProfile
+                            ? const Center(
+                                child: CircularProgressIndicator(
+                                    color: AppColors.orange))
+                            : profile == null
+                                ? Center(
+                                    child: Text(
+                                      'Impossible de charger le profil.',
+                                      style: TextStyle(
+                                          color: isDark
+                                              ? Colors.white54
+                                              : AppColors.textGray),
+                                    ),
+                                  )
+                                : ListView(
+                                    controller: scrollCtrl,
+                                    padding: const EdgeInsets.all(24),
+                                    children: [
+                                      // Job title & location
+                                      if ((profile!['jobtitle'] ?? '').toString().isNotEmpty)
+                                        _profileInfoRow(
+                                          Icons.work_rounded,
+                                          profile!['jobtitle'].toString(),
+                                          isDark,
+                                        ),
+                                      if ((profile!['localisation'] ?? '').toString().isNotEmpty) ...[
+                                        const SizedBox(height: 10),
+                                        _profileInfoRow(
+                                          Icons.location_on_rounded,
+                                          profile!['localisation'].toString(),
+                                          isDark,
+                                        ),
+                                      ],
+                                      if ((profile!['telephone'] ?? '').toString().isNotEmpty) ...[
+                                        const SizedBox(height: 10),
+                                        _profileInfoRow(
+                                          Icons.phone_rounded,
+                                          profile!['telephone'].toString(),
+                                          isDark,
+                                        ),
+                                      ],
+                                      if ((profile!['senderEmail'] ?? profile!['email'] ?? '').toString().isNotEmpty) ...[
+                                        const SizedBox(height: 10),
+                                        _profileInfoRow(
+                                          Icons.email_rounded,
+                                          (profile!['senderEmail'] ?? profile!['email'] ?? '').toString(),
+                                          isDark,
+                                        ),
+                                      ],
+                                      // Bio
+                                      if ((profile!['bio'] ?? '').toString().isNotEmpty) ...[
+                                        const SizedBox(height: 20),
+                                        Text(
+                                          'À propos',
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w800,
+                                            color: isDark
+                                                ? Colors.white
+                                                : AppColors.textDark,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.all(14),
+                                          decoration: BoxDecoration(
+                                            color: isDark
+                                                ? Colors.white.withOpacity(0.05)
+                                                : AppColors.bg,
+                                            borderRadius:
+                                                BorderRadius.circular(14),
+                                            border: Border.all(
+                                                color: isDark
+                                                    ? AppColors.borderDark
+                                                    : AppColors.border),
+                                          ),
+                                          child: Text(
+                                            profile!['bio'].toString(),
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              height: 1.6,
+                                              color: isDark
+                                                  ? Colors.white70
+                                                  : AppColors.textDark,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                      // Skills
+                                      if ((profile!['skills'] as List?)?.isNotEmpty == true) ...[
+                                        const SizedBox(height: 20),
+                                        Text(
+                                          'Compétences',
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w800,
+                                            color: isDark
+                                                ? Colors.white
+                                                : AppColors.textDark,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 10),
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 8,
+                                          children: [
+                                            for (final s in (profile!['skills'] as List))
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                    horizontal: 12, vertical: 6),
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.orange
+                                                      .withValues(alpha: 0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
+                                                  border: Border.all(
+                                                      color: AppColors.orange
+                                                          .withValues(alpha: 0.3)),
+                                                ),
+                                                child: Text(
+                                                  s is Map
+                                                      ? (s['name'] ?? '').toString()
+                                                      : s.toString(),
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: AppColors.orange,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ],
+                                      // CV button
+                                      const SizedBox(height: 28),
+                                      if ((profile!['cv_path'] ?? '').toString().isNotEmpty)
+                                        SizedBox(
+                                          width: double.infinity,
+                                          child: ElevatedButton.icon(
+                                            onPressed: () async {
+                                              final cvUrl =
+                                                  '${ApiConstants.baseUrl}/candidat/internal/$candidateId/cv-file';
+                                              final uri = Uri.parse(cvUrl);
+                                              try {
+                                                if (await canLaunchUrl(uri)) {
+                                                  await launchUrl(uri,
+                                                      mode: LaunchMode
+                                                          .externalApplication);
+                                                } else {
+                                                  if (ctx2.mounted) {
+                                                    ScaffoldMessenger.of(ctx2)
+                                                        .showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text(
+                                                            'Impossible d\'ouvrir le CV.'),
+                                                        behavior: SnackBarBehavior
+                                                            .floating,
+                                                      ),
+                                                    );
+                                                  }
+                                                }
+                                              } catch (_) {
+                                                if (ctx2.mounted) {
+                                                  ScaffoldMessenger.of(ctx2)
+                                                      .showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text(
+                                                          'Erreur lors de l\'ouverture du CV.'),
+                                                      behavior: SnackBarBehavior
+                                                          .floating,
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            },
+                                            icon: const Icon(
+                                                Icons.picture_as_pdf_rounded,
+                                                size: 20),
+                                            label:
+                                                const Text('Ouvrir le CV (PDF)'),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: AppColors.navy,
+                                              foregroundColor: Colors.white,
+                                              elevation: 0,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 14),
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(14)),
+                                            ),
+                                          ),
+                                        )
+                                      else
+                                        Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            color: isDark
+                                                ? Colors.white.withOpacity(0.05)
+                                                : AppColors.bg,
+                                            borderRadius:
+                                                BorderRadius.circular(14),
+                                            border: Border.all(
+                                                color: isDark
+                                                    ? AppColors.borderDark
+                                                    : AppColors.border),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(Icons.info_outline_rounded,
+                                                  size: 18,
+                                                  color: isDark
+                                                      ? Colors.white38
+                                                      : AppColors.textGray),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'Aucun CV téléchargé par le candidat',
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: isDark
+                                                      ? Colors.white38
+                                                      : AppColors.textGray,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      const SizedBox(height: 16),
+                                    ],
+                                  ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _profileInfoRow(IconData icon, String text, bool isDark) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.navy.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 16, color: AppColors.navy),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white : AppColors.textDark,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -642,49 +1049,80 @@ class _NotificationBellState extends State<NotificationBell> {
                                     ),
                                   ],
                                   if (type == 'APPLICATION' &&
-                                      widget.isRecruiter &&
-                                      !isDecisionMade) ...[
+                                      widget.isRecruiter) ...[
                                     const SizedBox(height: 16),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: OutlinedButton(
-                                            onPressed: () => _showRejectDialog(
-                                                n['_id'], isDark),
-                                            style: OutlinedButton.styleFrom(
-                                              side: const BorderSide(
-                                                  color: AppColors.error),
-                                              foregroundColor: AppColors.error,
-                                              shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          12)),
-                                            ),
-                                            child: const Text('Refuser'),
-                                          ),
+                                    // ── Voir le CV button ───────────────
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: OutlinedButton.icon(
+                                        onPressed: () =>
+                                            _showCandidateProfileModal(
+                                          n['senderId'] ?? '',
+                                          n['senderName'] ?? 'Candidat',
                                         ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: ElevatedButton(
-                                            onPressed: () => _showAcceptDialog(
+                                        icon: const Icon(
+                                            Icons.description_rounded,
+                                            size: 16),
+                                        label: const Text('Voir le CV'),
+                                        style: OutlinedButton.styleFrom(
+                                          side: const BorderSide(
+                                              color: AppColors.navy, width: 1.5),
+                                          foregroundColor: AppColors.navy,
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12)),
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 10),
+                                        ),
+                                      ),
+                                    ),
+                                    if (!isDecisionMade) ...[
+                                      const SizedBox(height: 10),
+                                      // ── Accept / Reject row ─────────────
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: OutlinedButton(
+                                              onPressed: () =>
+                                                  _showRejectDialog(
+                                                      n['_id'], isDark),
+                                              style: OutlinedButton.styleFrom(
+                                                side: const BorderSide(
+                                                    color: AppColors.error),
+                                                foregroundColor: AppColors.error,
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12)),
+                                              ),
+                                              child: const Text('Refuser'),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: ElevatedButton(
+                                              onPressed: () =>
+                                                  _showAcceptDialog(
                                                 n['_id'],
                                                 n['senderName'] ?? 'Candidat',
-                                                isDark),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor:
-                                                  AppColors.success,
-                                              foregroundColor: Colors.white,
-                                              elevation: 0,
-                                              shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          12)),
+                                                isDark,
+                                              ),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    AppColors.success,
+                                                foregroundColor: Colors.white,
+                                                elevation: 0,
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12)),
+                                              ),
+                                              child: const Text('Accepter'),
                                             ),
-                                            child: const Text('Accepter'),
                                           ),
-                                        ),
-                                      ],
-                                    ),
+                                        ],
+                                      ),
+                                    ],
                                   ],
                                 ],
                               ),

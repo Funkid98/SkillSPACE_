@@ -3,9 +3,8 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
-const groq = new Groq({
-  apiKey: "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",
-});
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
 
 exports.transcribeAudio = async (req, res) => {
   try {

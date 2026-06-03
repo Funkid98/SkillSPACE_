@@ -63,6 +63,24 @@ router.get("/internal/:id", async (req, res) => {
   res.json(user);
 });
 
+// Serve the CV file for a candidate (for recruiter access)
+router.get("/internal/:id/cv-file", async (req, res) => {
+  try {
+    const fs = require("fs");
+    const path = require("path");
+    const User = require("../models/candidat");
+    const user = await User.findById(req.params.id).select("cv_path");
+    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user.cv_path || !fs.existsSync(user.cv_path)) {
+      return res.status(404).json({ error: "No CV file found for this candidate" });
+    }
+    const absPath = path.resolve(user.cv_path);
+    res.sendFile(absPath);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Formation Enrollment
 router.post("/enroll/:formationId", auth, enrollFormation);
 router.post("/leave/:formationId", auth, leaveFormation);
