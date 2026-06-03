@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import '../../data/profile_api.dart';
 import '../../../../core/app_colors.dart';
 import '../../../../core/utils/app_toast.dart';
 
@@ -41,20 +40,14 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
   Future<void> _sendOtp() async {
     setState(() => _isLoading = true);
     try {
-      final res = await http.post(
-        Uri.parse('${widget.apiUrl}/forgot-password'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': widget.email}),
-      );
-
-      if (res.statusCode == 200 || res.statusCode == 201) {
+      final res = await ProfileApi.requestPasswordReset(widget.email);
+      if (res['message'] == 'Code envoyé' || res['message']?.contains('envoyé') == true) {
         setState(() {
           _step = 1;
           _isLoading = false;
         });
       } else {
-        final body = jsonDecode(res.body);
-        _showError(body['message'] ?? 'Erreur lors de l\'envoi du code');
+        _showError(res['message'] ?? 'Erreur lors de l\'envoi du code');
         Navigator.pop(context);
       }
     } catch (e) {
@@ -70,20 +63,14 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
     }
     setState(() => _isLoading = true);
     try {
-      final res = await http.post(
-        Uri.parse('${widget.apiUrl}/verify-otp'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': widget.email, 'otp': _otp}),
-      );
-
-      if (res.statusCode == 200 || res.statusCode == 201) {
+      final res = await ProfileApi.verifyOtp(widget.email, _otp);
+      if (res['message'] == 'Code valide' || res['message']?.contains('valide') == true) {
         setState(() {
           _step = 2;
           _isLoading = false;
         });
       } else {
-        final body = jsonDecode(res.body);
-        _showError(body['message'] ?? 'Code invalide ou expiré');
+        _showError(res['message'] ?? 'Code invalide ou expiré');
         setState(() => _isLoading = false);
       }
     } catch (e) {
@@ -105,19 +92,12 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
 
     setState(() => _isLoading = true);
     try {
-      final res = await http.post(
-        Uri.parse('${widget.apiUrl}/reset-password'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(
-            {'email': widget.email, 'otp': _otp, 'newPassword': pass}),
-      );
-
-      if (res.statusCode == 200 || res.statusCode == 201) {
+      final res = await ProfileApi.updatePassword(widget.email, pass);
+      if (res['message'] == 'Mot de passe mis à jour avec succès' || res['message']?.contains('succès') == true) {
         AppToast.showSuccess(context, 'Mot de passe mis à jour avec succès');
         Navigator.pop(context);
       } else {
-        final body = jsonDecode(res.body);
-        _showError(body['message'] ?? 'Erreur lors de la mise à jour');
+        _showError(res['message'] ?? 'Erreur lors de la mise à jour');
         setState(() => _isLoading = false);
       }
     } catch (e) {

@@ -77,6 +77,8 @@ class _AppSidebarState extends State<AppSidebar> {
     final l10n = AppLocalizations.of(context);
     final isRtl = Directionality.of(context) == TextDirection.rtl;
 
+    final isDark = ReactiveMode.isDarkMode(context);
+
     return MouseRegion(
       onHover: (event) {
         final box = context.findRenderObject() as RenderBox?;
@@ -95,18 +97,28 @@ class _AppSidebarState extends State<AppSidebar> {
         width: 240,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: Colors.black,
+          color: isDark ? Colors.transparent : Colors.white,
           border: Border(
             right: isRtl
                 ? BorderSide.none
-                : const BorderSide(color: Color(0x1AFFFFFF), width: 1),
+                : BorderSide(
+                    color: isDark
+                        ? const Color(0x1AFFFFFF)
+                        : Colors.black.withValues(alpha: 0.08),
+                    width: 1),
             left: isRtl
-                ? const BorderSide(color: Color(0x1AFFFFFF), width: 1)
+                ? BorderSide(
+                    color: isDark
+                        ? const Color(0x1AFFFFFF)
+                        : Colors.black.withValues(alpha: 0.08),
+                    width: 1)
                 : BorderSide.none,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.45),
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.45)
+                  : Colors.black.withValues(alpha: 0.05),
               blurRadius: 28,
               spreadRadius: -4,
               offset: Offset(isRtl ? -10 : 10, 0),
@@ -118,15 +130,16 @@ class _AppSidebarState extends State<AppSidebar> {
             return Stack(
               children: [
                 // ── Spline 3D background (IgnorePointer so nav stays clickable) ──
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: SplineRobot(
-                      mouseNotifier: _mouseNotifier,
-                      width: constraints.maxWidth,
-                      height: constraints.maxHeight,
+                if (ReactiveMode.isDarkMode(context))
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: SplineRobot(
+                        mouseNotifier: _mouseNotifier,
+                        width: constraints.maxWidth,
+                        height: constraints.maxHeight,
+                      ),
                     ),
                   ),
-                ),
                 // ── Gradient overlay for readability ─────────────────────
                 Positioned.fill(
                   child: Container(
@@ -135,12 +148,19 @@ class _AppSidebarState extends State<AppSidebar> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         stops: const [0.0, 0.35, 0.65, 1.0],
-                        colors: [
-                          Colors.black.withValues(alpha: 0.88),
-                          Colors.black.withValues(alpha: 0.62),
-                          Colors.black.withValues(alpha: 0.70),
-                          Colors.black.withValues(alpha: 0.92),
-                        ],
+                        colors: ReactiveMode.isDarkMode(context)
+                            ? [
+                                Colors.black.withValues(alpha: 0.88),
+                                Colors.black.withValues(alpha: 0.62),
+                                Colors.black.withValues(alpha: 0.70),
+                                Colors.black.withValues(alpha: 0.92),
+                              ]
+                            : [
+                                Colors.white.withValues(alpha: 0.8),
+                                Colors.white.withValues(alpha: 0.5),
+                                Colors.white.withValues(alpha: 0.6),
+                                Colors.white.withValues(alpha: 0.9),
+                              ],
                       ),
                     ),
                   ),
@@ -185,13 +205,13 @@ class _AppSidebarState extends State<AppSidebar> {
                                 color: Colors.white, size: 20),
                           ),
                           const SizedBox(width: 10),
-                          const Text(
+                          Text(
                             'SkillSpace',
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.5,
-                              color: Colors.white,
+                              color: isDark ? Colors.white : AppColors.navy,
                             ),
                           ),
                           const Spacer(),
@@ -216,7 +236,9 @@ class _AppSidebarState extends State<AppSidebar> {
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 1.4,
-                          color: Colors.white.withValues(alpha: 0.35),
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.35)
+                              : AppColors.textGray,
                         ),
                       ),
                     ),
@@ -227,7 +249,6 @@ class _AppSidebarState extends State<AppSidebar> {
                         tab: tab,
                         isActive: tab == widget.activeTab,
                         onTap: () => widget.onTabSelected(tab),
-                        forceDark: true,
                       ),
                     ),
                     const Spacer(),
@@ -563,15 +584,16 @@ class _MobileDrawer extends StatelessWidget {
                 child: Stack(
                   children: [
                     // ── Spline 3D background ──────────────────────────
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: SplineRobot(
-                          mouseNotifier: drawerMouseNotifier,
-                          width: double.infinity,
-                          height: double.infinity,
+                    if (isDark)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: SplineRobot(
+                            mouseNotifier: drawerMouseNotifier,
+                            width: double.infinity,
+                            height: double.infinity,
+                          ),
                         ),
                       ),
-                    ),
                     // ── Gradient overlay ──────────────────────────────
                     Positioned.fill(
                       child: Container(
@@ -580,12 +602,19 @@ class _MobileDrawer extends StatelessWidget {
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             stops: const [0.0, 0.35, 0.65, 1.0],
-                            colors: [
-                              Colors.black.withValues(alpha: 0.88),
-                              Colors.black.withValues(alpha: 0.62),
-                              Colors.black.withValues(alpha: 0.70),
-                              Colors.black.withValues(alpha: 0.92),
-                            ],
+                            colors: isDark
+                                ? [
+                                    Colors.black.withValues(alpha: 0.88),
+                                    Colors.black.withValues(alpha: 0.62),
+                                    Colors.black.withValues(alpha: 0.70),
+                                    Colors.black.withValues(alpha: 0.92),
+                                  ]
+                                : [
+                                    Colors.white.withValues(alpha: 0.8),
+                                    Colors.white.withValues(alpha: 0.5),
+                                    Colors.white.withValues(alpha: 0.6),
+                                    Colors.white.withValues(alpha: 0.9),
+                                  ],
                           ),
                         ),
                       ),
@@ -843,6 +872,7 @@ class _NavItem extends StatefulWidget {
     required this.tab,
     required this.isActive,
     required this.onTap,
+    // ignore: unused_element
     this.forceDark = false,
   });
 
@@ -855,6 +885,7 @@ class _NavItemState extends State<_NavItem> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ReactiveMode.isDarkMode(context);
     final bool highlighted = widget.isActive || _hovered;
 
     return Padding(
@@ -874,7 +905,9 @@ class _NavItemState extends State<_NavItem> {
               color: widget.isActive
                   ? AppColors.orange.withValues(alpha: 0.13)
                   : _hovered
-                      ? Colors.white.withValues(alpha: 0.07)
+                      ? (isDark
+                          ? Colors.white.withValues(alpha: 0.07)
+                          : Colors.black.withValues(alpha: 0.03))
                       : Colors.transparent,
               borderRadius: BorderRadius.circular(16),
               // Glowing glass border
@@ -882,8 +915,12 @@ class _NavItemState extends State<_NavItem> {
                 color: widget.isActive
                     ? AppColors.orange.withValues(alpha: 0.50)
                     : _hovered
-                        ? Colors.white.withValues(alpha: 0.18)
-                        : Colors.white.withValues(alpha: 0.06),
+                        ? (isDark
+                            ? Colors.white.withValues(alpha: 0.18)
+                            : Colors.black.withValues(alpha: 0.08))
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.06)
+                            : Colors.transparent),
                 width: widget.isActive ? 1.5 : 1.0,
               ),
               // Outer glow for active state
@@ -900,7 +937,7 @@ class _NavItemState extends State<_NavItem> {
                         offset: const Offset(0, 2),
                       ),
                     ]
-                  : _hovered
+                  : _hovered && isDark
                       ? [
                           BoxShadow(
                             color: Colors.white.withValues(alpha: 0.04),
@@ -948,12 +985,16 @@ class _NavItemState extends State<_NavItem> {
                   decoration: BoxDecoration(
                     color: highlighted
                         ? AppColors.orange.withValues(alpha: 0.20)
-                        : Colors.white.withValues(alpha: 0.08),
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.black.withValues(alpha: 0.04)),
                     borderRadius: BorderRadius.circular(11),
                     border: Border.all(
                       color: highlighted
                           ? AppColors.orange.withValues(alpha: 0.35)
-                          : Colors.white.withValues(alpha: 0.10),
+                          : (isDark
+                              ? Colors.white.withValues(alpha: 0.10)
+                              : Colors.transparent),
                       width: 1,
                     ),
                     boxShadow: highlighted
@@ -971,7 +1012,9 @@ class _NavItemState extends State<_NavItem> {
                     size: 18,
                     color: highlighted
                         ? AppColors.orange
-                        : Colors.white.withValues(alpha: 0.45),
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.45)
+                            : AppColors.textGray),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -983,10 +1026,14 @@ class _NavItemState extends State<_NavItem> {
                       fontWeight:
                           widget.isActive ? FontWeight.w700 : FontWeight.w500,
                       color: widget.isActive
-                          ? Colors.white
+                          ? (isDark ? Colors.white : AppColors.orange)
                           : _hovered
-                              ? Colors.white.withValues(alpha: 0.85)
-                              : Colors.white.withValues(alpha: 0.48),
+                              ? (isDark
+                                  ? Colors.white.withValues(alpha: 0.85)
+                                  : AppColors.textDark)
+                              : (isDark
+                                  ? Colors.white.withValues(alpha: 0.48)
+                                  : AppColors.textGray),
                       letterSpacing: widget.isActive ? 0.1 : 0,
                     ),
                   ),

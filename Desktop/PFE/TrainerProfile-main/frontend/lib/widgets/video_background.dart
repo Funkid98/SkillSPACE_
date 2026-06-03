@@ -26,6 +26,7 @@ class _VideoBackgroundState extends State<VideoBackground> {
   late VideoPlayerController _controller;
   bool _isInitialized = false;
   bool _isLoading = true;
+  // ignore: unused_field
   String? _error;
 
   @override

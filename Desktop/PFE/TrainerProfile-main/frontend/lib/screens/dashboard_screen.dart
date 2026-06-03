@@ -97,7 +97,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
 
         final dashboardData = state.dashboardData!;
-        final profileCompleteness = state.profileData?.profileCompleteness ?? 0;
+        // Calculate completeness client-side (same logic as ProfileCubit._calcScore)
+        // so it reflects the real current data, not a stale DB-stored value.
+        int profileCompleteness = 0;
+        final _p = state.profileData;
+        if (_p != null) {
+          if (_p.firstName.isNotEmpty) profileCompleteness += 10;
+          if (_p.lastName.isNotEmpty) profileCompleteness += 10;
+          if (_p.email.isNotEmpty) profileCompleteness += 10;
+          if (_p.phone.isNotEmpty) profileCompleteness += 10;
+          if (_p.jobTitle.isNotEmpty) profileCompleteness += 10;
+          if (_p.location.isNotEmpty) profileCompleteness += 10;
+          if (_p.bio.isNotEmpty) profileCompleteness += 10;
+          if (_p.linkedIn.isNotEmpty) profileCompleteness += 10;
+          if (_p.profilePicture.isNotEmpty) profileCompleteness += 10;
+          if (_p.expertise.isNotEmpty) profileCompleteness += 10;
+        }
+        profileCompleteness = profileCompleteness.clamp(0, 100);
         final isProfileComplete = profileCompleteness >= 80;
 
         return Scaffold(
@@ -577,24 +593,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           spacing: 12,
           runSpacing: 12,
           children: [
-            OutlinedButton.icon(
-              onPressed: () {
-                final userId =
-                    context.read<AuthCubit>().state.loggedInUser?['id'] ?? '';
-                context.read<TrainerCubit>().seedData(userId);
-              },
-              icon:
-                  const Icon(Icons.refresh, size: 20, color: Color(0xFF64748B)),
-              label: const Text('Données Démo',
-                  style: TextStyle(color: Color(0xFF64748B))),
-              style: OutlinedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                side: BorderSide(color: Colors.grey[300]!),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
             ElevatedButton.icon(
               onPressed: () => _showFormationDialog(null),
               icon: const Icon(Icons.add, size: 20),
@@ -848,56 +846,60 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             'Titre de la formation *',
                                             'Ex : React avancé & Performance',
                                             titleController,
+                                            enabled: !isEdit,
                                             inputFormatters: [
                                           FilteringTextInputFormatter.deny(
                                               RegExp(r'[0-9]'))
                                         ])),
                                     const SizedBox(width: 12),
-                                    Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 24.0),
-                                      child: IconButton(
-                                        onPressed: () async {
-                                          if (titleController.text
-                                              .trim()
-                                              .isEmpty) {
+                                    if (!isEdit)
+                                      Padding(
+                                        padding:
+                                            const EdgeInsets.only(bottom: 24.0),
+                                        child: IconButton(
+                                          onPressed: () async {
+                                            if (titleController.text
+                                                .trim()
+                                                .isEmpty) {
+                                              Fluttertoast.showToast(
+                                                  msg:
+                                                      "Entrez d'abord un titre.");
+                                              return;
+                                            }
                                             Fluttertoast.showToast(
-                                                msg:
-                                                    "Entrez d'abord un titre.");
-                                            return;
-                                          }
-                                          Fluttertoast.showToast(
-                                              msg: "Génération en cours...");
-                                          final content = await trainerCubit
-                                              .generateFormationContent(
-                                                  titleController.text.trim());
-                                          if (content != null) {
-                                            setDialogState(() {
-                                              descController.text =
-                                                  content['description'] ?? '';
-                                              tagsController.text =
-                                                  (content['tags'] as List?)
-                                                          ?.join(', ') ??
-                                                      '';
-                                            });
-                                            Fluttertoast.showToast(
-                                                msg: "Contenu généré !");
-                                          } else {
-                                            Fluttertoast.showToast(
-                                                msg:
-                                                    "Erreur lors de la génération.");
-                                          }
-                                        },
-                                        icon: const Icon(Icons.auto_awesome,
-                                            color: Color(0xFFE9652B)),
-                                        tooltip: 'Améliorer avec l\'IA',
-                                        style: IconButton.styleFrom(
-                                          backgroundColor:
-                                              const Color(0xFFFFF7ED),
-                                          padding: const EdgeInsets.all(12),
+                                                msg: "Génération en cours...");
+                                            final content = await trainerCubit
+                                                .generateFormationContent(
+                                                    titleController.text
+                                                        .trim());
+                                            if (content != null) {
+                                              setDialogState(() {
+                                                descController.text =
+                                                    content['description'] ??
+                                                        '';
+                                                tagsController.text =
+                                                    (content['tags'] as List?)
+                                                            ?.join(', ') ??
+                                                        '';
+                                              });
+                                              Fluttertoast.showToast(
+                                                  msg: "Contenu généré !");
+                                            } else {
+                                              Fluttertoast.showToast(
+                                                  msg:
+                                                      "Erreur lors de la génération.");
+                                            }
+                                          },
+                                          icon: const Icon(Icons.auto_awesome,
+                                              color: Color(0xFFE9652B)),
+                                          tooltip: 'Améliorer avec l\'IA',
+                                          style: IconButton.styleFrom(
+                                            backgroundColor:
+                                                const Color(0xFFFFF7ED),
+                                            padding: const EdgeInsets.all(12),
+                                          ),
                                         ),
                                       ),
-                                    ),
                                   ],
                                 ),
                                 _buildTextField(
@@ -905,6 +907,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     'Décrivez en quelques phrases ce que les apprenants vont maîtriser...',
                                     descController,
                                     maxLines: 3,
+                                    enabled: !isEdit,
                                     inputFormatters: [
                                       FilteringTextInputFormatter.deny(
                                           RegExp(r'[0-9]'))
@@ -913,6 +916,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     'Compétences (séparées par des virgules) *',
                                     'React, TypeScript, Performance',
                                     tagsController,
+                                    enabled: !isEdit,
                                     inputFormatters: [
                                       FilteringTextInputFormatter.deny(
                                           RegExp(r'[0-9]'))
@@ -1009,11 +1013,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                                       14)),
                                                         );
                                                       }).toList(),
-                                                      onChanged: (val) {
-                                                        setDialogState(() =>
-                                                            selectedLevel =
-                                                                val!);
-                                                      },
+                                                      onChanged: isEdit
+                                                          ? null
+                                                          : (val) {
+                                                              setDialogState(() =>
+                                                                  selectedLevel =
+                                                                      val!);
+                                                            },
                                                     ),
                                                   ),
                                                 ),
@@ -1050,6 +1056,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             },
                                           );
                                         },
+                                        enabled: !isEdit,
                                       ),
                                     ),
                                     const SizedBox(width: 20),
@@ -1070,6 +1077,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             });
                                           }
                                         },
+                                        enabled: !isEdit,
                                       ),
                                     ),
                                   ],
@@ -1272,7 +1280,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       String label, String hint, TextEditingController controller,
       {int maxLines = 1,
       TextInputType keyboardType = TextInputType.text,
-      List<TextInputFormatter>? inputFormatters}) {
+      List<TextInputFormatter>? inputFormatters,
+      bool enabled = true}) {
     final isDark = ReactiveMode.isDarkMode(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 24.0),
@@ -1291,6 +1300,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: TextField(
                 controller: controller,
+                enabled: enabled,
                 maxLines: maxLines,
                 keyboardType: keyboardType,
                 inputFormatters: inputFormatters,
@@ -1336,7 +1346,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildDateTimePickerField(String label,
-      TextEditingController controller, IconData icon, VoidCallback onTap) {
+      TextEditingController controller, IconData icon, VoidCallback onTap,
+      {bool enabled = true}) {
     final isDark = ReactiveMode.isDarkMode(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 18.0),
@@ -1354,11 +1365,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: InkWell(
-                onTap: onTap,
+                onTap: enabled ? onTap : null,
                 borderRadius: BorderRadius.circular(12),
                 child: IgnorePointer(
                   child: TextField(
                     controller: controller,
+                    enabled: enabled,
                     style:
                         TextStyle(color: isDark ? Colors.white : Colors.black),
                     decoration: InputDecoration(

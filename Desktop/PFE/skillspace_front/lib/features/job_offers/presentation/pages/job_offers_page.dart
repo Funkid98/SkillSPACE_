@@ -3,14 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_theme/reactive_theme.dart';
 import '../../../profile/presentation/pages/candidate_formation_details_page.dart';
 import '../../cubit/job_offers_cubit.dart';
+import '../../data/job_offers_api.dart';
 import '../../data/models/job_offer_model.dart';
 import '../../../../core/app_colors.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../shared/widgets/animated_reveal.dart';
 import '../../../../core/utils/responsive.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../../../../core/api_constants.dart';
 
 class JobOffersPage extends StatelessWidget {
   const JobOffersPage({super.key});
@@ -46,8 +44,14 @@ class _JobOffersContent extends StatelessWidget {
 
     final contracts = [l10n.all, 'CDI', 'CDD', 'Freelance', 'Stage'];
 
+    final compatibleOffers = state.filteredOffers.where((o) {
+      if (o.status == 'ANALYSING') return true;
+      if (o.compatibilityPercent == 0 && o.matchingSkills == 0) return false;
+      return true;
+    }).toList();
+
     final highMatch =
-        state.filteredOffers.where((o) => o.compatibilityPercent >= 80).length;
+        compatibleOffers.where((o) => o.compatibilityPercent >= 80).length;
 
     final isDark = ReactiveMode.isDarkMode(context);
     return SingleChildScrollView(
@@ -150,7 +154,7 @@ class _JobOffersContent extends StatelessWidget {
           const SizedBox(height: 32),
 
           // Offers list
-          if (state.filteredOffers.isEmpty)
+          if (compatibleOffers.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 64),
               child: Center(
@@ -172,7 +176,7 @@ class _JobOffersContent extends StatelessWidget {
               ),
             )
           else
-            ...state.filteredOffers.asMap().entries.map(
+            ...compatibleOffers.asMap().entries.map(
                   (entry) => Padding(
                     padding: const EdgeInsets.only(bottom: 20),
                     child: AnimatedReveal(
@@ -272,38 +276,25 @@ class _JobCardState extends State<_JobCard> {
   Future<void> _navigateToFormation(String formationId) async {
     setState(() => _isLoadingFormation = true);
     try {
-      final response = await http.get(
-        Uri.parse(
-            '${ApiConstants.baseUrl}/api/formateur/formations/item/$formationId'),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => CandidateFormationDetailsPage(
-                formation: data,
-                aiReason: widget.offer.recommendation,
-              ),
+      final data = await JobOffersApi.fetchFormationItem(formationId);
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CandidateFormationDetailsPage(
+              formation: data,
+              aiReason: widget.offer.recommendation,
             ),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content:
-                    Text('Impossible de charger les détails de la formation.')),
-          );
-        }
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
+        final errorMsg = e.toString().contains('Failed to load')
+            ? 'Impossible de charger les détails de la formation.'
+            : 'Erreur de connexion au service de formation.';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Erreur de connexion au service de formation.')),
+          SnackBar(content: Text(errorMsg)),
         );
       }
     } finally {
@@ -314,54 +305,43 @@ class _JobCardState extends State<_JobCard> {
   Future<void> _navigateToFormationByName(String skillName) async {
     setState(() => _isLoadingFormation = true);
     try {
-      final response = await http.get(
-        Uri.parse(
-            '${ApiConstants.baseUrl}/api/formateur/all-formations?query=${Uri.encodeComponent(skillName)}'),
-      );
+      final List<dynamic> data =
+          await JobOffersApi.fetchFormationsByQuery(skillName);
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        if (data.isNotEmpty) {
-          final formation = data.first;
-          if (mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => CandidateFormationDetailsPage(
-                  formation: formation,
-                  aiReason:
-                      'Formation recommandée pour combler votre lacune en $skillName.',
-                ),
+      if (data.isNotEmpty) {
+        final formation = data.first;
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CandidateFormationDetailsPage(
+                formation: formation,
+                aiReason:
+                    'Formation recommandée pour combler votre lacune en $skillName.',
               ),
-            );
-          }
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                    'Aucune formation pour "$skillName" n\'est disponible actuellement.'),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: AppColors.orange,
-              ),
-            );
-          }
+            ),
+          );
         }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Impossible de charger les formations.'),
+            SnackBar(
+              content: Text(
+                  'Aucune formation pour "$skillName" n\'est disponible actuellement.'),
               behavior: SnackBarBehavior.floating,
+              backgroundColor: AppColors.orange,
             ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
+        final errorMsg = e.toString().contains('Failed to load')
+            ? 'Impossible de charger les formations.'
+            : 'Erreur de connexion au service de formation.';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur de connexion au service de formation.'),
+          SnackBar(
+            content: Text(errorMsg),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -374,36 +354,24 @@ class _JobCardState extends State<_JobCard> {
   Future<void> _exploreAllFormations() async {
     setState(() => _isLoadingFormation = true);
     try {
-      final response = await http.get(
-        Uri.parse('${ApiConstants.baseUrl}/api/formateur/all-formations'),
-      );
-
-      if (response.statusCode == 200) {
-        final List<dynamic> formations = jsonDecode(response.body);
-        if (mounted) {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (context) =>
-                _AllFormationsModalContent(formations: formations),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Impossible de charger les formations.'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
+      final List<dynamic> formations = await JobOffersApi.fetchAllFormations();
+      if (mounted) {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) =>
+              _AllFormationsModalContent(formations: formations),
+        );
       }
     } catch (e) {
       if (mounted) {
+        final errorMsg = e.toString().contains('Failed to load')
+            ? 'Impossible de charger les formations.'
+            : 'Erreur de connexion au service de formation.';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur de connexion au service de formation.'),
+          SnackBar(
+            content: Text(errorMsg),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -421,7 +389,7 @@ class _JobCardState extends State<_JobCard> {
 
   String _getApplyButtonLabel(JobOffer offer, AppLocalizations l10n) {
     if (offer.applicationStatus == 'PENDING') {
-      return 'Candidature envoyée';
+      return 'Vous avez déjà postulé';
     } else if (offer.applicationStatus == 'ACCEPTED') {
       return 'Candidature acceptée';
     } else if (offer.applicationStatus == 'INTERVIEW_PLANNED') {

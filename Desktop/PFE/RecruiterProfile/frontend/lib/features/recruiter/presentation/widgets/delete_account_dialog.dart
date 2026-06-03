@@ -56,7 +56,11 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
   Future<void> _verifyWithGoogle() async {
     setState(() => _isLoading = true);
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        clientId:
+            '1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com',
+        scopes: ['email', 'openid'],
+      );
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
         setState(() => _isLoading = false);
@@ -65,12 +69,13 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
       }
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
-      if (googleAuth.idToken == null) {
+      if (googleAuth.idToken == null && googleAuth.accessToken == null) {
         setState(() => _isLoading = false);
         _showError('Impossible d\'obtenir le token Google');
         return;
       }
-      await _deleteAccount(googleToken: googleAuth.idToken);
+      await _deleteAccount(
+          googleToken: googleAuth.idToken ?? googleAuth.accessToken);
     } catch (e) {
       setState(() => _isLoading = false);
       _showError('Erreur Google: $e');
@@ -126,7 +131,7 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
               OutlinedButton.icon(
                 onPressed: _verifyWithGoogle,
                 icon: Image.network(
-                    'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/120px-Google_%22G%22_logo.svg.png',
                     width: 24),
                 label: const Text('Vérifier avec Google'),
                 style: OutlinedButton.styleFrom(

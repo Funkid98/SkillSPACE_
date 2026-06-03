@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/formateur_model.dart';
 import '../models/formation_model.dart';
@@ -16,7 +17,7 @@ class DashboardData {
 }
 
 class DashboardService {
-  final String baseUrl = '/api/formateur';
+  final String baseUrl = kDebugMode ? 'http://localhost:8088/api/formateur' : '/api/formateur';
 
   Future<DashboardData?> getDashboardData(String userId) async {
     try {

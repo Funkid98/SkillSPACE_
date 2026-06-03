@@ -17,6 +17,7 @@ import '../../../../core/app_colors.dart';
 import '../../../../core/app_text_styles.dart';
 import '../../../../shared/widgets/animated_reveal.dart';
 import '../../../../shared/widgets/notification_bell.dart';
+import 'package:reactive_theme/reactive_theme.dart';
 
 class RecruiterShell extends StatefulWidget {
   final RecruiterTab initialTab;
@@ -75,7 +76,7 @@ class _RecruiterShellState extends State<RecruiterShell> {
     }
 
     final isMobile = MediaQuery.of(context).size.width < 800;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ReactiveMode.isDarkMode(context);
 
     return BlocProvider(
       create: (context) => RecruiterProfileCubit(
@@ -188,7 +189,7 @@ class _RecruiterMobileTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ReactiveMode.isDarkMode(context);
     return Container(
       height: 70,
       decoration: BoxDecoration(
@@ -264,7 +265,7 @@ class _RecruiterMobileDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ReactiveMode.isDarkMode(context);
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       child: BackdropFilter(
@@ -301,15 +302,16 @@ class _RecruiterMobileDrawer extends StatelessWidget {
                 child: Stack(
                   children: [
                     // ── Spline 3D background ──────────────────────────
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: SplineRobot(
-                          mouseNotifier: drawerMouseNotifier,
-                          width: double.infinity,
-                          height: double.infinity,
+                    if (isDark)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: SplineRobot(
+                            mouseNotifier: drawerMouseNotifier,
+                            width: double.infinity,
+                            height: double.infinity,
+                          ),
                         ),
                       ),
-                    ),
                     // ── Gradient overlay ──────────────────────────────
                     Positioned.fill(
                       child: Container(
@@ -318,12 +320,19 @@ class _RecruiterMobileDrawer extends StatelessWidget {
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             stops: const [0.0, 0.35, 0.65, 1.0],
-                            colors: [
-                              Colors.black.withValues(alpha: 0.88),
-                              Colors.black.withValues(alpha: 0.62),
-                              Colors.black.withValues(alpha: 0.70),
-                              Colors.black.withValues(alpha: 0.92),
-                            ],
+                            colors: isDark
+                                ? [
+                                    Colors.black.withValues(alpha: 0.88),
+                                    Colors.black.withValues(alpha: 0.62),
+                                    Colors.black.withValues(alpha: 0.70),
+                                    Colors.black.withValues(alpha: 0.92),
+                                  ]
+                                : [
+                                    Colors.white.withValues(alpha: 0.8),
+                                    Colors.white.withValues(alpha: 0.5),
+                                    Colors.white.withValues(alpha: 0.6),
+                                    Colors.white.withValues(alpha: 0.9),
+                                  ],
                           ),
                         ),
                       ),

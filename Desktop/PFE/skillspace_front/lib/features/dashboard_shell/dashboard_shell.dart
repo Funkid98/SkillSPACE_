@@ -119,7 +119,9 @@ class _DashboardShellState extends State<DashboardShell> {
       case DashboardTab.tableau:
         return BlocProvider(
           create: (_) => DashboardCubit()..loadDashboard(),
-          child: const DashboardPage(),
+          child: DashboardPage(
+            onSeeAllOffers: () => _onTabChanged(DashboardTab.offres),
+          ),
         );
       case DashboardTab.profil:
         return BlocProvider(

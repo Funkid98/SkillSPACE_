@@ -54,10 +54,22 @@ class _FormationsScreenState extends State<FormationsScreen> {
           child: CircularProgressIndicator(color: Color(0xFFE9652B)));
     }
 
-    // Read profile completeness from the shared TrainerCubit
-    final profileCompleteness =
-        context.watch<TrainerCubit>().state.profileData?.profileCompleteness ??
-            0;
+    // Calculate completeness client-side (same logic as ProfileCubit._calcScore)
+    final _pd = context.watch<TrainerCubit>().state.profileData;
+    int profileCompleteness = 0;
+    if (_pd != null) {
+      if (_pd.firstName.isNotEmpty) profileCompleteness += 10;
+      if (_pd.lastName.isNotEmpty) profileCompleteness += 10;
+      if (_pd.email.isNotEmpty) profileCompleteness += 10;
+      if (_pd.phone.isNotEmpty) profileCompleteness += 10;
+      if (_pd.jobTitle.isNotEmpty) profileCompleteness += 10;
+      if (_pd.location.isNotEmpty) profileCompleteness += 10;
+      if (_pd.bio.isNotEmpty) profileCompleteness += 10;
+      if (_pd.linkedIn.isNotEmpty) profileCompleteness += 10;
+      if (_pd.profilePicture.isNotEmpty) profileCompleteness += 10;
+      if (_pd.expertise.isNotEmpty) profileCompleteness += 10;
+    }
+    profileCompleteness = profileCompleteness.clamp(0, 100);
     final isProfileComplete = profileCompleteness >= 80;
 
     return Scaffold(

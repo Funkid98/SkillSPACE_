@@ -1,9 +1,10 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/formateur_model.dart';
 
 class FormateurService {
-  final String baseUrl = '/api/formateur';
+  final String baseUrl = kDebugMode ? 'http://localhost:8088/api/formateur' : '/api/formateur';
 
   Future<FormateurModel?> getProfile(String userId) async {
     try {

@@ -11,7 +11,8 @@ import 'package:flutter/services.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 class DashboardPage extends StatelessWidget {
-  const DashboardPage({super.key});
+  final VoidCallback? onSeeAllOffers;
+  const DashboardPage({super.key, this.onSeeAllOffers});
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +32,9 @@ class DashboardPage extends StatelessWidget {
           data = (state as DashboardLoaded).data;
         }
         return _DashboardContent(
-            data: data, isSaving: state is DashboardSaving);
+            data: data,
+            isSaving: state is DashboardSaving,
+            onSeeAllOffers: onSeeAllOffers);
       },
     );
   }
@@ -40,7 +43,9 @@ class DashboardPage extends StatelessWidget {
 class _DashboardContent extends StatelessWidget {
   final DashboardData data;
   final bool isSaving;
-  const _DashboardContent({required this.data, this.isSaving = false});
+  final VoidCallback? onSeeAllOffers;
+  const _DashboardContent(
+      {required this.data, this.isSaving = false, this.onSeeAllOffers});
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +98,10 @@ class _DashboardContent extends StatelessWidget {
                     children: [
                       AnimatedReveal(
                           delay: const Duration(milliseconds: 700),
-                          child: _RecentOffersCard(offers: data.recentOffers)),
+                          child: _RecentOffersCard(
+                              offers: data.recentOffers,
+                              hasCv: data.hasCv,
+                              onSeeAllOffers: onSeeAllOffers)),
                       const SizedBox(height: 20),
                       AnimatedReveal(
                           delay: const Duration(milliseconds: 800),
@@ -123,7 +131,9 @@ class _DashboardContent extends StatelessWidget {
                             AnimatedReveal(
                                 delay: const Duration(milliseconds: 700),
                                 child: _RecentOffersCard(
-                                    offers: data.recentOffers)),
+                                    offers: data.recentOffers,
+                                    hasCv: data.hasCv,
+                                    onSeeAllOffers: onSeeAllOffers)),
                             const SizedBox(height: 24),
                             AnimatedReveal(
                                 delay: const Duration(milliseconds: 900),
@@ -318,7 +328,10 @@ class _StatCard extends StatelessWidget {
 // ─── Recent Offers Card ────────────────────────────────────────────────────
 class _RecentOffersCard extends StatelessWidget {
   final List<RecentOffer> offers;
-  const _RecentOffersCard({required this.offers});
+  final bool hasCv;
+  final VoidCallback? onSeeAllOffers;
+  const _RecentOffersCard(
+      {required this.offers, required this.hasCv, this.onSeeAllOffers});
 
   @override
   Widget build(BuildContext context) {
@@ -350,7 +363,7 @@ class _RecentOffersCard extends StatelessWidget {
                 ),
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: onSeeAllOffers,
                 child: Row(
                   children: [
                     Text(
@@ -369,7 +382,16 @@ class _RecentOffersCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          if (offers.isEmpty)
+          if (!hasCv)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                    'Veuillez importer votre CV pour voir les offres compatibles',
+                    style: TextStyle(color: AppColors.textGray, fontSize: 14)),
+              ),
+            )
+          else if (offers.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Center(

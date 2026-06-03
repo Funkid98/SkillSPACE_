@@ -749,17 +749,31 @@ const deleteRecruiterAccount = async (req, res) => {
 
     if (googleToken) {
       // Google Re-Auth Flow
-      const { OAuth2Client } = require("google-auth-library");
-      const client = new OAuth2Client(
-        "1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com",
-      );
-      const ticket = await client.verifyIdToken({
-        idToken: googleToken,
-        audience:
+      let googleEmail;
+      
+      // Basic check: idToken is a JWT (has dots), accessToken usually starts with 'ya29' and has no/few dots.
+      if (googleToken.split('.').length === 3) {
+        const { OAuth2Client } = require("google-auth-library");
+        const client = new OAuth2Client(
           "1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com",
-      });
-      const payload = ticket.getPayload();
-      if (payload.email !== recruiter.email) {
+        );
+        const ticket = await client.verifyIdToken({
+          idToken: googleToken,
+          audience:
+            "1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com",
+        });
+        const payload = ticket.getPayload();
+        googleEmail = payload.email;
+      } else {
+        const axios = require('axios');
+        const response = await axios.get(
+          "https://www.googleapis.com/oauth2/v3/userinfo",
+          { headers: { Authorization: `Bearer ${googleToken}` } }
+        );
+        googleEmail = response.data.email;
+      }
+
+      if (googleEmail !== recruiter.email) {
         return res
           .status(401)
           .json({ message: "L'email Google ne correspond pas au compte" });

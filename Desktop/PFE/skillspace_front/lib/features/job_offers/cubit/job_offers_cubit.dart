@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pfe/core/network/api_client.dart';
+import '../data/job_offers_api.dart';
 import '../data/models/job_offer_model.dart';
 
 part 'job_offers_state.dart';
@@ -126,8 +126,7 @@ class JobOffersCubit extends Cubit<JobOffersState> {
 
   Future<void> registerView(String offerId) async {
     try {
-      final client = ApiClient();
-      await client.put('/api/offers/$offerId/view', {});
+      await JobOffersApi.registerView(offerId);
     } catch (_) {
       // Unobstructive silent error handler
     }
@@ -139,17 +138,41 @@ class JobOffersCubit extends Cubit<JobOffersState> {
       if (offer.recruiterId == null || offer.recruiterId!.isEmpty) {
         return 'Recruteur introuvable pour cette offre.';
       }
-      final client = ApiClient();
-      final response = await client.post('/candidat/apply', {
-        'offerId': offer.id,
-        'recruiterId': offer.recruiterId,
-        'offerTitle': offer.title,
-      });
-      if (response.statusCode == 200) {
-        return null; // success
+      await JobOffersApi.applyToOffer(
+        offerId: offer.id,
+        recruiterId: offer.recruiterId!,
+        offerTitle: offer.title,
+      );
+
+      if (state is JobOffersLoaded) {
+        final current = state as JobOffersLoaded;
+        final updatedAllOffers = current.offers.map((o) {
+          if (o.id == offer.id) {
+            return o.copyWith(applicationStatus: 'PENDING');
+          }
+          return o;
+        }).toList();
+        
+        final updatedFilteredOffers = current.filteredOffers.map((o) {
+          if (o.id == offer.id) {
+            return o.copyWith(applicationStatus: 'PENDING');
+          }
+          return o;
+        }).toList();
+
+        emit(JobOffersLoaded(
+          offers: updatedAllOffers,
+          filteredOffers: updatedFilteredOffers,
+          searchQuery: current.searchQuery,
+          selectedContract: current.selectedContract,
+        ));
       }
-      return 'Erreur lors de la candidature (${response.statusCode}).';
+
+      return null; // success
     } catch (e) {
+      if (e.toString().contains('Failed to apply to offer')) {
+        return 'Erreur lors de la candidature.';
+      }
       return 'Erreur réseau. Veuillez réessayer.';
     }
   }

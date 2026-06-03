@@ -284,8 +284,9 @@ class RecruiterOffersPage extends StatelessWidget {
                           context: context,
                           controller: titleController,
                           label: "Titre du poste",
-                          hint: "ex: Développeur Fullstack Senior",
+                          hint: "ex: Développeur Fullstack React Senior",
                           icon: Icons.title_rounded,
+                          enabled: existingOffer == null,
                         ),
                         const SizedBox(height: 20),
                         Row(
@@ -392,6 +393,7 @@ class RecruiterOffersPage extends StatelessWidget {
                           label: "Compétences clés",
                           hint: "ex: React, Flutter, Python, Docker...",
                           icon: Icons.psychology_rounded,
+                          enabled: existingOffer == null,
                         ),
                       ],
                     ),
@@ -521,6 +523,7 @@ class RecruiterOffersPage extends StatelessWidget {
     required String hint,
     required IconData icon,
     int maxLines = 1,
+    bool enabled = true,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
@@ -544,7 +547,11 @@ class RecruiterOffersPage extends StatelessWidget {
         TextField(
           controller: controller,
           maxLines: maxLines,
-          style: const TextStyle(fontSize: 15),
+          enabled: enabled,
+          style: TextStyle(
+              fontSize: 15,
+              color:
+                  enabled ? null : (isDark ? Colors.white54 : Colors.black54)),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
@@ -570,6 +577,10 @@ class RecruiterOffersPage extends StatelessWidget {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(color: AppColors.orange, width: 2),
+            ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
             ),
           ),
         ),
@@ -610,7 +621,10 @@ class RecruiterOffersPage extends StatelessWidget {
               .map((t) => DropdownMenuItem(value: t, child: Text(t)))
               .toList(),
           onChanged: onChanged,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+          dropdownColor: isDark ? AppColors.surfaceDark : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          icon: Icon(Icons.keyboard_arrow_down_rounded,
+              color: isDark ? Colors.white38 : AppColors.textGray),
           style: TextStyle(
               fontSize: 15, color: isDark ? Colors.white : AppColors.textDark),
           decoration: InputDecoration(

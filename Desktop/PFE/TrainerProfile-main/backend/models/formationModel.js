@@ -12,6 +12,8 @@ const formationSchema = new mongoose.Schema({
   studentCount: { type: Number, default: 0 },
   students: [{
     name: { type: String, required: true },
+    email: { type: String },
+    userId: { type: String },
     joinedAt: { type: Date, default: Date.now },
     rating: { type: Number, default: 0 }
   }],

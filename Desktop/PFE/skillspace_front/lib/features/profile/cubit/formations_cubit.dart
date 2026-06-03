@@ -1,50 +1,40 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pfe/core/network/api_client.dart';
-import 'dart:convert';
+import '../data/profile_api.dart';
 
 part 'formations_state.dart';
 
 // Uses ApiClient (BrowserClient + withCredentials) — no manual token required.
 class FormationsCubit extends Cubit<FormationsState> {
-  final ApiClient _apiClient = ApiClient();
-
   FormationsCubit() : super(FormationsInitial());
 
   Future<void> fetchFormations() async {
     emit(FormationsLoading());
     try {
-      final response = await _apiClient.get('/candidat/formations');
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        emit(FormationsLoaded(data));
-      } else if (response.statusCode == 401) {
-        emit(FormationsError('Non authentifié'));
-      } else {
-        emit(FormationsError('Impossible de charger vos formations'));
-      }
+      final data = await ProfileApi.fetchFormations();
+      emit(FormationsLoaded(data));
     } catch (e) {
-      emit(FormationsError('Erreur réseau : $e'));
+      final msg = e.toString();
+      if (msg.contains('Non authentifié')) {
+        emit(FormationsError('Non authentifié'));
+      } else if (msg.contains('Impossible de charger')) {
+        emit(FormationsError('Impossible de charger vos formations'));
+      } else {
+        emit(FormationsError('Erreur réseau : $e'));
+      }
     }
   }
 
   Future<void> completeFormation(String formationId) async {
     try {
-      final response =
-          await _apiClient.post('/candidat/complete/$formationId', {});
-      if (response.statusCode == 200) {
-        await fetchFormations();
-      }
+      await ProfileApi.completeFormation(formationId);
+      await fetchFormations();
     } catch (_) {}
   }
 
   Future<void> leaveFormation(String formationId) async {
     try {
-      final response =
-          await _apiClient.post('/candidat/leave/$formationId', {});
-      if (response.statusCode == 200) {
-        await fetchFormations();
-      }
+      await ProfileApi.leaveFormation(formationId);
+      await fetchFormations();
     } catch (_) {}
   }
 
@@ -84,12 +74,8 @@ class FormationsCubit extends Cubit<FormationsState> {
     }
 
     try {
-      final response = await _apiClient.post('/candidat/review/$formationId', {
-        'rating': rating,
-        'review': review,
-      });
-
-      if (response.statusCode == 200) {
+      final success = await ProfileApi.submitReview(formationId, rating, review);
+      if (success) {
         return true;
       } else {
         if (previousFormations.isNotEmpty) {

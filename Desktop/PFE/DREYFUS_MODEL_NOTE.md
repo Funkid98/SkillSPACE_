@@ -106,18 +106,30 @@ Après le calcul du score, le système effectue une **vérification croisée** e
 
 Le score brut du quiz (0–100) est **mappé vers une plage de pourcentage** cohérente avec le niveau déterminé :
 
-| Niveau Déterminé | Plage de pourcentage stocké | Formule |
-|------------------|---------------------------|---------|
-| Débutant | 0% – 39% | `floor(score/100 × 39)` |
-| Intermédiaire | 40% – 79% | `40 + floor(score/100 × 39)` |
-| Avancé | 80% – 100% | `80 + floor(score/100 × 20)` |
+| Niveau Déterminé | Plage du pourcentage | Calcul appliqué |
+|------------------|---------------------|-----------------|
+| Débutant | 0 % – 39 % | `⌊score/100 × 40⌋` |
+| Intermédiaire | 40 % – 79 % | `40 + ⌊score/100 × 40⌋` |
+| Avancé | 80 % – 100 % | `80 + ⌊score/100 × 20⌋` |
 
-### Exemple concret
+> **Note** : La formule s'applique toujours sur le **niveau déterminé** (après promotion éventuelle).
+
+### Exemples concrets
+
+**Cas 1 — Débutant normal :**
 Un candidat passe le quiz **Débutant en Java** et obtient **45/100** :
 1. Score brut = 45
-2. Niveau déterminé = **Débutant** (car score < 100 sur un quiz Débutant)
-3. Pourcentage stocké = `floor(45/100 × 39)` = **17%**
-4. Le badge de compétence affiche correctement **"Débutant"**
+2. Niveau déterminé = **Débutant** (score < 100 → pas de promotion)
+3. Pourcentage stocké = `floor(45/100 × 40)` = **18%**
+4. Le badge affiche **"Débutant"**
+
+**Cas 2 — Promotion (underrated) :**
+Un candidat passe le quiz **Débutant** et obtient **100/100** :
+1. Score brut = 100
+2. Niveau déterminé = **Intermédiaire** (score parfait → promotion, Table 4.4)
+3. Pourcentage stocké = entrée minimale de la bande Intermédiaire = **40 %**
+   *(= `⌊100/100 × 40⌋` avec la formule Débutant, soit le plancher de la bande suivante)*
+4. Le badge affiche **"Intermédiaire"** à 40 %
 
 ---
 

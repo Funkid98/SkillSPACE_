@@ -9,6 +9,21 @@ const taskQueue = [];
 const processingTasks = new Set(); // Track tasks currently being processed to prevent loops
 let isProcessing = false;
 
+// Helper to check if two job titles match flexibly
+function checkTitleMatch(t1, t2) {
+  if (!t1 || !t2) return false;
+  const s1 = t1.toLowerCase();
+  const s2 = t2.toLowerCase();
+  if (s1.includes(s2) || s2.includes(s1)) return true;
+  
+  // Check word overlap
+  const w1 = s1.split(/[\s,.-]+/).filter(w => w.length > 2);
+  const w2 = s2.split(/[\s,.-]+/).filter(w => w.length > 2);
+  const common = w1.filter(word1 => w2.some(word2 => word2.includes(word1) || word1.includes(word2)));
+  
+  return common.length >= 1;
+}
+
 // Helpers to compute strict snapshots of skills for comparison
 const computeCandidateSkillsSnapshot = (skills) => {
   if (!skills || !Array.isArray(skills)) return "[]";
@@ -135,28 +150,9 @@ const handleCandidateTask = async (candidateId) => {
         ),
       ).length;
     }
-    const isTitleMatch =
-      candidate.jobtitle &&
-      (offer.title || "")
-        .toLowerCase()
-        .includes(candidate.jobtitle.toLowerCase());
+    const isTitleMatch = checkTitleMatch(candidate.jobtitle, offer.title);
 
-    // Skip if absolutely no chance of matching (threshold aligned with API: 2)
-    if (!isTitleMatch && matchCount < 2) {
-      // If match was stuck in ANALYSING, finalize it as FAILED or COMPLETED(0) to stop the loop
-      await Match.findOneAndUpdate(
-        { candidateId: candidate._id, offerId: offer._id, status: "ANALYSING" },
-        {
-          $set: {
-            status: "COMPLETED",
-            score: 0,
-            analysis:
-              "Le profil ne correspond pas assez aux pré-requis de l'offre.",
-          },
-        },
-      );
-      continue;
-    }
+    // FILTER REMOVED: Always run AI analysis even if title doesn't match and skills < 2
 
     const existingMatch = await Match.findOne({
       candidateId: candidate._id,
@@ -182,7 +178,8 @@ const handleCandidateTask = async (candidateId) => {
       if (
         !isCandidateSkillsChanged &&
         !isOfferRequirementsChanged &&
-        !isPoorQuality
+        !isPoorQuality &&
+        existingMatch.score > 0
       ) {
         // Skills haven't changed and quality is fine -> Skip analysis
         continue;
@@ -256,26 +253,9 @@ const handleOfferTask = async (offerId, offerData) => {
         ),
       ).length;
     }
-    const isTitleMatch =
-      candidate.jobtitle &&
-      (offer.title || "")
-        .toLowerCase()
-        .includes(candidate.jobtitle.toLowerCase());
+    const isTitleMatch = checkTitleMatch(candidate.jobtitle, offer.title);
 
-    if (!isTitleMatch && matchCount < 2) {
-      await Match.findOneAndUpdate(
-        { candidateId: candidate._id, offerId: offer._id, status: "ANALYSING" },
-        {
-          $set: {
-            status: "COMPLETED",
-            score: 0,
-            analysis:
-              "Le profil ne correspond pas assez aux pré-requis de l'offre.",
-          },
-        },
-      );
-      continue;
-    }
+    // FILTER REMOVED: Always run AI analysis even if title doesn't match and skills < 2
 
     const existingMatch = await Match.findOne({
       candidateId: candidate._id,
@@ -295,7 +275,7 @@ const handleOfferTask = async (offerId, offerData) => {
       const isOfferRequirementsChanged =
         existingMatch.offerRequirementsSnapshot !== currentOfferSnapshot;
 
-      if (!isCandidateSkillsChanged && !isOfferRequirementsChanged) {
+      if (!isCandidateSkillsChanged && !isOfferRequirementsChanged && existingMatch.score > 0) {
         continue; // Skip: No skills were added/removed/upgraded
       }
       console.log(

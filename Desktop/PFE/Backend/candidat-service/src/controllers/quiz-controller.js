@@ -96,24 +96,28 @@ const evaluateQuizHandler = async (req, res) => {
 
     result.determined_level = determinedLevel;
     result.level_match = levelMatch;
-
-    // ── Map raw score to the correct percent range for the determined level ──
-    // Badge system: 0-39 = Débutant, 40-79 = Intermédiaire, 80-100 = Avancé
+    // For confirmed / overrated / critical_mismatch:
+    //   Apply the formula for the DETERMINED level.
+    //     Débutant      → ⌊score/100 × 40⌋          (gives 0–39 for score 0–99)
+    //     Intermédiaire → 40 + ⌊score/100 × 40⌋    (gives 40–79 for score 0–99)
+    //     Avancé        → 80 + ⌊score/100 × 20⌋    (gives 80–100)
+    //
+    // For underrated (score = 100, promoted to next level):
+    //   The candidate answered a LOWER-level quiz perfectly.
+    //   We enter the promoted band at its MINIMUM threshold.
+    //   This equals applying the CLAIMED level’s formula with score=100:
+    //     Beginner→28 Intermediate : floor(100/100 × 40) = 40  → entry of Intermediate band
+    //     Intermediate → Advanced   : 40 + floor(100/100 × 40) = 80 → entry of Advanced band
     let mappedPercent = 0;
     if (levelMatch === "underrated") {
-      // The candidate just got promoted by scoring 100 in the lower level.
-      // They enter the new level at its minimum threshold.
       if (determinedLevel === "Intermediate") mappedPercent = 40;
       else if (determinedLevel === "Advanced") mappedPercent = 80;
     } else {
       if (determinedLevel === "Beginner") {
-        // Map 0-100 raw → 0-39 percent range
-        mappedPercent = Math.floor((score / 100) * 39);
+        mappedPercent = Math.floor((score / 100) * 40);
       } else if (determinedLevel === "Intermediate") {
-        // Map 0-100 raw → 40-79 percent range
-        mappedPercent = 40 + Math.floor((score / 100) * 39);
+        mappedPercent = 40 + Math.floor((score / 100) * 40);
       } else {
-        // Map 0-100 raw → 80-100 percent range
         mappedPercent = 80 + Math.floor((score / 100) * 20);
       }
     }
@@ -125,8 +129,9 @@ const evaluateQuizHandler = async (req, res) => {
       const skillIndex = user.skills.findIndex((s) => s.name === skill);
       if (skillIndex > -1) {
         user.skills[skillIndex].percent = mappedPercent;
+        user.skills[skillIndex].level = determinedLevel;
       } else {
-        user.skills.push({ name: skill, percent: mappedPercent });
+        user.skills.push({ name: skill, percent: mappedPercent, level: determinedLevel });
       }
       await user.save();
 

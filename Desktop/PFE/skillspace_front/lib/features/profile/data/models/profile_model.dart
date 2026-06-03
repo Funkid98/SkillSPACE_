@@ -37,7 +37,7 @@ class ProfileData {
       phone: json['telephone'] ?? '',
       location: json['localisation'] ?? '',
       bio: json['bio'] ?? '',
-      completionPercent: json['completion_percent'] ?? 0,
+      completionPercent: json['completion_percent'] ?? 30,
       hasCv: (json['cv_path'] as String?)?.isNotEmpty == true,
       entreprise: json['entreprise'] is Map
           ? (json['entreprise'] as Map)['nom']

@@ -25,6 +25,11 @@ const userSchema = new mongoose.Schema(
         {
           name: { type: String, required: true },
           percent: { type: Number, default: 50, min: 0, max: 100 },
+          level: {
+            type: String,
+            enum: ["Beginner", "Intermediate", "Advanced"],
+            default: "Beginner",
+          },
         },
       ],
       default: [],

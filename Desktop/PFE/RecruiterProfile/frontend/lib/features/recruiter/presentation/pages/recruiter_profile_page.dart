@@ -543,7 +543,10 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                         showDialog(
                           context: context,
                           barrierDismissible: false,
-                          builder: (ctx) => ChangePasswordDialog(email: email),
+                          builder: (ctx) => ChangePasswordDialog(
+                            email: email,
+                            apiUrl: 'http://localhost:8088/recruiter',
+                          ),
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -678,6 +681,11 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
               .map((e) => DropdownMenuItem(value: e, child: Text(e)))
               .toList(),
           onChanged: onChanged,
+          dropdownColor: isDark ? AppColors.surfaceDark : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          icon: Icon(Icons.keyboard_arrow_down_rounded, color: isDark ? Colors.white38 : AppColors.textGray),
+          style: TextStyle(
+              fontSize: 14, color: isDark ? Colors.white : AppColors.textDark),
           decoration: InputDecoration(
             filled: true,
             fillColor: isDark ? Colors.white.withOpacity(0.05) : AppColors.bg,

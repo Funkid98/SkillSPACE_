@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {
-  getProfile, updateProfile, patchProfile, getDashboardData, getFormations,
+  getProfile, getPublicProfile, updateProfile, patchProfile, getDashboardData, getFormations,
   getAllFormations, seedDummyData, suggestExpertise, generateBio, validateUrl,
   createFormation, updateFormation, deleteFormation, enhanceFormation,
   register, login, verifySignupOtp, checkEmailExists, enrollFormation, leaveFormation, getFormationById, updateFormationRating, terminateFormation, closeFormation, rateStudent,
@@ -11,6 +11,7 @@ const {
 router.route('/profile/:userId').get(getProfile).put(updateProfile).patch(patchProfile).delete(deleteFormateurAccount); // Keeping alias
 router.route('/profile/delete/:userId').delete(deleteFormateurAccount);
 router.route('/profile/google-reauth/:userId').post(googleReauth);
+router.route('/public-profile/:userId').get(getPublicProfile);
 
 router.route('/dashboard/:userId').get(getDashboardData);
 
@@ -24,6 +25,10 @@ router.get('/exists/:email', checkEmailExists);
 router.post('/internal/set-otp', setOtp);
 router.post('/internal/verify-otp', verifyOtp);
 router.post('/internal/reset-password', resetPassword);
+// Public password reset routes (used by ChangePasswordDialog)
+router.post('/forgot-password', setOtp);
+router.post('/verify-otp', verifyOtp);
+router.post('/reset-password', resetPassword);
 // Formation Management
 router.route('/formations/:userId').get(getFormations).post(createFormation);
 router.route('/formations/item/:id').get(getFormationById).put(updateFormation).delete(deleteFormation);

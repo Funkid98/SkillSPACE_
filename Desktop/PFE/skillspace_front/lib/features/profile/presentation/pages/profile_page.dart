@@ -326,7 +326,7 @@ class _CompletionCard extends StatelessWidget {
     if (data.bio.isEmpty) missing.add('Bio');
     if (data.skills.isEmpty) missing.add('Compétences');
     if (!data.hasCv) missing.add('CV');
-    if (data.poste == null || data.poste!.isEmpty) missing.add('Poste actuel');
+    if (data.poste == null || data.poste!.isEmpty) missing.add('Poste');
     if (isRecruiter && (data.entreprise == null || data.entreprise!.isEmpty)) {
       missing.add('Entreprise');
     }
@@ -349,7 +349,7 @@ class _CompletionCard extends StatelessWidget {
         final isSaved = state is ProfileLoaded ? state.isSaved : false;
         final isCompact =
             Responsive.isMobile(context) || Responsive.isTablet(context);
-        final percent = data?.completionPercent ?? 0;
+        final percent = data?.completionPercent ?? 30;
 
         final isDark = ReactiveMode.isDarkMode(context);
 

@@ -1,6 +1,22 @@
 const User = require("../models/candidat");
 const Match = require("../models/match");
 const axios = require("axios");
+
+// Helper to check if two job titles match flexibly
+function checkTitleMatch(t1, t2) {
+  if (!t1 || !t2) return false;
+  const s1 = t1.toLowerCase();
+  const s2 = t2.toLowerCase();
+  if (s1.includes(s2) || s2.includes(s1)) return true;
+  
+  // Check word overlap
+  const w1 = s1.split(/[\s,.-]+/).filter(w => w.length > 2);
+  const w2 = s2.split(/[\s,.-]+/).filter(w => w.length > 2);
+  const common = w1.filter(word1 => w2.some(word2 => word2.includes(word1) || word1.includes(word2)));
+  
+  // If they share at least one significant word, consider it a match
+  return common.length >= 1;
+}
 const {
   hashPassword,
   verifyPassword,
@@ -381,13 +397,11 @@ const getMatchingOffersForCandidate = async (req, res) => {
             ? existingMatch.matchingSkills
             : matchCount;
 
-        const isTitleMatch =
-          candidate.jobtitle &&
-          (offer.title || "").toLowerCase() ===
-            candidate.jobtitle.toLowerCase();
-        if (!isTitleMatch && effectiveMatchCount < 2) {
-          return null; // Skip this offer entirely (less than 2 skills mapped)
-        }
+        const isTitleMatch = checkTitleMatch(candidate.jobtitle, offer.title);
+        // FILTER REMOVED: Allow all offers to show, even if title doesn't match and skills < 2
+        // if (!isTitleMatch && effectiveMatchCount < 2) {
+        //   return null; // Skip this offer entirely (less than 2 skills mapped)
+        // }
 
         if (existingMatch) {
           matchScore = existingMatch.score;
@@ -646,11 +660,7 @@ const getMatchingCandidatesGroupedByOffer = async (req, res) => {
           if (isStale) {
             // We don't skip if we are updating a stale match that already existed
           } else {
-            const isTitleMatch =
-              c.jobtitle &&
-              (offer.title || "")
-                .toLowerCase()
-                .includes(c.jobtitle.toLowerCase());
+            const isTitleMatch = checkTitleMatch(c.jobtitle, offer.title);
             if (!isTitleMatch && matchCount < 3) {
               continue; // Skip: Stricter pre-filter (at least 3 keywords for total outsiders)
             }
@@ -761,14 +771,7 @@ const getMatchingCandidatesGroupedByOffer = async (req, res) => {
             ),
           ).length;
 
-          const isTitleMatch =
-            candidate.jobtitle &&
-            ((offer.title || "")
-              .toLowerCase()
-              .includes(candidate.jobtitle.toLowerCase()) ||
-              candidate.jobtitle
-                .toLowerCase()
-                .includes((offer.title || "").toLowerCase()));
+          const isTitleMatch = checkTitleMatch(candidate.jobtitle, offer.title);
 
           // Skip if neither title matches nor enough keywords (2+ required for analyzed, 3+ for new)
           const threshold = currentStatus === "COMPLETED" ? 2 : 3;
@@ -781,10 +784,10 @@ const getMatchingCandidatesGroupedByOffer = async (req, res) => {
             triggerBackgroundArray.push(candidate._id);
           }
 
-          // FILTER: If AI analysis is complete but score is very low, do not show him
-          if (currentStatus === "COMPLETED" && currentScore < 30) {
-            continue;
-          }
+          // FILTER: Removed the 30% score threshold so all matched candidates show up
+          // if (currentStatus === "COMPLETED" && currentScore < 30) {
+          //   continue;
+          // }
 
           // COLLECT STATUS
           const application = offerApplications.find(
@@ -1104,6 +1107,7 @@ const internalUpdateApplication = async (req, res) => {
       meetingLink,
       interviewDate,
       interviewTime,
+      rejectionReason,
     });
     await notif.save();
 
@@ -1164,6 +1168,8 @@ const enrollFormation = async (req, res) => {
         `${process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088"}/api/formateur/formations/item/${formationId}/enroll`,
         {
           userName: `${user.prenom} ${user.nom}`,
+          userEmail: user.email,
+          userId: user._id.toString()
         },
       );
     } catch (e) {

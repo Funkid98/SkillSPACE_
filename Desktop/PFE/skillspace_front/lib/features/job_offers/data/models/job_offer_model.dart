@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pfe/core/network/api_client.dart';
-import 'dart:convert';
+import '../job_offers_api.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../../../core/l10n/app_localizations.dart';
 
@@ -97,56 +96,53 @@ class JobOffer {
 
   static Future<List<JobOffer>> fetchAll() async {
     try {
-      final client = ApiClient();
-      final response = await client.get('/candidat/matching-offers');
+      final data = await JobOffersApi.fetchMatchingOffers();
 
-      if (response.statusCode == 200) {
-        timeago.setLocaleMessages('fr', timeago.FrMessages());
-        final List data = jsonDecode(response.body);
-        return data.map((json) {
-          final contractStr = json['type'] ?? 'Full-time';
-          ContractType mappedType;
-          if (contractStr.toLowerCase().contains('cdd')) {
-            mappedType = ContractType.cdd;
-          } else if (contractStr.toLowerCase().contains('freelance'))
-            mappedType = ContractType.freelance;
-          else if (contractStr.toLowerCase().contains('stage'))
-            mappedType = ContractType.stage;
-          else
-            mappedType = ContractType.cdi;
+      timeago.setLocaleMessages('fr', timeago.FrMessages());
+      return data.map((json) {
+        final contractStr = json['type'] ?? 'Full-time';
+        ContractType mappedType;
+        if (contractStr.toLowerCase().contains('cdd')) {
+          mappedType = ContractType.cdd;
+        } else if (contractStr.toLowerCase().contains('freelance')) {
+          mappedType = ContractType.freelance;
+        } else if (contractStr.toLowerCase().contains('stage')) {
+          mappedType = ContractType.stage;
+        } else {
+          mappedType = ContractType.cdi;
+        }
 
-          final DateTime? createdAt = json['createdAt'] != null
-              ? DateTime.tryParse(json['createdAt'])
-              : null;
-          final String postedAgo = createdAt != null
-              ? timeago.format(createdAt, locale: 'fr')
-              : 'Récemment';
+        final DateTime? createdAt = json['createdAt'] != null
+            ? DateTime.tryParse(json['createdAt'])
+            : null;
+        final String postedAgo = createdAt != null
+            ? timeago.format(createdAt, locale: 'fr')
+            : 'Récemment';
 
-          return JobOffer(
-            id: json['_id']?.toString() ?? '',
-            title: json['title'] ?? 'Sans titre',
-            company: json['company'] ?? 'Non spécifié',
-            city: json['location'] ?? 'Remote',
-            recruiterId: json['recruiterId']?.toString(),
-            contractType: mappedType,
-            salaryRange: json['salary'] ?? 'N/A',
-            postedAgo: postedAgo,
-            compatibilityPercent:
-                (json['compatibilityPercent'] as num?)?.round() ?? 0,
-            matchingSkills: (json['matchingSkills'] as num?)?.round() ?? 0,
-            totalSkills: (json['totalSkills'] as num?)?.round() ?? 0,
-            description: json['description'] ?? '',
-            matchingAnalysis: json['matchingAnalysis'] ?? '',
-            recommendation: json['recommendation'] ?? '',
-            matchedSkills: List<String>.from(json['matchedSkills'] ?? []),
-            missingSkills: List<String>.from(json['missingSkills'] ?? []),
-            status: json['status'] ?? 'COMPLETED',
-            applicationStatus: json['applicationStatus'],
-            internalFormationId: json['internalFormationId']?.toString(),
-            createdAt: createdAt,
-          );
-        }).toList();
-      }
+        return JobOffer(
+          id: json['_id']?.toString() ?? '',
+          title: json['title'] ?? 'Sans titre',
+          company: json['company'] ?? 'Non spécifié',
+          city: json['location'] ?? 'Remote',
+          recruiterId: json['recruiterId']?.toString(),
+          contractType: mappedType,
+          salaryRange: json['salary'] ?? 'N/A',
+          postedAgo: postedAgo,
+          compatibilityPercent:
+              (json['compatibilityPercent'] as num?)?.round() ?? 0,
+          matchingSkills: (json['matchingSkills'] as num?)?.round() ?? 0,
+          totalSkills: (json['totalSkills'] as num?)?.round() ?? 0,
+          description: json['description'] ?? '',
+          matchingAnalysis: json['matchingAnalysis'] ?? '',
+          recommendation: json['recommendation'] ?? '',
+          matchedSkills: List<String>.from(json['matchedSkills'] ?? []),
+          missingSkills: List<String>.from(json['missingSkills'] ?? []),
+          status: json['status'] ?? 'COMPLETED',
+          applicationStatus: json['applicationStatus'],
+          internalFormationId: json['internalFormationId']?.toString(),
+          createdAt: createdAt,
+        );
+      }).toList();
     } catch (e) {
       // ignore: avoid_print
       print('[JobOffer.fetchAll] Error: $e');

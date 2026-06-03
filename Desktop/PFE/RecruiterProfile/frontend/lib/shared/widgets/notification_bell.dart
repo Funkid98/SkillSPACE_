@@ -17,6 +17,7 @@ class NotificationBell extends StatefulWidget {
 }
 
 class _NotificationBellState extends State<NotificationBell> {
+  final ApiClient _apiClient = ApiClient();
   Timer? _pollingTimer;
   int _unreadCount = 0;
   List<dynamic> _notifications = [];
@@ -41,11 +42,10 @@ class _NotificationBellState extends State<NotificationBell> {
     if (_loading) return;
     _loading = true;
     try {
-      final client = ApiClient();
       final endpoint = widget.isRecruiter
           ? '/recruiter/notifications'
           : '/candidat/notifications';
-      final response = await client.get(endpoint);
+      final response = await _apiClient.get(endpoint);
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
@@ -63,8 +63,7 @@ class _NotificationBellState extends State<NotificationBell> {
   Future<void> _handleDecision(String id, String decision,
       {String? date, String? time, String? link, String? reason}) async {
     try {
-      final client = ApiClient();
-      await client.post('/recruiter/notifications/decision', {
+      await _apiClient.post('/recruiter/notifications/decision', {
         'notificationId': id,
         'decision': decision,
         'interviewDate': date,
@@ -78,33 +77,30 @@ class _NotificationBellState extends State<NotificationBell> {
 
   Future<void> _markAsRead(String id) async {
     try {
-      final client = ApiClient();
       final endpoint = widget.isRecruiter
           ? '/recruiter/notifications/$id/read'
           : '/candidat/notifications/$id/read';
-      await client.put(endpoint, {});
+      await _apiClient.put(endpoint, {});
       _fetchNotifications();
     } catch (_) {}
   }
 
   Future<void> _deleteNotification(String id) async {
     try {
-      final client = ApiClient();
       final endpoint = widget.isRecruiter
           ? '/recruiter/notifications/$id'
           : '/candidat/notifications/$id';
-      await client.delete(endpoint);
+      await _apiClient.delete(endpoint);
       _fetchNotifications();
     } catch (_) {}
   }
 
   Future<void> _clearAllNotifications() async {
     try {
-      final client = ApiClient();
       final endpoint = widget.isRecruiter
           ? '/recruiter/notifications/clear/all'
           : '/candidat/notifications/clear/all';
-      await client.delete(endpoint);
+      await _apiClient.delete(endpoint);
       _fetchNotifications();
     } catch (_) {}
   }
@@ -564,6 +560,37 @@ class _NotificationBellState extends State<NotificationBell> {
                                       height: 1.5,
                                     ),
                                   ),
+                                  if ((type == 'APPLICATION_REJECTED' || type == 'REJECTION') &&
+                                      n['rejectionReason'] != null &&
+                                      n['rejectionReason'].toString().isNotEmpty) ...[
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: isDark ? AppColors.error.withOpacity(0.1) : AppColors.error.withOpacity(0.05),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              const Icon(Icons.format_quote_rounded, size: 16, color: AppColors.error),
+                                              const SizedBox(width: 8),
+                                              const Text('Message du recruteur', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.error)),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            n['rejectionReason'],
+                                            style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : AppColors.textDark, fontStyle: FontStyle.italic),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                   if (type == 'INTERVIEW_SCHEDULED' &&
                                       !widget.isRecruiter &&
                                       n['meetingLink'] != null &&

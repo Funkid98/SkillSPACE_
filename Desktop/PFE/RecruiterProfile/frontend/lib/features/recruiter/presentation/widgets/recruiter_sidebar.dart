@@ -75,8 +75,7 @@ class _RecruiterSidebarState extends State<RecruiterSidebar> {
   Widget build(BuildContext context) {
     final l10n = RecruiterLocalizations.of(context);
     final isRtl = Directionality.of(context) == TextDirection.rtl;
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ReactiveMode.isDarkMode(context);
 
     return MouseRegion(
         onHover: (event) {
@@ -131,15 +130,16 @@ class _RecruiterSidebarState extends State<RecruiterSidebar> {
                 return Stack(
                   children: [
                     // ── Spline 3D background ──────────────────────────
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: SplineRobot(
-                          mouseNotifier: _mouseNotifier,
-                          width: constraints.maxWidth,
-                          height: constraints.maxHeight,
+                    if (isDark)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: SplineRobot(
+                            mouseNotifier: _mouseNotifier,
+                            width: constraints.maxWidth,
+                            height: constraints.maxHeight,
+                          ),
                         ),
                       ),
-                    ),
                     // ── Gradient overlay ──────────────────────────────
                     Positioned.fill(
                       child: Container(
@@ -148,12 +148,19 @@ class _RecruiterSidebarState extends State<RecruiterSidebar> {
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             stops: const [0.0, 0.35, 0.65, 1.0],
-                            colors: [
-                              Colors.black.withValues(alpha: 0.88),
-                              Colors.black.withValues(alpha: 0.62),
-                              Colors.black.withValues(alpha: 0.70),
-                              Colors.black.withValues(alpha: 0.92),
-                            ],
+                            colors: isDark
+                                ? [
+                                    Colors.black.withValues(alpha: 0.88),
+                                    Colors.black.withValues(alpha: 0.62),
+                                    Colors.black.withValues(alpha: 0.70),
+                                    Colors.black.withValues(alpha: 0.92),
+                                  ]
+                                : [
+                                    Colors.white.withValues(alpha: 0.8),
+                                    Colors.white.withValues(alpha: 0.5),
+                                    Colors.white.withValues(alpha: 0.6),
+                                    Colors.white.withValues(alpha: 0.9),
+                                  ],
                           ),
                         ),
                       ),
@@ -495,7 +502,7 @@ class _NavItemState extends State<_NavItem> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = ReactiveMode.isDarkMode(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: MouseRegion(

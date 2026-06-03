@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import '../../../../core/api_constants.dart';
+import '../../data/profile_api.dart';
 import 'package:reactive_theme/reactive_theme.dart';
 import 'package:pfe/core/network/cookie_service.dart';
 import 'package:intl/intl.dart';
@@ -58,31 +57,18 @@ class _InterviewHistoryModalState extends State<InterviewHistoryModal> {
       }
       final user = jsonDecode(userDataStr);
       final candidateId = user['id'] ?? user['_id'];
-      print(
-          'InterviewHistoryModal: Fetching history for candidateId = $candidateId');
 
-      final response = await http.get(
-        Uri.parse('${ApiConstants.baseUrl}/api/interview/history/$candidateId'),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        print(
-            'InterviewHistoryModal: Received response: success=${data['success']}');
-        if (data['success']) {
-          if (mounted) {
-            setState(() {
-              _history = data['history'] ?? [];
-              _isLoading = false;
-            });
-            print(
-                'InterviewHistoryModal: Loaded ${_history.length} history items.');
-          }
-        } else {
-          throw Exception("Failed to load history");
+      final data = await ProfileApi.getInterviewHistory(candidateId);
+      
+      if (data['success']) {
+        if (mounted) {
+          setState(() {
+            _history = data['history'] ?? [];
+            _isLoading = false;
+          });
         }
       } else {
-        throw Exception("Server error");
+        throw Exception("Failed to load history");
       }
     } catch (e) {
       if (mounted) {

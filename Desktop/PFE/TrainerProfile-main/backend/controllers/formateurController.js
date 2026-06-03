@@ -1,8 +1,9 @@
 const Formateur = require('../models/formateurModel');
 const Formation = require('../models/formationModel');
+const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const { suggestExpertiseDomains, generateBio: generateBioAI, validatePortfolioUrlAI, suggestFormationContent } = require('../services/ai-service');
-const { sendVerificationEmail, sendLoginSuccessEmail } = require('../services/emailService');
+const { sendVerificationEmail, sendLoginSuccessEmail, sendFormationUpdateEmail } = require('../services/emailService');
 
 const generateToken = (id) => {
   return jwt.sign({ id, sub: id }, process.env.JWT_SECRET, {
@@ -26,6 +27,22 @@ const getProfile = async (req, res) => {
   try {
     const { userId } = req.params;
     const formateur = await Formateur.findById(userId);
+
+    if (!formateur) {
+      return res.status(404).json({ message: 'Profil non trouvé' });
+    }
+    res.status(200).json(formateur);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+};
+
+// @desc    Get public formateur profile for candidates
+// @route   GET /api/formateur/public-profile/:userId
+const getPublicProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const formateur = await Formateur.findById(userId).select('-password -resetOtp -resetOtpExpires -signupOtp -signupOtpExpires');
 
     if (!formateur) {
       return res.status(404).json({ message: 'Profil non trouvé' });
@@ -684,6 +701,29 @@ const updateFormation = async (req, res) => {
       return res.status(404).json({ message: 'Formation non trouvée' });
     }
 
+    // Notify subscribed candidates if they have an email registered
+    if (updated.students && updated.students.length > 0) {
+      for (const student of updated.students) {
+        if (student.email) {
+          await sendFormationUpdateEmail(student.email, updated.title, student.name);
+        }
+        if (student.userId) {
+          try {
+            await axios.post(`${process.env.INTERNAL_GATEWAY_URL || "http://127.0.0.1:8088"}/candidat/internal/notify`, {
+              candidateId: student.userId,
+              senderId: updated.trainerId.toString(),
+              senderName: "Formateur",
+              message: `La formation ${updated.title} a été modifiée (durée ou lien de réunion).`,
+              type: "SYSTEM",
+              offerTitle: updated.title
+            });
+          } catch (err) {
+            console.error('Failed to send in-app notification:', err.message);
+          }
+        }
+      }
+    }
+
     res.status(200).json(updated);
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la mise à jour', error: error.message });
@@ -733,7 +773,9 @@ const getAllFormations = async (req, res) => {
     let filter = { status: 'active' };
 
     if (query) {
-      const regexQuery = new RegExp(query, 'i');
+      // Escape special characters in query (like '+', '.', '*') so regex doesn't crash on 'C++'
+      const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regexQuery = new RegExp(escapedQuery, 'i');
       filter.$or = [
         { tags: { $in: [regexQuery] } },
         { title: regexQuery },
@@ -776,14 +818,14 @@ const getFormationById = async (req, res) => {
 const enrollFormation = async (req, res) => {
   try {
     const { id } = req.params;
-    const { userName } = req.body;
+    const { userName, userEmail, userId } = req.body;
     const studentName = userName || 'Étudiant Anonyme';
 
     const updated = await Formation.findByIdAndUpdate(
       id,
       {
         $inc: { studentCount: 1 },
-        $push: { students: { name: studentName } }
+        $push: { students: { name: studentName, email: userEmail, userId: userId } }
       },
       { returnDocument: 'after' }
     );
@@ -1033,14 +1075,27 @@ const deleteFormateurAccount = async (req, res) => {
 
     if (googleToken) {
       // Google Re-Auth Flow
-      const { OAuth2Client } = require('google-auth-library');
-      const client = new OAuth2Client('1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com');
-      const ticket = await client.verifyIdToken({
-          idToken: googleToken,
-          audience: '1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com',
-      });
-      const payload = ticket.getPayload();
-      if (payload.email !== formateur.email) {
+      let googleEmail;
+
+      if (googleToken.split('.').length === 3) {
+        const { OAuth2Client } = require('google-auth-library');
+        const client = new OAuth2Client('1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com');
+        const ticket = await client.verifyIdToken({
+            idToken: googleToken,
+            audience: '1028943448620-vrcc3vji772h8uhenve1uht69i51qvij.apps.googleusercontent.com',
+        });
+        const payload = ticket.getPayload();
+        googleEmail = payload.email;
+      } else {
+        const axios = require('axios');
+        const response = await axios.get(
+          "https://www.googleapis.com/oauth2/v3/userinfo",
+          { headers: { Authorization: `Bearer ${googleToken}` } }
+        );
+        googleEmail = response.data.email;
+      }
+
+      if (googleEmail !== formateur.email) {
           return res.status(401).json({ message: "L'email Google ne correspond pas au compte" });
       }
     } else if (password) {
@@ -1070,7 +1125,7 @@ const googleReauth = async (req, res) => {
 };
 
 module.exports = {
-  getProfile, updateProfile, patchProfile, getDashboardData, getFormations,
+  getProfile, getPublicProfile, updateProfile, patchProfile, getDashboardData, getFormations,
   getAllFormations, seedDummyData, suggestExpertise, generateBio, validateUrl,
   createFormation, updateFormation, deleteFormation, enhanceFormation,
   register, login, verifySignupOtp, checkEmailExists, enrollFormation, leaveFormation, 

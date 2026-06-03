@@ -1,7 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pfe/core/network/api_client.dart';
+import '../../data/profile_api.dart';
 import 'package:reactive_theme/reactive_theme.dart';
 import '../../cubit/profile_cubit.dart';
 import '../../data/models/profile_model.dart';
@@ -38,25 +37,15 @@ class _QuizModalState extends State<QuizModal> {
   int _finalScore = 0; // computed score after evaluation
   int _quizRawScore = 0; // raw 0-100 score for the specific quiz level
 
-  final ApiClient _apiClient = ApiClient();
-
   Future<void> _generateQuiz() async {
     setState(() => _step = 1);
     try {
-      final response = await _apiClient.post('/quiz/generate', {
-        'skill': widget.skill.name,
-        'level': _selectedLevel,
+      final data =
+          await ProfileApi.generateQuiz(widget.skill.name, _selectedLevel);
+      setState(() {
+        _questions = data is List ? data : (data['questions'] ?? []);
+        _step = 2;
       });
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          _questions = data is List ? data : (data['questions'] ?? []);
-          _step = 2;
-        });
-      } else {
-        throw Exception('Failed to generate quiz');
-      }
     } catch (e) {
       if (mounted) {
         AppToast.showError(context, "Erreur de génération du quiz. Réessayez.");
@@ -68,44 +57,35 @@ class _QuizModalState extends State<QuizModal> {
   Future<void> _evaluateQuiz() async {
     setState(() => _step = 3);
     try {
-      final response = await _apiClient.post('/quiz/evaluate', {
-        'skill': widget.skill.name,
-        'claimedLevel': _selectedLevel,
-        'qna': _qna,
-      });
+      final data = await ProfileApi.evaluateQuiz(
+          widget.skill.name, _selectedLevel, _qna);
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+      int score = (data['updated_score'] ?? data['score'] ?? 0).toInt();
+      int rawScore = (data['score'] ?? 0).toInt();
+      String displayLevel = data['determined_level'] ?? 'Beginner';
 
-        int score = (data['updated_score'] ?? data['score'] ?? 0).toInt();
-        int rawScore = (data['score'] ?? 0).toInt();
-        String displayLevel = data['determined_level'] ?? 'Beginner';
-
-        if (mounted) {
-          widget.parentContext
-              .read<ProfileCubit>()
-              .updateSkillPercent(widget.skill.name, score);
-          widget.parentContext.read<ProfileCubit>().saveProfile();
-        }
-
-        setState(() {
-          _finalScore = score;
-          _quizRawScore = rawScore;
-          _determinedLevel = displayLevel;
-          _evaluationFeedback = data['feedback'] ?? '';
-          _answersAnalysis = data['answers_analysis'] ?? [];
-
-          if ((_selectedLevel == 'Beginner' ||
-                  _selectedLevel == 'Intermediate') &&
-              rawScore == 100) {
-            _step = 5;
-          } else {
-            _step = 4;
-          }
-        });
-      } else {
-        throw Exception('Failed to evaluate quiz');
+      if (mounted) {
+        widget.parentContext
+            .read<ProfileCubit>()
+            .updateSkillPercent(widget.skill.name, score);
+        widget.parentContext.read<ProfileCubit>().saveProfile();
       }
+
+      setState(() {
+        _finalScore = score;
+        _quizRawScore = rawScore;
+        _determinedLevel = displayLevel;
+        _evaluationFeedback = data['feedback'] ?? '';
+        _answersAnalysis = data['answers_analysis'] ?? [];
+
+        if ((_selectedLevel == 'Beginner' ||
+                _selectedLevel == 'Intermediate') &&
+            rawScore == 100) {
+          _step = 5;
+        } else {
+          _step = 4;
+        }
+      });
     } catch (e) {
       if (mounted) {
         AppToast.showError(context, "Erreur lors de l'évaluation.");

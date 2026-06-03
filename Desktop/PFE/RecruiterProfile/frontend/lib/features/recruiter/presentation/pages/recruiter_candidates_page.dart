@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pfe/core/network/api_client.dart';
 import 'package:reactive_theme/reactive_theme.dart';
 import '../cubits/recruiter_extra_cubits.dart';
 import '../../data/models/recruiter_job_offer_model.dart';
+import '../../data/recruiter_service.dart';
 import '../../../../core/app_colors.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/l10n/app_localizations.dart';
@@ -557,93 +557,84 @@ class _CandidateMatchCard extends StatelessWidget {
     );
 
     try {
-      final client = ApiClient();
-      final response = await client.post('/recruiter/contact', {
-        'candidateId': candidate.id,
-        'candidateName': candidate.name,
-        'offerId': offerId,
-        'offerTitle': offerTitle,
-        'interviewDate': date,
-        'interviewTime': time,
-        'meetingLink': link,
-        'rejectionReason': rejectionReason,
-        'type': rejectionReason != null
+      final service = RecruiterService();
+      await service.contactCandidate(
+        candidateId: candidate.id,
+        candidateName: candidate.name,
+        offerId: offerId,
+        offerTitle: offerTitle,
+        interviewDate: date,
+        interviewTime: time,
+        meetingLink: link,
+        rejectionReason: rejectionReason,
+        type: rejectionReason != null
             ? 'REJECTION'
             : (date != null ? 'INTERVIEW' : 'CONTACT'),
-      });
+      );
 
       if (context.mounted) Navigator.of(context).pop(); // close loading
 
       if (context.mounted) {
-        if (response.statusCode == 200) {
-          showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check_circle_rounded,
+                      color: AppColors.success, size: 40),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  rejectionReason != null
+                      ? 'Candidature refusée'
+                      : (date != null
+                          ? 'Entretien proposé !'
+                          : 'Contact envoyé !'),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w900, fontSize: 17),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  rejectionReason != null
+                      ? 'Le candidat a été informé de votre décision.'
+                      : (date != null
+                          ? 'Le candidat a été notifié de l\'entretien prévu le $date à $time.'
+                          : '${candidate.name} recevra une notification que vous souhaitez le contacter.'),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      color: AppColors.textGray, fontSize: 14, height: 1.5),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.navy,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    child: const Icon(Icons.check_circle_rounded,
-                        color: AppColors.success, size: 40),
+                    child: const Text('Fermer',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    rejectionReason != null
-                        ? 'Candidature refusée'
-                        : (date != null
-                            ? 'Entretien proposé !'
-                            : 'Contact envoyé !'),
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w900, fontSize: 17),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    rejectionReason != null
-                        ? 'Le candidat a été informé de votre décision.'
-                        : (date != null
-                            ? 'Le candidat a été notifié de l\'entretien prévu le $date à $time.'
-                            : '${candidate.name} recevra une notification que vous souhaitez le contacter.'),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        color: AppColors.textGray, fontSize: 14, height: 1.5),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.navy,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      child: const Text('Fermer',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erreur (${response.statusCode})'),
-              backgroundColor: Colors.red.shade600,
-            ),
-          );
-        }
+          ),
+        );
       }
     } catch (e) {
       if (context.mounted) Navigator.of(context).pop();

@@ -145,4 +145,62 @@ class RecruiterService {
     }
     throw Exception('Failed to upload logo');
   }
+
+  Future<void> contactCandidate({
+    required String candidateId,
+    required String candidateName,
+    required String offerId,
+    required String offerTitle,
+    String? interviewDate,
+    String? interviewTime,
+    String? meetingLink,
+    String? rejectionReason,
+    required String type,
+  }) async {
+    final response = await _apiClient.post('/recruiter/contact', {
+      'candidateId': candidateId,
+      'candidateName': candidateName,
+      'offerId': offerId,
+      'offerTitle': offerTitle,
+      if (interviewDate != null) 'interviewDate': interviewDate,
+      if (interviewTime != null) 'interviewTime': interviewTime,
+      if (meetingLink != null) 'meetingLink': meetingLink,
+      if (rejectionReason != null) 'rejectionReason': rejectionReason,
+      'type': type,
+    });
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Failed to contact candidate: ${response.statusCode}');
+    }
+  }
+
+  Future<void> forgotPassword(String apiUrl, String email) async {
+    final response = await _apiClient.post('$apiUrl/forgot-password', {'email': email});
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final body = jsonDecode(response.body);
+      throw Exception(body['message'] ?? 'Erreur lors de l\'envoi du code');
+    }
+  }
+
+  Future<void> verifyOtp(String apiUrl, String email, String otp) async {
+    final response = await _apiClient.post('$apiUrl/verify-otp', {
+      'email': email,
+      'otp': otp,
+    });
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final body = jsonDecode(response.body);
+      throw Exception(body['message'] ?? 'Code invalide ou expiré');
+    }
+  }
+
+  Future<void> resetPassword(String apiUrl, String email, String otp, String newPassword) async {
+    final response = await _apiClient.post('$apiUrl/reset-password', {
+      'email': email,
+      'otp': otp,
+      'newPassword': newPassword,
+    });
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final body = jsonDecode(response.body);
+      throw Exception(body['message'] ?? 'Erreur lors de la mise à jour');
+    }
+  }
 }

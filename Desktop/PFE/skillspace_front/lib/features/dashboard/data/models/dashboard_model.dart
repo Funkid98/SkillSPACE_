@@ -1,5 +1,4 @@
-import 'dart:convert';
-import 'package:pfe/core/network/api_client.dart';
+import '../dashboard_api.dart';
 
 class DashboardStats {
   final int offresMatchees;
@@ -77,6 +76,7 @@ class DashboardData {
   final int profileViewsCount;
   final int profileViewsPercentChange;
   final String coachAdvice;
+  final bool hasCv;
 
   const DashboardData({
     required this.userName,
@@ -87,18 +87,12 @@ class DashboardData {
     required this.profileViewsCount,
     required this.profileViewsPercentChange,
     required this.coachAdvice,
+    required this.hasCv,
   });
 
   static Future<DashboardData> fetch() async {
-    final apiClient = ApiClient();
-
     // Fetch candidate profile
-    final response = await apiClient.get('/candidat/me');
-    final data = jsonDecode(response.body);
-
-    if (response.statusCode != 200) {
-      throw Exception(data['error'] ?? 'Erreur de chargement du profil');
-    }
+    final data = await DashboardApi.fetchProfile();
 
     // Extract real user data
     final prenom = data['prenom'] ?? '';
@@ -106,6 +100,7 @@ class DashboardData {
     final userName =
         prenom.isNotEmpty ? prenom : (nom.isNotEmpty ? nom : 'Candidat');
     final completionPercent = data['completion_percent'] ?? 30;
+    final hasCv = (data['cv_path'] as String?)?.isNotEmpty == true;
 
     // Map skills from backend ({name, percent} objects)
     final List<dynamic> rawSkills = data['skills'] ?? [];
@@ -126,9 +121,7 @@ class DashboardData {
     bool hasAnalysing = false;
 
     try {
-      final offersRes = await apiClient.get('/candidat/matching-offers');
-      if (offersRes.statusCode == 200) {
-        final List offersData = jsonDecode(offersRes.body);
+      final List offersData = await DashboardApi.fetchMatchingOffers();
 
         final highMatchOffers = offersData
             .where((o) =>
@@ -137,6 +130,14 @@ class DashboardData {
         offresMatcheesReal = highMatchOffers.length;
 
         hasAnalysing = offersData.any((o) => o['status'] == 'ANALYSING');
+
+        // Filter out offers that have 0% compatibility and 0 matching skills, unless they are ANALYSING
+        offersData.removeWhere((o) {
+          final isAnalysing = o['status'] == 'ANALYSING';
+          final compatibility = (o['compatibilityPercent'] as num?)?.round() ?? 0;
+          final matchingSkills = (o['matchingSkills'] as num?)?.round() ?? 0;
+          return !isAnalysing && compatibility == 0 && matchingSkills == 0;
+        });
 
         // Sort by match score descending to show best offers first
         offersData.sort((a, b) =>
@@ -154,43 +155,30 @@ class DashboardData {
                   status: o['status'] ?? 'COMPLETED',
                 ))
             .toList();
-      }
     } catch (_) {}
 
     // Fetch upcoming interviews (accepted offers)
     List<UpcomingInterview> realInterviews = [];
     try {
-      final interviewsRes = await apiClient.get('/candidat/accepted-offers');
-      if (interviewsRes.statusCode == 200) {
-        final List interviewsData = jsonDecode(interviewsRes.body);
-        realInterviews = interviewsData.map((i) {
-          final status = i['applicationStatus'] ?? 'ACCEPTED';
-          return UpcomingInterview(
-            role: i['title'] ?? 'Entretien',
-            company: i['company'] ?? 'Entreprise',
-            rawDate: i['interviewDate'] ?? 'Date à définir',
-            rawTime: i['interviewTime'] ?? 'Heure à définir',
-            format: status == 'INTERVIEW_PLANNED'
-                ? 'Entretien en direct'
-                : 'Simulation IA',
-            meetingLink: i['meetingLink'],
-            applicationStatus: status,
-          );
-        }).toList();
-      }
+      final List interviewsData = await DashboardApi.fetchAcceptedOffers();
+      realInterviews = interviewsData.map((i) {
+        final status = i['applicationStatus'] ?? 'ACCEPTED';
+        return UpcomingInterview(
+          role: i['title'] ?? 'Entretien',
+          company: i['company'] ?? 'Entreprise',
+          rawDate: i['interviewDate'] ?? 'Date à définir',
+          rawTime: i['interviewTime'] ?? 'Heure à définir',
+          format: status == 'INTERVIEW_PLANNED'
+              ? 'Entretien en direct'
+              : 'Simulation IA',
+          meetingLink: i['meetingLink'],
+          applicationStatus: status,
+        );
+      }).toList();
     } catch (_) {}
 
     // Fetch Coach Advice
-    String realCoachAdvice =
-        'Analysez votre profil pour obtenir des conseils personnalisés.';
-
-    try {
-      final coachRes = await apiClient.get('/candidat/coach-advice');
-      if (coachRes.statusCode == 200) {
-        final coachData = jsonDecode(coachRes.body);
-        realCoachAdvice = coachData['advice'] ?? realCoachAdvice;
-      }
-    } catch (_) {}
+    final String realCoachAdvice = await DashboardApi.fetchCoachAdvice();
 
     // Stats derived from profile completion & real offers count
     return DashboardData(
@@ -215,14 +203,14 @@ class DashboardData {
           : 0, // Hack to pass analysing state to Cubit without rewriting whole model
       profileViewsPercentChange: 0,
       coachAdvice: realCoachAdvice,
+      hasCv: hasCv,
     );
   }
 
   /// Save updated skill percentages to the backend
   static Future<void> saveSkills(List<UserSkill> skills) async {
-    final apiClient = ApiClient();
-    await apiClient.put('/candidat/me', {
-      'skills': skills.map((s) => s.toJson()).toList(),
-    });
+    await DashboardApi.saveSkills(
+      skills.map((s) => s.toJson()).toList(),
+    );
   }
 }

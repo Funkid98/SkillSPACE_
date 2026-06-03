@@ -60,8 +60,7 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
         scopes: ['email', 'profile'],
       );
 
-      GoogleSignInAccount? googleUser = await googleSignIn.signInSilently();
-      googleUser ??= await googleSignIn.signIn();
+      GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
       if (googleUser == null) {
         setState(() => _isLoading = false);

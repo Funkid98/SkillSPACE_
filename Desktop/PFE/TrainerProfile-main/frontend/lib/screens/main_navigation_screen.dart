@@ -257,15 +257,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         return Stack(
                           children: [
                             // ── Spline 3D background ──────────────────────────
-                            Positioned.fill(
-                              child: IgnorePointer(
-                                child: SplineRobot(
-                                  mouseNotifier: _mouseNotifier,
-                                  width: constraints.maxWidth,
-                                  height: constraints.maxHeight,
+                            if (isDark)
+                              Positioned.fill(
+                                child: IgnorePointer(
+                                  child: SplineRobot(
+                                    mouseNotifier: _mouseNotifier,
+                                    width: constraints.maxWidth,
+                                    height: constraints.maxHeight,
+                                  ),
                                 ),
                               ),
-                            ),
                             // ── Gradient overlay ──────────────────────────────
                             Positioned.fill(
                               child: Container(
@@ -274,12 +275,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
                                     stops: const [0.0, 0.35, 0.65, 1.0],
-                                    colors: [
-                                      Colors.black.withValues(alpha: 0.88),
-                                      Colors.black.withValues(alpha: 0.62),
-                                      Colors.black.withValues(alpha: 0.70),
-                                      Colors.black.withValues(alpha: 0.92),
-                                    ],
+                                    colors: isDark
+                                        ? [
+                                            Colors.black.withValues(alpha: 0.88),
+                                            Colors.black.withValues(alpha: 0.62),
+                                            Colors.black.withValues(alpha: 0.70),
+                                            Colors.black.withValues(alpha: 0.92),
+                                          ]
+                                        : [
+                                            Colors.white.withValues(alpha: 0.8),
+                                            Colors.white.withValues(alpha: 0.5),
+                                            Colors.white.withValues(alpha: 0.6),
+                                            Colors.white.withValues(alpha: 0.9),
+                                          ],
                                   ),
                                 ),
                               ),

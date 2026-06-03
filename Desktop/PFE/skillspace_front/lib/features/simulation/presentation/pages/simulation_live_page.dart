@@ -1,18 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart' hide Animation;
-import 'package:http/http.dart' as http;
-import '../../../../core/api_constants.dart';
 import 'package:reactive_theme/reactive_theme.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:http_parser/http_parser.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:camera/camera.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'dart:typed_data';
+import '../../../../core/api_constants.dart';
 import '../../../../core/app_colors.dart';
+import '../../data/simulation_api.dart';
 import 'simulation_result_page.dart';
+import 'package:http/http.dart' as http;
 
 class SimulationLivePage extends StatefulWidget {
   final String roleTitle;
@@ -160,33 +160,24 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
       _isGenerating = true;
     });
     try {
-      final response = await http.post(
-        Uri.parse('${ApiConstants.baseUrl}/api/interview/start'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'role': widget.roleTitle,
-          'language': _selectedLanguage,
-        }),
+      final data = await SimulationApi().startInterview(
+        widget.roleTitle,
+        _selectedLanguage,
       );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (mounted) {
-          setState(() {
-            _currentQuestion = data['initialMessage'];
-            _chatHistory.add({'isUser': false, 'text': _currentQuestion});
-            _isGenerating = false;
-          });
+      if (mounted) {
+        setState(() {
+          _currentQuestion = data['initialMessage'];
+          _chatHistory.add({'isUser': false, 'text': _currentQuestion});
+          _isGenerating = false;
+        });
 
-          if (data['audioBase64'] != null) {
-            final Uint8List audioBytes = base64Decode(data['audioBase64']);
-            _audioPlayer.play(BytesSource(audioBytes));
-          }
-
-          _startTimer();
-          _scrollToBottom();
+        if (data['audioBase64'] != null) {
+          final Uint8List audioBytes = base64Decode(data['audioBase64']);
+          _audioPlayer.play(BytesSource(audioBytes));
         }
-      } else {
-        if (mounted) _fallbackStart();
+
+        _startTimer();
+        _scrollToBottom();
       }
     } catch (e) {
       if (mounted) _fallbackStart();
@@ -266,62 +257,34 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
     setState(() => _isSending = true);
 
     try {
-      final request = http.MultipartRequest(
-        'POST',
-        Uri.parse('${ApiConstants.baseUrl}/api/interview/chat'),
+      final data = await SimulationApi().sendInterviewChat(
+        audioPath: path,
+        language: _selectedLanguage,
+        roleTitle: widget.roleTitle,
+        history: _chatHistory,
       );
 
-      if (kIsWeb) {
-        final audioResponse = await http.get(Uri.parse(path));
-        request.files.add(http.MultipartFile.fromBytes(
-          'audio',
-          audioResponse.bodyBytes,
-          filename: 'audio.ogg',
-          contentType: MediaType('audio', 'ogg'),
-        ));
-      } else {
-        request.files.add(await http.MultipartFile.fromPath(
-          'audio',
-          path,
-          contentType: MediaType('audio', 'ogg'),
-        ));
-      }
-
-      request.fields['language'] = _selectedLanguage;
-      request.fields['roleTitle'] = widget.roleTitle;
-      request.fields['history'] = jsonEncode(_chatHistory);
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (mounted) {
-          final userText = data['userTranscript'] ?? '(Réponse vocale)';
-          setState(() {
-            _chatHistory.add({
-              'isUser': true,
-              'text': userText,
-              'audioUrl': data['audioUrl'],
-              'vocalMetrics': data['vocalMetrics']
-            });
-            _currentQuestion = data['reply'];
-            _chatHistory.add({'isUser': false, 'text': _currentQuestion});
-            _isSending = false;
+      if (mounted) {
+        final userText = data['userTranscript'] ?? '(Réponse vocale)';
+        setState(() {
+          _chatHistory.add({
+            'isUser': true,
+            'text': userText,
+            'audioUrl': data['audioUrl'],
+            'vocalMetrics': data['vocalMetrics']
           });
+          _currentQuestion = data['reply'];
+          _chatHistory.add({'isUser': false, 'text': _currentQuestion});
+          _isSending = false;
+        });
 
-          if (data['audioBase64'] != null) {
-            final Uint8List audioBytes = base64Decode(data['audioBase64']);
-            _audioPlayer.play(BytesSource(audioBytes));
-          }
-
-          _startTimer();
-          _scrollToBottom();
+        if (data['audioBase64'] != null) {
+          final Uint8List audioBytes = base64Decode(data['audioBase64']);
+          _audioPlayer.play(BytesSource(audioBytes));
         }
-      } else {
-        print("Chat error: ${response.body}");
-        if (mounted) _fallbackResponse();
-        setState(() => _isSending = false);
+
+        _startTimer();
+        _scrollToBottom();
       }
     } catch (e) {
       print("Error sending audio: $e");
@@ -1089,12 +1052,10 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
   }
 
   Future<void> _playRecording(String url) async {
-    final fullUrl = '${ApiConstants.baseUrl}$url';
     try {
-      final response = await http.get(Uri.parse(fullUrl));
-      if (response.statusCode == 200) {
-        await _audioPlayer.play(BytesSource(response.bodyBytes));
-      }
+      final api = SimulationApi();
+      final bytes = await api.fetchAudioBytes(url);
+      await _audioPlayer.play(BytesSource(Uint8List.fromList(bytes)));
     } catch (e) {
       print("Error playing recording: $e");
     }

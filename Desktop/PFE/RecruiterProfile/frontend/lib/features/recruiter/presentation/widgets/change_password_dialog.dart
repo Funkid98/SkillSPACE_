@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import '../../data/recruiter_service.dart';
 import '../../../../core/app_colors.dart';
 
 class ChangePasswordDialog extends StatefulWidget {
@@ -40,25 +39,20 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
   Future<void> _sendOtp() async {
     setState(() => _isLoading = true);
     try {
-      final res = await http.post(
-        Uri.parse('${widget.apiUrl}/forgot-password'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': widget.email}),
-      );
+      final service = RecruiterService();
+      await service.forgotPassword(widget.apiUrl, widget.email);
 
-      if (res.statusCode == 200 || res.statusCode == 201) {
+      if (mounted) {
         setState(() {
           _step = 1;
           _isLoading = false;
         });
-      } else {
-        final body = jsonDecode(res.body);
-        _showError(body['message'] ?? 'Erreur lors de l\'envoi du code');
-        Navigator.pop(context);
       }
     } catch (e) {
-      _showError('Erreur de connexion');
-      Navigator.pop(context);
+      if (mounted) {
+        _showError(e.toString().replaceAll('Exception: ', ''));
+        Navigator.pop(context);
+      }
     }
   }
 
@@ -69,25 +63,20 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
     }
     setState(() => _isLoading = true);
     try {
-      final res = await http.post(
-        Uri.parse('${widget.apiUrl}/verify-otp'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': widget.email, 'otp': _otp}),
-      );
+      final service = RecruiterService();
+      await service.verifyOtp(widget.apiUrl, widget.email, _otp);
 
-      if (res.statusCode == 200 || res.statusCode == 201) {
+      if (mounted) {
         setState(() {
           _step = 2;
           _isLoading = false;
         });
-      } else {
-        final body = jsonDecode(res.body);
-        _showError(body['message'] ?? 'Code invalide ou expiré');
-        setState(() => _isLoading = false);
       }
     } catch (e) {
-      _showError('Erreur de connexion');
-      setState(() => _isLoading = false);
+      if (mounted) {
+        _showError(e.toString().replaceAll('Exception: ', ''));
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -104,26 +93,20 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
 
     setState(() => _isLoading = true);
     try {
-      final res = await http.post(
-        Uri.parse('${widget.apiUrl}/reset-password'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(
-            {'email': widget.email, 'otp': _otp, 'newPassword': pass}),
-      );
+      final service = RecruiterService();
+      await service.resetPassword(widget.apiUrl, widget.email, _otp, pass);
 
-      if (res.statusCode == 200 || res.statusCode == 201) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('Mot de passe mis à jour avec succès'),
             backgroundColor: Colors.green));
         Navigator.pop(context);
-      } else {
-        final body = jsonDecode(res.body);
-        _showError(body['message'] ?? 'Erreur lors de la mise à jour');
-        setState(() => _isLoading = false);
       }
     } catch (e) {
-      _showError('Erreur de connexion');
-      setState(() => _isLoading = false);
+      if (mounted) {
+        _showError(e.toString().replaceAll('Exception: ', ''));
+        setState(() => _isLoading = false);
+      }
     }
   }
 

@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/string_extension.dart';
 import '../data/models/profile_model.dart';
-import '../data/profile_service.dart';
+import '../data/profile_api.dart';
 
 part 'profile_state.dart';
 
@@ -15,9 +15,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     if (isClosed) return;
     emit(ProfileLoading());
     try {
-      // ProfileService.getProfile() uses ApiClient (BrowserClient + withCredentials)
-      // — no token reading needed; the HttpOnly cookie is sent automatically.
-      final data = await ProfileService.getProfile();
+      final data = await ProfileApi.getProfile();
       final merged = initialUserData != null
           ? _mergeInitialData(data, initialUserData!)
           : data;
@@ -36,7 +34,7 @@ class ProfileCubit extends Cubit<ProfileState> {
 
     try {
       final updatedData = _calculateCompletion(currentData);
-      await ProfileService.updateProfile(updatedData);
+      await ProfileApi.updateProfile(updatedData);
       emit(ProfileLoaded(updatedData, isSaved: true));
     } catch (e) {
       if (kDebugMode) print('Error saving profile: $e');
@@ -151,7 +149,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     if (state is! ProfileLoaded) return;
 
     try {
-      await ProfileService.removeCv();
+      await ProfileApi.removeCv();
       await loadProfile();
     } catch (e) {
       if (kDebugMode) print('Error removing CV: $e');
@@ -166,7 +164,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   }) async {
     emit(ProfileLoading());
     try {
-      await ProfileService.deleteAccount(
+      await ProfileApi.deleteAccount(
         password: password,
         googleToken: googleToken,
         googleAccessToken: googleAccessToken,

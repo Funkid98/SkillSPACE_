@@ -402,7 +402,7 @@ class _HeroPanel extends StatelessWidget {
                   isPlayful: isPlayful),
               const SizedBox(width: 12),
               _StatChip(
-                  value: '98%',
+                  value: '87%',
                   label: 'Satisfaction',
                   isDark: isDark,
                   isPlayful: isPlayful),
@@ -1922,6 +1922,7 @@ class _StaggeredReveal extends StatefulWidget {
   const _StaggeredReveal({
     required this.child,
     this.index = 0,
+    // ignore: unused_element
     this.delayMs = 100,
   });
 
@@ -2124,7 +2125,7 @@ class _WideHeroContent extends StatelessWidget {
           children: [
             _StatChipWide(value: '15k+', label: 'Talents', isDark: isDark),
             _StatChipWide(value: '150+', label: 'Entreprises', isDark: isDark),
-            _StatChipWide(value: '98%', label: 'Satisfaction', isDark: isDark),
+            _StatChipWide(value: '87%', label: 'Satisfaction', isDark: isDark),
           ],
         ),
       ],

@@ -121,20 +121,23 @@ class AuthCubit extends Cubit<AuthState> {
 
       CookieService.setString('auth_provider', 'email');
 
+      final loginUserData = {
+        'id': user.id,
+        'firstName': user.firstName,
+        'lastName': user.lastName,
+        'email': user.email,
+        'role': user.role,
+        'entreprise': user.entreprise,
+        'sector': synchronizedSector ?? user.sector,
+        'auth_provider': 'email',
+      };
+      CookieService.setString('user_data', jsonEncode(loginUserData));
+
       emit(state.copyWith(
         isLoading: false,
         isSuccess: true,
         role: userRole,
-        loggedInUser: {
-          'id': user.id,
-          'firstName': user.firstName,
-          'lastName': user.lastName,
-          'email': user.email,
-          'role': user.role,
-          'entreprise': user.entreprise,
-          'sector': synchronizedSector ?? user.sector,
-          'auth_provider': 'email',
-        },
+        loggedInUser: loginUserData,
       ));
     } on NeedsVerificationException catch (e) {
       emit(state.copyWith(
@@ -194,20 +197,23 @@ class AuthCubit extends Cubit<AuthState> {
 
       CookieService.setString('auth_provider', 'email');
 
+      final registerUserData = {
+        'id': user.id,
+        'firstName': user.firstName,
+        'lastName': user.lastName,
+        'email': user.email,
+        'role': user.role,
+        'entreprise': user.entreprise,
+        'sector': synchronizedSector ?? user.sector,
+        'auth_provider': 'email',
+      };
+      CookieService.setString('user_data', jsonEncode(registerUserData));
+
       emit(state.copyWith(
         isLoading: false,
         isSuccess: true,
         role: userRole,
-        loggedInUser: {
-          'id': user.id,
-          'firstName': user.firstName,
-          'lastName': user.lastName,
-          'email': user.email,
-          'role': user.role,
-          'entreprise': user.entreprise,
-          'sector': synchronizedSector ?? user.sector,
-          'auth_provider': 'email',
-        },
+        loggedInUser: registerUserData,
       ));
     } on NeedsVerificationException catch (e) {
       emit(state.copyWith(
@@ -242,20 +248,23 @@ class AuthCubit extends Cubit<AuthState> {
 
       CookieService.setString('auth_provider', 'google');
 
+      final googleUserData = {
+        'id': user.id,
+        'firstName': user.firstName,
+        'lastName': user.lastName,
+        'email': user.email,
+        'role': user.role,
+        'entreprise': user.entreprise,
+        'sector': synchronizedSector ?? user.sector,
+        'auth_provider': 'google',
+      };
+      CookieService.setString('user_data', jsonEncode(googleUserData));
+
       emit(state.copyWith(
         isLoading: false,
         isSuccess: true,
         role: userRole,
-        loggedInUser: {
-          'id': user.id,
-          'firstName': user.firstName,
-          'lastName': user.lastName,
-          'email': user.email,
-          'role': user.role,
-          'entreprise': user.entreprise,
-          'sector': synchronizedSector ?? user.sector,
-          'auth_provider': 'google',
-        },
+        loggedInUser: googleUserData,
       ));
     } catch (e) {
       final errorMsg = e.toString().replaceAll('Exception: ', '');
@@ -314,21 +323,24 @@ class AuthCubit extends Cubit<AuthState> {
 
       CookieService.setString('auth_provider', 'github');
 
+      final githubUserData = {
+        'id': user.id,
+        'firstName': user.firstName,
+        'lastName': user.lastName,
+        'email': user.email,
+        'role': user.role,
+        'entreprise': user.entreprise,
+        'sector': synchronizedSector ?? user.sector,
+        'auth_provider': 'github',
+      };
+      CookieService.setString('user_data', jsonEncode(githubUserData));
+
       emit(state.copyWith(
         isLoading: false,
         isSuccess: true,
         role: userRole,
         githubAwaitingCode: false,
-        loggedInUser: {
-          'id': user.id,
-          'firstName': user.firstName,
-          'lastName': user.lastName,
-          'email': user.email,
-          'role': user.role,
-          'entreprise': user.entreprise,
-          'sector': synchronizedSector ?? user.sector,
-          'auth_provider': 'github',
-        },
+        loggedInUser: githubUserData,
       ));
     } catch (e) {
       final errorMsg = e.toString().replaceAll('Exception: ', '');
@@ -431,22 +443,25 @@ class AuthCubit extends Cubit<AuthState> {
 
       CookieService.setString('auth_provider', 'email');
 
+      final verifyUserData = {
+        'id': user.id,
+        'firstName': user.firstName,
+        'lastName': user.lastName,
+        'email': user.email,
+        'role': user.role,
+        'entreprise': user.entreprise,
+        'sector': user.sector,
+        'auth_provider': 'email',
+      };
+      CookieService.setString('user_data', jsonEncode(verifyUserData));
+
       emit(state.copyWith(
         isLoading: false,
         isSuccess: true,
         awaitingVerification: false,
         verificationEmail: null,
         role: userRole,
-        loggedInUser: {
-          'id': user.id,
-          'firstName': user.firstName,
-          'lastName': user.lastName,
-          'email': user.email,
-          'role': user.role,
-          'entreprise': user.entreprise,
-          'sector': user.sector,
-          'auth_provider': 'email',
-        },
+        loggedInUser: verifyUserData,
       ));
     } catch (e) {
       emit(state.copyWith(

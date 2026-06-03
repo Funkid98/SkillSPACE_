@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import '../../../../core/api_constants.dart';
+import '../../data/simulation_api.dart';
 import 'package:reactive_theme/reactive_theme.dart';
 import '../../../../core/app_colors.dart';
 import 'package:pfe/core/network/cookie_service.dart';
@@ -62,31 +61,20 @@ class _SimulationResultPageState extends State<SimulationResultPage>
             'SimulationResultPage: userDataStr is null! Cannot get candidateId');
       }
 
-      final response = await http.post(
-        Uri.parse('${ApiConstants.baseUrl}/api/interview/finish'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'history': widget.chatHistory,
-          'roleTitle': widget.roleTitle,
-          'language': widget.language,
-          if (candidateId != null) 'candidateId': candidateId,
-        }),
+      final data = await SimulationApi().finishInterview(
+        history: widget.chatHistory,
+        roleTitle: widget.roleTitle,
+        language: widget.language,
+        candidateId: candidateId,
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['success']) {
-          if (mounted) {
-            setState(() {
-              _evaluationData = data;
-              _isLoading = false;
-            });
-            _controller.forward();
-          }
-          return;
-        }
+      if (mounted) {
+        setState(() {
+          _evaluationData = data;
+          _isLoading = false;
+        });
+        _controller.forward();
       }
-      throw Exception("Failed to fetch evaluation");
     } catch (e) {
       if (mounted) {
         setState(() {

@@ -442,8 +442,10 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                             showDialog(
                               context: context,
                               barrierDismissible: false,
-                              builder: (ctx) =>
-                                  ChangePasswordDialog(email: state.email),
+                              builder: (ctx) => ChangePasswordDialog(
+                                email: state.email,
+                                apiUrl: 'http://localhost:8088/api/formateur',
+                              ),
                             );
                           } else {
                             Fluttertoast.showToast(

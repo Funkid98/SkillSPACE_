@@ -75,6 +75,8 @@ const removeCv = async (req, res) => {
       nom: "",
       telephone: "",
       localisation: "",
+      completion_percent: 30,
+
     };
 
     await User.findByIdAndUpdate(req.userId, { $set: updates });

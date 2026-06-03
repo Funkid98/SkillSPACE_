@@ -63,32 +63,8 @@ class _SimulationSelectionPageState extends State<SimulationSelectionPage>
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: AppColors.orange.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.auto_awesome,
-                                  size: 16, color: AppColors.orange),
-                              SizedBox(width: 8),
-                              Text(
-                                'Pré-entraînement IA',
-                                style: TextStyle(
-                                  color: AppColors.orange,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                         ElevatedButton.icon(
                           onPressed: () => InterviewHistoryModal.show(context),
                           icon: const Icon(Icons.history,

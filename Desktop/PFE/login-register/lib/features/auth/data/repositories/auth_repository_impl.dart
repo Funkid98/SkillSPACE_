@@ -227,11 +227,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
     // ── MOBILE ───────────────────────────────────────────────────────────────
     try {
-      GoogleSignInAccount? googleUser;
-      try {
-        await _googleSignIn.signInSilently();
-      } catch (_) {}
-      googleUser = await _googleSignIn.signIn();
+      GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
         throw Exception(

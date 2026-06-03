@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:pfe/core/network/api_client.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/utils/app_toast.dart';
+import '../../cubit/formations_cubit.dart';
+import '../../data/profile_api.dart';
 import 'package:reactive_theme/reactive_theme.dart';
 import '../../../../core/app_colors.dart';
 import '../../../../core/utils/responsive.dart';
+import 'trainer_public_profile_page.dart';
 
 class CandidateFormationDetailsPage extends StatefulWidget {
   final dynamic formation;
@@ -21,46 +25,55 @@ class CandidateFormationDetailsPage extends StatefulWidget {
 
 class _CandidateFormationDetailsPageState
     extends State<CandidateFormationDetailsPage> {
-  final ApiClient _apiClient = ApiClient();
   bool _isEnrolling = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // Ensure we have the latest enrolled formations list so the button
+    // correctly reflects enrollment status even on first open.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final cubit = context.read<FormationsCubit>();
+      if (cubit.state is FormationsInitial) {
+        cubit.fetchFormations();
+      }
+    });
+  }
+
   Future<void> _enrollInFormation() async {
-    final formationId = widget.formation['_id'] ?? widget.formation['id'];
-    if (formationId == null) return;
-
     setState(() => _isEnrolling = true);
-
     try {
-      final body = widget.aiReason != null
-          ? {'aiReason': widget.aiReason!}
-          : <String, dynamic>{};
+      final formationId = widget.formation['_id'] ?? widget.formation['id'];
+      if (formationId == null) throw Exception("ID de formation manquant.");
 
-      final response =
-          await _apiClient.post('/candidat/enroll/$formationId', body);
+      final success = await ProfileApi.enrollInFormation(formationId);
 
-      if (response.statusCode == 200) {
+      if (success) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text(
-                    'Inscription réussie ! Vous pouvez la consulter dans "Formations".')),
-          );
-          Navigator.of(context).pop(); // Go back after enroll
+          AppToast.showSuccess(
+              context, "Vous êtes maintenant inscrit à cette formation !");
+          context.read<FormationsCubit>().fetchFormations();
+          Navigator.pop(context);
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Erreur: Vous êtes peut-être déjà inscrit.')),
-          );
+          AppToast.showError(
+              context, "Impossible de s'inscrire à cette formation.");
         }
+      }
+    } on AlreadyEnrolledException {
+      // Already enrolled — refresh the list so the BlocBuilder disables the button
+      if (mounted) {
+        context.read<FormationsCubit>().fetchFormations();
+        AppToast.showError(context, "Vous êtes déjà inscrit à cette formation.");
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Une erreur est survenue lors de l\'inscription.')),
-        );
+        String errorMsg = "Erreur réseau. Veuillez vérifier votre connexion.";
+        if (e is Exception && e.toString().startsWith('Exception: ')) {
+          errorMsg = e.toString().substring(11);
+        }
+        AppToast.showError(context, errorMsg);
       }
     } finally {
       if (mounted) {
@@ -76,9 +89,13 @@ class _CandidateFormationDetailsPageState
     final title = f['title'] ?? 'Formation';
     final description = f['description'] ??
         'Aucune description disponible pour cette formation.';
+    final trainerId = f['trainerId'] != null
+        ? (f['trainerId']['_id'] ?? f['trainerId']['id'])
+        : null;
     final trainer = f['trainerId'] != null
         ? '${f['trainerId']['firstName'] ?? ''} ${f['trainerId']['lastName'] ?? ''}'
-        : 'Formatteur';
+            .trim()
+        : 'Formateur';
     final category = f['category'] ?? 'Général';
     final level = f['level'] ?? 'Tous niveaux';
     final duration =
@@ -160,16 +177,43 @@ class _CandidateFormationDetailsPageState
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Icon(Icons.person,
-                          size: 18,
-                          color: isDark ? Colors.white60 : AppColors.textGray),
-                      const SizedBox(width: 8),
-                      Text('Par $trainer',
-                          style: TextStyle(
-                              fontSize: 15,
-                              color:
-                                  isDark ? Colors.white70 : AppColors.textGray,
-                              fontWeight: FontWeight.w600)),
+                      GestureDetector(
+                        onTap: trainerId != null
+                            ? () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        TrainerPublicProfilePage(
+                                            trainerId: trainerId),
+                                  ),
+                                );
+                              }
+                            : null,
+                        child: Row(
+                          children: [
+                            Icon(Icons.person,
+                                size: 18,
+                                color: isDark
+                                    ? Colors.white60
+                                    : AppColors.textGray),
+                            const SizedBox(width: 8),
+                            Text('Par $trainer',
+                                style: TextStyle(
+                                    fontSize: 15,
+                                    color: trainerId != null
+                                        ? AppColors.orange
+                                        : (isDark
+                                            ? Colors.white70
+                                            : AppColors.textGray),
+                                    fontWeight: FontWeight.w600,
+                                    decoration: trainerId != null
+                                        ? TextDecoration.underline
+                                        : null,
+                                    decorationColor: AppColors.orange)),
+                          ],
+                        ),
+                      ),
                       const SizedBox(width: 16),
                       Container(
                           width: 1,
@@ -281,24 +325,52 @@ class _CandidateFormationDetailsPageState
                   SizedBox(
                     width: double.infinity,
                     height: 56,
-                    child: ElevatedButton(
-                      onPressed: _isEnrolling ? null : _enrollInFormation,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.orange,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
-                      ),
-                      child: _isEnrolling
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2))
-                          : const Text('S\'inscrire à la formation',
-                              style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold)),
+                    child: BlocBuilder<FormationsCubit, FormationsState>(
+                      builder: (context, state) {
+                        bool isAlreadyEnrolled = false;
+                        if (state is FormationsLoaded) {
+                          final formationId = f['_id'] ?? f['id'];
+                          isAlreadyEnrolled = state.formations.any((enrolledF) => 
+                            (enrolledF['_id'] ?? enrolledF['id']) == formationId
+                          );
+                        }
+
+                        if (isAlreadyEnrolled) {
+                          return ElevatedButton(
+                            onPressed: null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.textGray.withOpacity(0.2),
+                              foregroundColor: isDark ? Colors.white60 : AppColors.textGray,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16)),
+                            ),
+                            child: const Text('Déjà inscrit à cette formation',
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold)),
+                          );
+                        }
+
+                        return ElevatedButton(
+                          onPressed: _isEnrolling ? null : _enrollInFormation,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.orange,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
+                          ),
+                          child: _isEnrolling
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2))
+                              : const Text('S\'inscrire à la formation',
+                                  style: TextStyle(
+                                      fontSize: 16, fontWeight: FontWeight.bold)),
+                        );
+                      },
                     ),
                   )
                 ],

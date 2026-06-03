@@ -75,5 +75,9 @@ router.post("/notifications/decision", protect, handleApplicationDecision);
 router.post("/internal/set-otp", setOtp);
 router.post("/internal/verify-otp", verifyOtp);
 router.post("/internal/reset-password", resetPassword);
+// Public password reset routes (used by ChangePasswordDialog)
+router.post("/forgot-password", setOtp);
+router.post("/verify-otp", verifyOtp);
+router.post("/reset-password", resetPassword);
 
 module.exports = router;

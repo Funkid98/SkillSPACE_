@@ -1,33 +1,29 @@
-import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pfe/core/network/api_client.dart';
 import 'simulation_state.dart';
+import '../data/simulation_api.dart';
 
 // Uses ApiClient (BrowserClient + withCredentials) — no manual token required.
 class SimulationCubit extends Cubit<SimulationState> {
-  final ApiClient _apiClient = ApiClient();
-
   SimulationCubit() : super(SimulationInitial());
 
   Future<void> fetchAcceptedOffers() async {
     if (isClosed) return;
     emit(SimulationLoading());
     try {
-      final response = await _apiClient.get('/candidat/accepted-offers');
-
+      final data = await SimulationApi().fetchAcceptedOffers();
       if (isClosed) return;
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        emit(SimulationLoaded(data));
-      } else if (response.statusCode == 401) {
-        emit(const SimulationError('Non authentifié'));
-      } else {
-        emit(const SimulationError(
-            'Impossible de charger vos offres acceptées'));
-      }
+      emit(SimulationLoaded(data));
     } catch (e) {
       if (isClosed) return;
-      emit(SimulationError('Erreur réseau : $e'));
+      final msg = e.toString();
+      if (msg.contains('Non authentifié')) {
+        emit(const SimulationError('Non authentifié'));
+      } else if (msg.contains('Impossible de charger')) {
+        emit(const SimulationError(
+            'Impossible de charger vos offres acceptées'));
+      } else {
+        emit(SimulationError('Erreur réseau : $e'));
+      }
     }
   }
 }

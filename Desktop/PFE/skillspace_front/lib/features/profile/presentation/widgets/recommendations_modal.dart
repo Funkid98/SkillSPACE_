@@ -1,6 +1,5 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:pfe/core/network/api_client.dart';
+import '../../data/profile_api.dart';
 import 'package:reactive_theme/reactive_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/app_colors.dart';
@@ -41,40 +40,27 @@ class _RecommendationsModalState extends State<RecommendationsModal> {
     _fetchRecommendations();
   }
 
-  final ApiClient _apiClient = ApiClient();
-
   Future<void> _fetchRecommendations() async {
     try {
-      final response = await _apiClient.post('/quiz/recommend', {
-        'skill': widget.skill,
-        'score': widget.score,
-        if (widget.claimedLevel != null) 'claimedLevel': widget.claimedLevel!,
-        if (widget.answersAnalysis != null)
-          'answersAnalysis': widget.answersAnalysis!,
-      });
+      final data = await ProfileApi.getRecommendations(
+        skill: widget.skill,
+        score: widget.score,
+        claimedLevel: widget.claimedLevel,
+        answersAnalysis: widget.answersAnalysis,
+      );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (mounted) {
-          setState(() {
-            _levelDetermined = data['level_determined'] ?? '';
-            _internalFormations = data['internal_formations'] ?? [];
-            _externalFormations = data['external_formations'] ?? [];
-            _isLoading = false;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _error = 'Failed to load recommendations';
-            _isLoading = false;
-          });
-        }
+      if (mounted) {
+        setState(() {
+          _levelDetermined = data['level_determined'] ?? '';
+          _internalFormations = data['internal_formations'] ?? [];
+          _externalFormations = data['external_formations'] ?? [];
+          _isLoading = false;
+        });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'An error occurred';
+          _error = 'Failed to load recommendations';
           _isLoading = false;
         });
       }
