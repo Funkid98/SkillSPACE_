@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_theme/reactive_theme.dart';
+import 'dart:html' as html;
+import '../../data/recruiter_service.dart';
 import '../cubits/recruiter_extra_cubits.dart';
 import '../../data/models/recruiter_job_offer_model.dart';
-import '../../data/recruiter_service.dart';
 import '../../../../core/app_colors.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/l10n/app_localizations.dart';
@@ -18,39 +19,52 @@ class RecruiterCandidatesPage extends StatelessWidget {
     final l10n = RecruiterLocalizations.of(context);
     final isDark = ReactiveMode.isDarkMode(context);
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
-          Responsive.hPad(context), 0, Responsive.hPad(context), 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AnimatedReveal(
-            direction: RevealDirection.fromTop,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.candidatesPageTitle,
-                  style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                      color: isDark ? Colors.white : AppColors.textDark),
+    return BlocListener<RecruiterCandidatesCubit, RecruiterCandidatesState>(
+        listener: (context, state) {
+          if (state is RecruiterCandidatesContactSuccess) {
+            _showContactSuccessDialog(context, state);
+          } else if (state is RecruiterCandidatesContactError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+              Responsive.hPad(context), 0, Responsive.hPad(context), 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AnimatedReveal(
+                direction: RevealDirection.fromTop,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.candidatesPageTitle,
+                      style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? Colors.white : AppColors.textDark),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      l10n.candidatesPageSubtitle,
+                      style: TextStyle(
+                          fontSize: 15,
+                          color: isDark ? Colors.white60 : AppColors.textGray),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  l10n.candidatesPageSubtitle,
-                  style: TextStyle(
-                      fontSize: 15,
-                      color: isDark ? Colors.white60 : AppColors.textGray),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-          AnimatedReveal(
-            delay: const Duration(milliseconds: 200),
-            child:
-                (Responsive.isMobile(context) || Responsive.isTablet(context))
+              ),
+              const SizedBox(height: 32),
+              AnimatedReveal(
+                delay: const Duration(milliseconds: 200),
+                child: (Responsive.isMobile(context) ||
+                        Responsive.isTablet(context))
                     ? Column(
                         children: [
                           _buildSearchField(context, l10n),
@@ -65,113 +79,117 @@ class RecruiterCandidatesPage extends StatelessWidget {
                           _buildSavedButton(context, l10n),
                         ],
                       ),
-          ),
-          const SizedBox(height: 32),
-          BlocBuilder<RecruiterCandidatesCubit, RecruiterCandidatesState>(
-            builder: (context, state) {
-              if (state is RecruiterCandidatesLoading) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.only(top: 100),
-                    child: CircularProgressIndicator(color: AppColors.orange),
-                  ),
-                );
-              }
-              if (state is RecruiterCandidatesError) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 100),
-                    child: Text(state.message),
-                  ),
-                );
-              }
-              if (state is RecruiterCandidatesLoaded) {
-                if (state.groupedMatches.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.only(top: 100),
-                      child: Text('Aucune offre ou candidat trouvé'),
-                    ),
-                  );
-                }
-                return Column(
-                  children: state.groupedMatches.map((group) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16.0),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.work_outline_rounded,
-                                  color: AppColors.navy, size: 20),
-                              const SizedBox(width: 12),
-                              Text(
-                                group.offer.title,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark ? Colors.white : AppColors.navy,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? Colors.white.withOpacity(0.05)
-                                      : AppColors.bg,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  '${group.candidates.length}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark
-                                        ? Colors.white60
-                                        : AppColors.textGray,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (group.candidates.isEmpty)
-                          Padding(
-                            padding:
-                                const EdgeInsets.only(left: 32, bottom: 24),
-                            child: Text(
-                              'Aucun match pour cette offre',
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  color: isDark
-                                      ? Colors.white38
-                                      : AppColors.textGray,
-                                  fontStyle: FontStyle.italic),
-                            ),
-                          )
-                        else
-                          ...group.candidates.map((c) {
-                            return _CandidateMatchCard(
-                              candidate: c,
-                              offerId: group.offer.id,
-                              offerTitle: group.offer.title,
-                            );
-                          }),
-                        const SizedBox(height: 16),
-                      ],
+              ),
+              const SizedBox(height: 32),
+              BlocBuilder<RecruiterCandidatesCubit, RecruiterCandidatesState>(
+                builder: (context, state) {
+                  if (state is RecruiterCandidatesLoading) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 100),
+                        child:
+                            CircularProgressIndicator(color: AppColors.orange),
+                      ),
                     );
-                  }).toList(),
-                );
-              }
-              return Container();
-            },
+                  }
+                  if (state is RecruiterCandidatesError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 100),
+                        child: Text(state.message),
+                      ),
+                    );
+                  }
+                  if (state is RecruiterCandidatesLoaded) {
+                    if (state.groupedMatches.isEmpty) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.only(top: 100),
+                          child: Text('Aucune offre ou candidat trouvé'),
+                        ),
+                      );
+                    }
+                    return Column(
+                      children: state.groupedMatches.map((group) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 16.0),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.work_outline_rounded,
+                                      color: AppColors.navy, size: 20),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    group.offer.title,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark
+                                          ? Colors.white
+                                          : AppColors.navy,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? Colors.white.withOpacity(0.05)
+                                          : AppColors.bg,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      '${group.candidates.length}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark
+                                            ? Colors.white60
+                                            : AppColors.textGray,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (group.candidates.isEmpty)
+                              Padding(
+                                padding:
+                                    const EdgeInsets.only(left: 32, bottom: 24),
+                                child: Text(
+                                  'Aucun match pour cette offre',
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      color: isDark
+                                          ? Colors.white38
+                                          : AppColors.textGray,
+                                      fontStyle: FontStyle.italic),
+                                ),
+                              )
+                            else
+                              ...group.candidates.map((c) {
+                                return _CandidateMatchCard(
+                                  candidate: c,
+                                  offerId: group.offer.id,
+                                  offerTitle: group.offer.title,
+                                );
+                              }),
+                            const SizedBox(height: 16),
+                          ],
+                        );
+                      }).toList(),
+                    );
+                  }
+                  return Container();
+                },
+              ),
+            ],
           ),
-        ],
-      ),
-    );
+        ));
   }
 
   Widget _buildSearchField(BuildContext context, RecruiterLocalizations l10n) {
@@ -212,56 +230,118 @@ class RecruiterCandidatesPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSavedButton(BuildContext context, RecruiterLocalizations l10n) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return BlocBuilder<RecruiterCandidatesCubit, RecruiterCandidatesState>(
-      builder: (context, state) {
-        final cubit = context.read<RecruiterCandidatesCubit>();
-        final isSavedFilterActive = cubit.isShowingSavedOnly;
-        final savedCount = cubit.savedCount;
-
-        return InkWell(
-          onTap: () => cubit.toggleSavedFilter(),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            height: 62,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            decoration: BoxDecoration(
-              color: isSavedFilterActive
-                  ? AppColors.navy
-                  : (isDark ? AppColors.surfaceDark : Colors.white),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                  color: isSavedFilterActive
-                      ? AppColors.navy
-                      : (isDark ? AppColors.borderDark : AppColors.border),
-                  width: 1),
+  void _showContactSuccessDialog(
+      BuildContext context, RecruiterCandidatesContactSuccess state) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check_circle_rounded,
+                  color: AppColors.success, size: 40),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.star_rounded,
-                    size: 22,
-                    color: isSavedFilterActive
-                        ? AppColors.orange
-                        : AppColors.textGray),
-                const SizedBox(width: 10),
-                Text(
-                  '${l10n.savedLabel} ($savedCount)',
-                  style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: isSavedFilterActive
-                          ? Colors.white
-                          : (isDark ? Colors.white : AppColors.textDark)),
+            const SizedBox(height: 16),
+            Text(
+              state.rejectionReason != null
+                  ? 'Candidature refusée'
+                  : (state.date != null
+                      ? 'Entretien proposé !'
+                      : 'Contact envoyé !'),
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              state.rejectionReason != null
+                  ? 'Le candidat a été informé de votre décision.'
+                  : (state.date != null
+                      ? 'Le candidat a été notifié de l\'entretien prévu le ${state.date} à ${state.time}.'
+                      : '${state.candidateName} recevra une notification que vous souhaitez le contacter.'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  color: AppColors.textGray, fontSize: 14, height: 1.5),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.navy,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-              ],
+                child: const Text('Fermer',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
+}
+
+Widget _buildSavedButton(BuildContext context, RecruiterLocalizations l10n) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return BlocBuilder<RecruiterCandidatesCubit, RecruiterCandidatesState>(
+    builder: (context, state) {
+      final cubit = context.read<RecruiterCandidatesCubit>();
+      final isSavedFilterActive = cubit.isShowingSavedOnly;
+      final savedCount = cubit.savedCount;
+
+      return InkWell(
+        onTap: () => cubit.toggleSavedFilter(),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          height: 62,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            color: isSavedFilterActive
+                ? AppColors.navy
+                : (isDark ? AppColors.surfaceDark : Colors.white),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+                color: isSavedFilterActive
+                    ? AppColors.navy
+                    : (isDark ? AppColors.borderDark : AppColors.border),
+                width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.star_rounded,
+                  size: 22,
+                  color: isSavedFilterActive
+                      ? AppColors.orange
+                      : AppColors.textGray),
+              const SizedBox(width: 10),
+              Text(
+                '${l10n.savedLabel} ($savedCount)',
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: isSavedFilterActive
+                        ? Colors.white
+                        : (isDark ? Colors.white : AppColors.textDark)),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 class _CandidateMatchCard extends StatelessWidget {
@@ -416,7 +496,13 @@ class _CandidateMatchCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildScore(context, l10n),
-              _buildActionButton(context, l10n),
+              Row(
+                children: [
+                  _buildViewCvButton(context),
+                  const SizedBox(width: 8),
+                  _buildActionButton(context, l10n),
+                ],
+              ),
             ],
           )
         : Column(
@@ -424,7 +510,14 @@ class _CandidateMatchCard extends StatelessWidget {
             children: [
               _buildScore(context, l10n),
               const SizedBox(height: 24),
-              _buildActionButton(context, l10n),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildViewCvButton(context),
+                  const SizedBox(width: 8),
+                  _buildActionButton(context, l10n),
+                ],
+              ),
             ],
           );
   }
@@ -511,142 +604,63 @@ class _CandidateMatchCard extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton(BuildContext context, RecruiterLocalizations l10n) {
+  Widget _buildViewCvButton(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Builder(
-      builder: (context) => OutlinedButton.icon(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (ctx) => SchedulingDialog(
-              candidateName: candidate.name,
-              onConfirm: (date, time, link) {
-                _submitContact(context, l10n,
-                    date: date, time: time, link: link);
-              },
-            ),
-          );
-        },
-        icon: const Icon(Icons.mail_outline_rounded, size: 16),
-        label: Text(l10n.contactCandidate),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: isDark ? Colors.white : AppColors.navy,
-          side: BorderSide(
-              color: isDark ? Colors.white38 : AppColors.navy, width: 1.2),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-        ),
+    return OutlinedButton.icon(
+      onPressed: () {
+        const baseUrl = String.fromEnvironment('CV_BASE_URL',
+            defaultValue: 'http://localhost:8088');
+        final url = '$baseUrl/candidat/internal/${candidate.id}/cv-file';
+        html.window.open(url, '_blank');
+      },
+      icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
+      label: const Text('Voir CV'),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: isDark ? AppColors.orange : AppColors.orange,
+        side: const BorderSide(color: AppColors.orange, width: 1.2),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
       ),
     );
   }
 
-  Future<void> _submitContact(BuildContext context, RecruiterLocalizations l10n,
-      {String? date,
-      String? time,
-      String? link,
-      String? rejectionReason}) async {
-    // Show loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(
-        child: CircularProgressIndicator(color: AppColors.navy),
-      ),
-    );
-
-    try {
-      final service = RecruiterService();
-      await service.contactCandidate(
-        candidateId: candidate.id,
-        candidateName: candidate.name,
-        offerId: offerId,
-        offerTitle: offerTitle,
-        interviewDate: date,
-        interviewTime: time,
-        meetingLink: link,
-        rejectionReason: rejectionReason,
-        type: rejectionReason != null
-            ? 'REJECTION'
-            : (date != null ? 'INTERVIEW' : 'CONTACT'),
-      );
-
-      if (context.mounted) Navigator.of(context).pop(); // close loading
-
-      if (context.mounted) {
+  Widget _buildActionButton(BuildContext context, RecruiterLocalizations l10n) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return OutlinedButton.icon(
+      onPressed: () {
         showDialog(
           context: context,
-          builder: (_) => AlertDialog(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.check_circle_rounded,
-                      color: AppColors.success, size: 40),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  rejectionReason != null
-                      ? 'Candidature refusée'
-                      : (date != null
-                          ? 'Entretien proposé !'
-                          : 'Contact envoyé !'),
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w900, fontSize: 17),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  rejectionReason != null
-                      ? 'Le candidat a été informé de votre décision.'
-                      : (date != null
-                          ? 'Le candidat a été notifié de l\'entretien prévu le $date à $time.'
-                          : '${candidate.name} recevra une notification que vous souhaitez le contacter.'),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      color: AppColors.textGray, fontSize: 14, height: 1.5),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.navy,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: const Text('Fermer',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ],
-            ),
+          builder: (ctx) => SchedulingDialog(
+            candidateName: candidate.name,
+            onConfirm: (date, time, link) {
+              Navigator.of(ctx).pop();
+              context.read<RecruiterCandidatesCubit>().contactCandidate(
+                    candidateId: candidate.id,
+                    candidateName: candidate.name,
+                    offerId: offerId,
+                    offerTitle: offerTitle,
+                    interviewDate: date,
+                    interviewTime: time,
+                    meetingLink: link,
+                    // ignore: unnecessary_null_comparison
+                    type: date != null ? 'INTERVIEW' : 'CONTACT',
+                  );
+            },
           ),
         );
-      }
-    } catch (e) {
-      if (context.mounted) Navigator.of(context).pop();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur réseau. Veuillez réessayer.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+      },
+      icon: const Icon(Icons.mail_outline_rounded, size: 16),
+      label: Text(l10n.contactCandidate),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: isDark ? Colors.white : AppColors.navy,
+        side: BorderSide(
+            color: isDark ? Colors.white38 : AppColors.navy, width: 1.2),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+      ),
+    );
   }
 }
 

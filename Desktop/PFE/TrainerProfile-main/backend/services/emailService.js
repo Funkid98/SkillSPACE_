@@ -11,6 +11,10 @@ const getTransporter = () => {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_PASS,
       },
+      pool: false,
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 5000,
     });
   }
   return _transporter;
@@ -40,7 +44,17 @@ const sendVerificationEmail = async (toEmail, otp) => {
 
   const transporter = getTransporter();
   if (!transporter) { console.warn('[Email] GMAIL_USER/GMAIL_PASS not set — skipping verification email.'); return; }
-  await transporter.sendMail(mailOptions);
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[Email] Verification email accepted by SMTP for ${toEmail}`);
+    console.log(`[Email] SMTP response: ${info.response}`);
+    console.log(`[Email] MessageId: ${info.messageId}`);
+    if (info.rejected && info.rejected.length > 0) {
+      console.warn(`[Email] Rejected recipients: ${info.rejected.join(', ')}`);
+    }
+  } catch (err) {
+    console.error(`[Email] Failed to send verification email to ${toEmail}:`, err.message || err);
+  }
 };
 
 const sendLoginSuccessEmail = async (toEmail, firstName) => {
@@ -65,9 +79,11 @@ const sendLoginSuccessEmail = async (toEmail, firstName) => {
   try {
     const transporter = getTransporter();
     if (!transporter) return;
-    await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[Email] Login success email accepted by SMTP for ${toEmail}`);
+    console.log(`[Email] SMTP response: ${info.response}`);
   } catch (error) {
-    console.error('Error sending login notification email:', error);
+    console.error(`[Email] Failed to send login success email to ${toEmail}:`, error.message || error);
   }
 };
 
@@ -95,7 +111,13 @@ const sendPasswordResetEmail = async (toEmail, otp) => {
 
   const transporter = getTransporter();
   if (!transporter) return;
-  await transporter.sendMail(mailOptions);
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[Email] Password reset email accepted by SMTP for ${toEmail}`);
+    console.log(`[Email] SMTP response: ${info.response}`);
+  } catch (err) {
+    console.error(`[Email] Failed to send password reset email to ${toEmail}:`, err.message || err);
+  }
 };
 
 module.exports = { sendVerificationEmail, sendLoginSuccessEmail, sendPasswordResetEmail };

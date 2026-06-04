@@ -213,7 +213,7 @@ class ProfileApi {
   // ── Password / OTP ─────────────────────────────────────────────────────────
   static Future<Map<String, dynamic>> requestPasswordReset(String email) async {
     final response = await http.post(
-      Uri.parse('${ApiConstants.baseUrl}/auth/forgot-password'),
+      Uri.parse('${ApiConstants.baseUrl}/api/auth/forgot-password'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email}),
     );
@@ -223,7 +223,7 @@ class ProfileApi {
   static Future<Map<String, dynamic>> verifyOtp(
       String email, String otp) async {
     final response = await http.post(
-      Uri.parse('${ApiConstants.baseUrl}/auth/verify-otp'),
+      Uri.parse('${ApiConstants.baseUrl}/api/auth/verify-otp'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email, 'otp': otp}),
     );
@@ -233,7 +233,7 @@ class ProfileApi {
   static Future<Map<String, dynamic>> updatePassword(
       String email, String newPassword) async {
     final response = await http.post(
-      Uri.parse('${ApiConstants.baseUrl}/auth/reset-password'),
+      Uri.parse('${ApiConstants.baseUrl}/api/auth/reset-password'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email, 'newPassword': newPassword}),
     );

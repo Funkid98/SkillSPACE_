@@ -1228,7 +1228,7 @@ class _SignupVerificationFlowState extends State<_SignupVerificationFlow> {
                       widget.isDark ? Colors.white : const Color(0xFF1E2B6B)),
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: _inputDecoration(
-                hint: '1234',
+                hint: 'Saisir le code envoyé ici.. ',
                 icon: Icons.verified_user_outlined,
                 isDark: widget.isDark,
               ),

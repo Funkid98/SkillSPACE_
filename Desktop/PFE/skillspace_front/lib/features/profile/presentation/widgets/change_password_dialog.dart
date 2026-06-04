@@ -41,7 +41,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
     setState(() => _isLoading = true);
     try {
       final res = await ProfileApi.requestPasswordReset(widget.email);
-      if (res['message'] == 'Code envoyé' || res['message']?.contains('envoyé') == true) {
+      if (res['success'] == true || res['message']?.contains('envoyé') == true) {
         setState(() {
           _step = 1;
           _isLoading = false;
@@ -64,7 +64,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
     setState(() => _isLoading = true);
     try {
       final res = await ProfileApi.verifyOtp(widget.email, _otp);
-      if (res['message'] == 'Code valide' || res['message']?.contains('valide') == true) {
+      if (res['success'] == true || res['message']?.contains('vérifié') == true) {
         setState(() {
           _step = 2;
           _isLoading = false;
@@ -93,7 +93,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
     setState(() => _isLoading = true);
     try {
       final res = await ProfileApi.updatePassword(widget.email, pass);
-      if (res['message'] == 'Mot de passe mis à jour avec succès' || res['message']?.contains('succès') == true) {
+      if (res['success'] == true || res['message']?.contains('succès') == true) {
         AppToast.showSuccess(context, 'Mot de passe mis à jour avec succès');
         Navigator.pop(context);
       } else {

@@ -109,17 +109,16 @@ const evaluateQuizHandler = async (req, res) => {
     //     Beginner→28 Intermediate : floor(100/100 × 40) = 40  → entry of Intermediate band
     //     Intermediate → Advanced   : 40 + floor(100/100 × 40) = 80 → entry of Advanced band
     let mappedPercent = 0;
+    if (determinedLevel === "Beginner") {
+      mappedPercent = Math.floor((score / 100) * 40);
+    } else if (determinedLevel === "Intermediate") {
+      mappedPercent = 40 + Math.floor((score / 100) * 40);
+    } else {
+      mappedPercent = 80 + Math.floor((score / 100) * 20);
+    }
     if (levelMatch === "underrated") {
       if (determinedLevel === "Intermediate") mappedPercent = 40;
       else if (determinedLevel === "Advanced") mappedPercent = 80;
-    } else {
-      if (determinedLevel === "Beginner") {
-        mappedPercent = Math.floor((score / 100) * 40);
-      } else if (determinedLevel === "Intermediate") {
-        mappedPercent = 40 + Math.floor((score / 100) * 40);
-      } else {
-        mappedPercent = 80 + Math.floor((score / 100) * 20);
-      }
     }
     mappedPercent = Math.max(0, Math.min(100, mappedPercent));
 

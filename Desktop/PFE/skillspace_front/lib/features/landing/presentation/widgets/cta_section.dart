@@ -14,8 +14,6 @@ import '../../../../core/l10n/app_localizations.dart';
 import 'package:skillspace/shared/widgets/app_sidebar.dart';
 import 'package:recruiter_profile/recruiter_profile.dart';
 
-import '../../../auth/presentation/pages/field_selection_page.dart';
-
 class CtaSection extends StatefulWidget {
   const CtaSection({super.key});
 
@@ -147,11 +145,6 @@ class _CtaSectionState extends State<CtaSection>
                                                 initialUserData: user,
                                               );
                                             } else {
-                                              final sector = user?['sector'];
-                                              if (sector == null ||
-                                                  sector.isEmpty) {
-                                                return const FieldSelectionPage();
-                                              }
                                               return DashboardShell(
                                                 initialTab: DashboardTab.profil,
                                                 initialUserData: user,

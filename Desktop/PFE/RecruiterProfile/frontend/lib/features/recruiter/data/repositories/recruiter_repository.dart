@@ -69,4 +69,34 @@ class RecruiterRepository {
           'Failed to delete recruiter account');
     }
   }
+
+  Future<void> contactCandidate({
+    required String candidateId,
+    required String candidateName,
+    required String offerId,
+    required String offerTitle,
+    String? interviewDate,
+    String? interviewTime,
+    String? meetingLink,
+    String? rejectionReason,
+    String type = 'CONTACT',
+  }) async {
+    final body = <String, dynamic>{
+      'candidateId': candidateId,
+      'candidateName': candidateName,
+      'offerId': offerId,
+      'offerTitle': offerTitle,
+      'type': type,
+      if (interviewDate != null) 'interviewDate': interviewDate,
+      if (interviewTime != null) 'interviewTime': interviewTime,
+      if (meetingLink != null) 'meetingLink': meetingLink,
+      if (rejectionReason != null) 'rejectionReason': rejectionReason,
+    };
+    final response = await apiClient.post('/recruiter/contact-candidate', body);
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final data = jsonDecode(response.body);
+      throw Exception(data['message'] ?? data['error'] ?? 'Erreur réseau');
+    }
+  }
 }
+

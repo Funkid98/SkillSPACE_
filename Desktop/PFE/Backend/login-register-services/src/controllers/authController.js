@@ -189,7 +189,15 @@ exports.register = async (req, res) => {
       });
     }
 
-    await sendVerificationEmail(user.email, otp);
+    // Send verification email in the background so the HTTP response isn't blocked
+    sendVerificationEmail(user.email, otp).catch((err) =>
+      console.error("[Register] Background email send failed:", err.message || err)
+    );
+
+    // DEV FALLBACK: print OTP to console so the developer can verify even if email fails
+    console.log(`\n========================================`);
+    console.log(`[DEV OTP] Registration OTP for ${user.email}: ${otp}`);
+    console.log(`========================================\n`);
 
     res.status(201).json({
       success: true,
@@ -288,7 +296,10 @@ exports.login = async (req, res) => {
       user.resetOtp = otp;
       user.resetOtpExpires = new Date(Date.now() + 10 * 60 * 1000);
       await user.save({ validateBeforeSave: false });
-      await sendVerificationEmail(user.email, otp);
+      // Resend verification email in the background so the HTTP response isn't blocked
+      sendVerificationEmail(user.email, otp).catch((err) =>
+        console.error("[Login] Background email resend failed:", err.message || err)
+      );
 
       return res.status(403).json({
         success: false,
@@ -577,7 +588,16 @@ exports.forgotPassword = async (req, res) => {
       }
     }
 
-    await sendOtpEmail(email, otp);
+    // Send OTP email in the background so the HTTP response isn't blocked
+    sendOtpEmail(email, otp).catch((err) =>
+      console.error("[ForgotPassword] Background email send failed:", err.message || err)
+    );
+
+    // DEV FALLBACK: print OTP to console so the developer can verify even if email fails
+    console.log(`\n========================================`);
+    console.log(`[DEV OTP] Password-reset OTP for ${email}: ${otp}`);
+    console.log(`========================================\n`);
+
     res
       .status(200)
       .json({ success: true, message: "Code OTP envoyé par email." });

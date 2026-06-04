@@ -474,6 +474,7 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
   late final TextEditingController _bio;
   late final TextEditingController _poste;
   late final TextEditingController _entreprise;
+  PhoneNumber _initialNumber = PhoneNumber(isoCode: 'TN');
   PhoneNumber _number = PhoneNumber(isoCode: 'TN');
 
   @override
@@ -501,16 +502,19 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
   Future<void> _initPhoneNumber(String text) async {
     try {
       final number = await PhoneNumber.getRegionInfoFromPhoneNumber(text, 'TN');
-      setState(() {
-        _number = number;
-        // If the text starts with the dial code, extract only the national part
-        // to avoid duplication in the InternationalPhoneNumberInput widget
-        if (number.dialCode != null && text.contains(number.dialCode!)) {
-          final national =
-              text.replaceAll(number.dialCode!, '').replaceAll('+', '').trim();
-          _phone.text = national;
-        }
-      });
+      if (mounted) {
+        setState(() {
+          _number = number;
+          _initialNumber = number;
+          // If the text starts with the dial code, extract only the national part
+          // to avoid duplication in the InternationalPhoneNumberInput widget
+          if (number.dialCode != null && text.contains(number.dialCode!)) {
+            final national =
+                text.replaceAll(number.dialCode!, '').replaceAll('+', '').trim();
+            _phone.text = national;
+          }
+        });
+      }
     } catch (e) {
       if (kDebugMode) print('Error parsing phone number: $e');
     }
@@ -670,11 +674,9 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
                 _PhoneField(
                   label: l10n.phone,
                   controller: _phone,
-                  initialNumber: _number,
+                  initialNumber: _initialNumber,
                   onChanged: (PhoneNumber number) {
-                    setState(() {
-                      _number = number;
-                    });
+                    _number = number;
                     _updateCubit();
                   },
                 ),
@@ -695,11 +697,9 @@ class _PersonalInfoCardState extends State<_PersonalInfoCard> {
                       child: _PhoneField(
                         label: l10n.phone,
                         controller: _phone,
-                        initialNumber: _number,
+                        initialNumber: _initialNumber,
                         onChanged: (PhoneNumber number) {
-                          setState(() {
-                            _number = number;
-                          });
+                          _number = number;
                           _updateCubit();
                         },
                       ),

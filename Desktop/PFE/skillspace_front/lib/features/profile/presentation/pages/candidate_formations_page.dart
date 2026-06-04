@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/app_colors.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../cubit/formations_cubit.dart';
+import 'trainer_public_profile_page.dart';
 
 class CandidateFormationsPage extends StatelessWidget {
   const CandidateFormationsPage({super.key});
@@ -82,9 +83,13 @@ class CandidateFormationsPage extends StatelessWidget {
                           itemBuilder: (context, index) {
                             final f = state.formations[index];
                             final title = f['title'] ?? 'Formation';
-                            final trainer = f['trainerId'] != null
-                                ? '${f['trainerId']['firstName'] ?? ''} ${f['trainerId']['lastName'] ?? ''}'
-                                : 'Formatteur';
+                            final trainerData = f['trainerId'];
+                            final trainer = trainerData != null
+                                ? '${trainerData['firstName'] ?? ''} ${trainerData['lastName'] ?? ''}'
+                                : 'Formateur';
+                            final trainerId = trainerData != null
+                                ? (trainerData['_id'] ?? '').toString()
+                                : '';
                             final aiReason = f['aiReason'] ?? '';
 
                             final status = f['status'] ?? 'ENROLLED';
@@ -154,13 +159,49 @@ class CandidateFormationsPage extends StatelessWidget {
                                             const SizedBox(height: 8),
                                             Row(
                                               children: [
-                                                Text('Par $trainer',
-                                                    style: TextStyle(
-                                                        fontSize: 14,
-                                                        color: isDark
-                                                            ? Colors.white60
-                                                            : AppColors
-                                                                .textGray)),
+                                                GestureDetector(
+                                                  onTap: trainerId.isNotEmpty
+                                                      ? () => Navigator.push(
+                                                            context,
+                                                            MaterialPageRoute(
+                                                              builder: (_) => TrainerPublicProfilePage(
+                                                                trainerId: trainerId,
+                                                              ),
+                                                            ),
+                                                          )
+                                                      : null,
+                                                  child: MouseRegion(
+                                                    cursor: trainerId.isNotEmpty
+                                                        ? SystemMouseCursors.click
+                                                        : SystemMouseCursors.basic,
+                                                    child: Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Text('Par $trainer',
+                                                            style: TextStyle(
+                                                                fontSize: 14,
+                                                                color: trainerId.isNotEmpty
+                                                                    ? AppColors.orange
+                                                                    : (isDark
+                                                                        ? Colors.white60
+                                                                        : AppColors.textGray),
+                                                                fontWeight: trainerId.isNotEmpty
+                                                                    ? FontWeight.w600
+                                                                    : FontWeight.normal,
+                                                                decoration: trainerId.isNotEmpty
+                                                                    ? TextDecoration.underline
+                                                                    : TextDecoration.none,
+                                                                decorationColor: AppColors.orange)),
+                                                        if (trainerId.isNotEmpty) ...[
+                                                          const SizedBox(width: 4),
+                                                          const Icon(Icons.open_in_new_rounded,
+                                                              size: 13,
+                                                              color: AppColors.orange),
+                                                        ],
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
                                                 if (f['reviewCount'] != null &&
                                                     f['reviewCount'] > 0) ...[
                                                   const SizedBox(width: 12),

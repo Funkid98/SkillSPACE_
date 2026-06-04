@@ -8,7 +8,6 @@ import 'package:skillspace/shared/widgets/animated_reveal.dart';
 import 'package:skillspace/core/l10n/app_localizations.dart';
 import 'package:pfe/features/auth/presentation/pages/auth_page.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
-import 'package:skillspace/features/auth/presentation/pages/field_selection_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:skillspace/features/dashboard_shell/dashboard_shell.dart';
 import 'package:skillspace/shared/widgets/app_sidebar.dart';
@@ -48,10 +47,7 @@ void _goToAuth(BuildContext context, AuthTab tab) {
                     },
                   );
                 } else {
-                  final sector = userData?['sector'];
-                  if (sector == null || sector.toString().isEmpty) {
-                    return const FieldSelectionPage();
-                  }
+                  
                   return DashboardShell(
                     initialTab: DashboardTab.profil,
                     initialUserData: userData,

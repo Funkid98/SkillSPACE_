@@ -444,7 +444,7 @@ class _FormateurProfileScreenState extends State<FormateurProfileScreen> {
                               barrierDismissible: false,
                               builder: (ctx) => ChangePasswordDialog(
                                 email: state.email,
-                                apiUrl: 'http://localhost:8088/api/formateur',
+                                apiUrl: '/api/auth',
                               ),
                             );
                           } else {

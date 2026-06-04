@@ -152,7 +152,10 @@ const handleCandidateTask = async (candidateId) => {
     }
     const isTitleMatch = checkTitleMatch(candidate.jobtitle, offer.title);
 
-    // FILTER REMOVED: Always run AI analysis even if title doesn't match and skills < 2
+    // FILTER: Skip AI analysis if title doesn't match AND fewer than 2 skills match
+    if (!isTitleMatch && matchCount < 2) {
+      continue; // Not relevant enough — skip to save AI credits
+    }
 
     const existingMatch = await Match.findOne({
       candidateId: candidate._id,
@@ -255,7 +258,10 @@ const handleOfferTask = async (offerId, offerData) => {
     }
     const isTitleMatch = checkTitleMatch(candidate.jobtitle, offer.title);
 
-    // FILTER REMOVED: Always run AI analysis even if title doesn't match and skills < 2
+    // FILTER: Skip AI analysis if title doesn't match AND fewer than 2 skills match
+    if (!isTitleMatch && matchCount < 2) {
+      continue; // Not relevant enough — skip to save AI credits
+    }
 
     const existingMatch = await Match.findOne({
       candidateId: candidate._id,

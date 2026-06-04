@@ -545,7 +545,7 @@ class _RecruiterProfilePageState extends State<RecruiterProfilePage> {
                           barrierDismissible: false,
                           builder: (ctx) => ChangePasswordDialog(
                             email: email,
-                            apiUrl: 'http://localhost:8088/recruiter',
+                            apiUrl: '/api/auth',
                           ),
                         );
                       } else {

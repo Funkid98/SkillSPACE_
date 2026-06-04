@@ -72,22 +72,25 @@ class _TrainerPublicProfilePageState extends State<TrainerPublicProfilePage>
   }
 
   Future<void> _launchEmail(String email) async {
-    final uri = Uri(scheme: 'mailto', path: email);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else {
-      await Clipboard.setData(ClipboardData(text: email));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Email copié dans le presse-papiers'),
-            backgroundColor: AppColors.navy,
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    await Clipboard.setData(ClipboardData(text: email));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded,
+                  color: Colors.white, size: 18),
+              const SizedBox(width: 10),
+              Text('Email copié : $email'),
+            ],
           ),
-        );
-      }
+          backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
 

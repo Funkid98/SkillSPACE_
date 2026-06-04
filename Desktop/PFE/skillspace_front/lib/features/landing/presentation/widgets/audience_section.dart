@@ -14,8 +14,6 @@ import 'package:pfe/features/auth/presentation/pages/auth_page.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../auth/presentation/pages/field_selection_page.dart';
-
 class _CardItem {
   final IconData icon;
   final String title;
@@ -59,13 +57,10 @@ class AudienceSection extends StatelessWidget {
               MaterialPageRoute(
                 builder: (context) => role == UserRole.recruteur
                     ? const RecruiterShell(initialTab: RecruiterTab.profile)
-                    : (user?['sector'] == null ||
-                            user!['sector'].toString().isEmpty)
-                        ? const FieldSelectionPage()
-                        : DashboardShell(
-                            initialTab: DashboardTab.profil,
-                            initialUserData: user,
-                          ),
+                    : DashboardShell(
+                        initialTab: DashboardTab.profil,
+                        initialUserData: user,
+                      ),
               ),
             );
           } else {
@@ -93,10 +88,6 @@ class AudienceSection extends StatelessWidget {
                               initialUserData: user,
                             );
                           } else {
-                            final sector = user?['sector'];
-                            if (sector == null || sector.toString().isEmpty) {
-                              return const FieldSelectionPage();
-                            }
                             return DashboardShell(
                               initialTab: DashboardTab.profil,
                               initialUserData: user,
@@ -133,10 +124,6 @@ class AudienceSection extends StatelessWidget {
             MaterialPageRoute(
               builder: (context) {
                 final user = authState.loggedInUser;
-                final sector = user?['sector'];
-                if (sector == null || sector.toString().isEmpty) {
-                  return const FieldSelectionPage();
-                }
                 return DashboardShell(
                   initialTab: DashboardTab.profil,
                   initialUserData: user,
@@ -157,10 +144,6 @@ class AudienceSection extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (_) {
                         final user = currentAuthState.loggedInUser;
-                        final sector = user?['sector'];
-                        if (sector == null || sector.toString().isEmpty) {
-                          return const FieldSelectionPage();
-                        }
                         return DashboardShell(
                           initialTab: DashboardTab.profil,
                           initialUserData: user,
@@ -201,13 +184,10 @@ class AudienceSection extends StatelessWidget {
                             initialTab: DashboardTab.profil,
                             initialUserData: user,
                           )
-                        : (user?['sector'] == null ||
-                                user!['sector'].toString().isEmpty)
-                            ? const FieldSelectionPage()
-                            : DashboardShell(
-                                initialTab: DashboardTab.profil,
-                                initialUserData: user,
-                              ),
+                        : DashboardShell(
+                            initialTab: DashboardTab.profil,
+                            initialUserData: user,
+                          ),
               ),
             );
           } else {
@@ -235,10 +215,6 @@ class AudienceSection extends StatelessWidget {
                             return const RecruiterShell(
                                 initialTab: RecruiterTab.profile);
                           } else {
-                            final sector = user?['sector'];
-                            if (sector == null || sector.isEmpty) {
-                              return const FieldSelectionPage();
-                            }
                             return DashboardShell(
                               initialTab: DashboardTab.profil,
                               initialUserData: user,

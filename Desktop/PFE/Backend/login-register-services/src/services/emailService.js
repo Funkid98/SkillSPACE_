@@ -11,6 +11,10 @@ const getTransporter = () => {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_PASS,
       },
+      pool: false,
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 5000,
     });
   }
   return _transporter;
@@ -43,7 +47,13 @@ const sendOtpEmail = async (toEmail, otp) => {
     console.warn("[Email] GMAIL_USER/GMAIL_PASS not set — skipping OTP email.");
     return;
   }
-  await transporter.sendMail(mailOptions);
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[Email] OTP email accepted by SMTP for ${toEmail}`);
+    console.log(`[Email] SMTP response: ${info.response}`);
+  } catch (err) {
+    console.error(`[Email] Failed to send OTP email to ${toEmail}:`, err.message || err);
+  }
 };
 
 const sendVerificationEmail = async (toEmail, otp) => {
@@ -75,7 +85,13 @@ const sendVerificationEmail = async (toEmail, otp) => {
     );
     return;
   }
-  await transporter.sendMail(mailOptions);
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[Email] Verification email accepted by SMTP for ${toEmail}`);
+    console.log(`[Email] SMTP response: ${info.response}`);
+  } catch (err) {
+    console.error(`[Email] Failed to send verification email to ${toEmail}:`, err.message || err);
+  }
 };
 
 const sendLoginSuccessEmail = async (toEmail, firstName) => {
@@ -111,9 +127,11 @@ const sendLoginSuccessEmail = async (toEmail, firstName) => {
       );
       return;
     }
-    await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[Email] Login success email accepted by SMTP for ${toEmail}`);
+    console.log(`[Email] SMTP response: ${info.response}`);
   } catch (error) {
-    console.error("Error sending login notification email:", error);
+    console.error(`[Email] Failed to send login success email to ${toEmail}:`, error.message || error);
   }
 };
 

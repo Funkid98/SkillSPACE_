@@ -91,7 +91,15 @@ const register = async (req, res) => {
       profileCompleteness: 10
     });
 
-    await sendVerificationEmail(email, otp);
+    // Send verification email in the background so the HTTP response isn't blocked
+    sendVerificationEmail(email, otp).catch((err) =>
+      console.error('[Register] Background email send failed:', err.message || err)
+    );
+
+    // DEV FALLBACK: print OTP to console so the developer can verify even if email fails
+    console.log(`\n========================================`);
+    console.log(`[DEV OTP] Formateur registration OTP for ${email}: ${otp}`);
+    console.log(`========================================\n`);
 
     res.status(201).json({
       requiresVerification: true,
@@ -118,7 +126,10 @@ const login = async (req, res) => {
         formateur.resetOtp = otp;
         formateur.resetOtpExpires = new Date(Date.now() + 10 * 60 * 1000);
         await formateur.save();
-        await sendVerificationEmail(formateur.email, otp);
+        // Resend verification email in the background so the HTTP response isn't blocked
+        sendVerificationEmail(formateur.email, otp).catch((err) =>
+          console.error('[Login] Background email resend failed:', err.message || err)
+        );
 
         return res.status(403).json({
           requiresVerification: true,
@@ -127,7 +138,10 @@ const login = async (req, res) => {
         });
       }
 
-      await sendLoginSuccessEmail(formateur.email, formateur.firstName);
+      // Send login notification in the background
+      sendLoginSuccessEmail(formateur.email, formateur.firstName).catch((err) =>
+        console.error('[Login] Background login email failed:', err.message || err)
+      );
 
       res.status(200).json({
         token: generateToken(formateur._id),

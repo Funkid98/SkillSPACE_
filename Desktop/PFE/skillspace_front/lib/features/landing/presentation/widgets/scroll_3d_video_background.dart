@@ -85,6 +85,10 @@ class _Scroll3DVideoBackgroundState extends State<Scroll3DVideoBackground> {
                     ? ValueListenableBuilder(
                         valueListenable: _controller!,
                         builder: (context, VideoPlayerValue value, child) {
+                          // Guard: video_player_web fires before size is ready
+                          if (value.size.width == 0 || value.size.height == 0) {
+                            return const SizedBox.shrink();
+                          }
                           return FittedBox(
                             fit: BoxFit.cover,
                             child: SizedBox(

@@ -23,6 +23,8 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
   String _otp = '';
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
 
   final Color primaryColor = const Color(0xFFE9652B);
 
@@ -183,21 +185,51 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
             if (!_isLoading && _step == 2) ...[
               TextField(
                 controller: _passwordController,
-                obscureText: true,
+                obscureText: _obscurePassword,
                 decoration: InputDecoration(
                   labelText: 'Nouveau mot de passe',
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12)),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Le mot de passe doit contenir au moins 6 caractères.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _confirmPasswordController,
-                obscureText: true,
+                obscureText: _obscureConfirm,
                 decoration: InputDecoration(
                   labelText: 'Confirmer le mot de passe',
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12)),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirm ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureConfirm = !_obscureConfirm;
+                      });
+                    },
+                  ),
                 ),
               ),
             ]

@@ -5,6 +5,26 @@ import '../../data/repositories/recruiter_job_repository.dart';
 import '../../data/repositories/recruiter_repository.dart';
 import 'package:pfe/core/network/cookie_service.dart';
 
+// Contact result states (transient – UI listens once then reloads)
+class RecruiterCandidatesContactSuccess extends RecruiterCandidatesState {
+  final String candidateName;
+  final String? date;
+  final String? time;
+  final String? rejectionReason;
+  RecruiterCandidatesContactSuccess({
+    required this.candidateName,
+    this.date,
+    this.time,
+    this.rejectionReason,
+  });
+}
+
+class RecruiterCandidatesContactError extends RecruiterCandidatesState {
+  final String message;
+  final List<RecruiterOfferWithCandidates> previousGroups;
+  RecruiterCandidatesContactError(this.message, this.previousGroups);
+}
+
 abstract class RecruiterOffersState {}
 
 class RecruiterOffersInitial extends RecruiterOffersState {}
@@ -258,4 +278,47 @@ class RecruiterCandidatesCubit extends Cubit<RecruiterCandidatesState> {
 
     filterCandidates(_lastQuery);
   }
+
+  Future<void> contactCandidate({
+    required String candidateId,
+    required String candidateName,
+    required String offerId,
+    required String offerTitle,
+    String? interviewDate,
+    String? interviewTime,
+    String? meetingLink,
+    String? rejectionReason,
+    String type = 'CONTACT',
+  }) async {
+    final previousGroups = List<RecruiterOfferWithCandidates>.from(
+      (state is RecruiterCandidatesLoaded)
+          ? (state as RecruiterCandidatesLoaded).groupedMatches
+          : [],
+    );
+    try {
+      await repository.contactCandidate(
+        candidateId: candidateId,
+        candidateName: candidateName,
+        offerId: offerId,
+        offerTitle: offerTitle,
+        interviewDate: interviewDate,
+        interviewTime: interviewTime,
+        meetingLink: meetingLink,
+        rejectionReason: rejectionReason,
+        type: type,
+      );
+      emit(RecruiterCandidatesContactSuccess(
+        candidateName: candidateName,
+        date: interviewDate,
+        time: interviewTime,
+        rejectionReason: rejectionReason,
+      ));
+      // Restore loaded state so UI stays responsive
+      emit(RecruiterCandidatesLoaded(previousGroups));
+    } catch (e) {
+      emit(RecruiterCandidatesContactError(e.toString(), previousGroups));
+      emit(RecruiterCandidatesLoaded(previousGroups));
+    }
+  }
 }
+

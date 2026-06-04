@@ -11,7 +11,6 @@ import 'package:skillspace/features/dashboard_shell/dashboard_shell.dart';
 import 'package:skillspace/shared/widgets/app_sidebar.dart';
 import 'package:recruiter_profile/recruiter_profile.dart';
 import 'package:pfe/features/auth/presentation/pages/auth_page.dart';
-import 'package:skillspace/features/auth/presentation/pages/field_selection_page.dart';
 import 'package:pfe/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -139,13 +138,10 @@ class _HeroText extends StatelessWidget {
                                       initialTab: DashboardTab.profil,
                                       initialUserData: user,
                                     )
-                                  : (user?['sector'] == null ||
-                                          user!['sector'].toString().isEmpty)
-                                      ? const FieldSelectionPage()
-                                      : DashboardShell(
-                                          initialTab: DashboardTab.profil,
-                                          initialUserData: user,
-                                        ),
+                                  : DashboardShell(
+                                      initialTab: DashboardTab.profil,
+                                      initialUserData: user,
+                                    ),
                         ),
                       );
                     } else {
@@ -173,10 +169,6 @@ class _HeroText extends StatelessWidget {
                                         initialUserData: user,
                                       );
                                     } else {
-                                      final sector = user?['sector'];
-                                      if (sector == null || sector.isEmpty) {
-                                        return const FieldSelectionPage();
-                                      }
                                       return DashboardShell(
                                         initialTab: DashboardTab.profil,
                                         initialUserData: user,

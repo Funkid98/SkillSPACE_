@@ -398,10 +398,10 @@ const getMatchingOffersForCandidate = async (req, res) => {
             : matchCount;
 
         const isTitleMatch = checkTitleMatch(candidate.jobtitle, offer.title);
-        // FILTER REMOVED: Allow all offers to show, even if title doesn't match and skills < 2
-        // if (!isTitleMatch && effectiveMatchCount < 2) {
-        //   return null; // Skip this offer entirely (less than 2 skills mapped)
-        // }
+        // FILTER: Require at least 2 matching skills unless the job title matches
+        if (!isTitleMatch && effectiveMatchCount < 2) {
+          return null; // Skip — not relevant enough to show or analyse
+        }
 
         if (existingMatch) {
           matchScore = existingMatch.score;
