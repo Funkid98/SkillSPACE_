@@ -8,11 +8,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:camera/camera.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'dart:typed_data';
-import '../../../../core/api_constants.dart';
 import '../../../../core/app_colors.dart';
 import '../../data/simulation_api.dart';
 import 'simulation_result_page.dart';
-import 'package:http/http.dart' as http;
 
 class SimulationLivePage extends StatefulWidget {
   final String roleTitle;

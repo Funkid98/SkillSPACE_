@@ -1,6 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const User = require("../models/candidat");
+
 
 const hashPassword = (password) => bcrypt.hash(password, 10);
 

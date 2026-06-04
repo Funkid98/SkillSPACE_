@@ -2,7 +2,8 @@ import 'dart:html' as html;
 
 class CookieService {
   static void setString(String key, String value, {int maxAge = 2592000}) {
-    html.document.cookie = '$key=${Uri.encodeComponent(value)}; max-age=$maxAge; path=/; samesite=Lax';
+    html.document.cookie =
+        '$key=${Uri.encodeComponent(value)}; max-age=$maxAge; path=/; samesite=Lax';
   }
 
   static String? getString(String key) {
@@ -42,7 +43,8 @@ class CookieService {
     return null;
   }
 
-  static void setStringList(String key, List<String> value, {int maxAge = 2592000}) {
+  static void setStringList(String key, List<String> value,
+      {int maxAge = 2592000}) {
     setString(key, value.join(','), maxAge: maxAge);
   }
 

@@ -762,13 +762,12 @@ class _LoginForm extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Sign in',
+                  Text('Se Connecter',
                       style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
-                          color: isDark
-                              ? Colors.white.withOpacity(0.1)
-                              : const Color(0xFF1E2B6B),
+                          color:
+                              isDark ? Colors.white : const Color(0xFF1E2B6B),
                           letterSpacing: -1.0)),
                   const SizedBox(height: 4),
                   Container(
@@ -951,7 +950,7 @@ class _RegisterForm extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Create Account',
+                  Text('Créer un Compte',
                       style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
@@ -1136,8 +1135,19 @@ class _RegisterForm extends StatelessWidget {
                 },
               )),
           const SizedBox(height: 24),
+          _StaggeredReveal(index: 11, child: _OrDivider(isDark: isDark)),
+          const SizedBox(height: 24),
           _StaggeredReveal(
-              index: 11,
+              index: 12,
+              child: _SocialLoginButtons(
+                isLoading: state.isLoading,
+                isDark: isDark,
+                onGoogleTap: () => context.read<AuthCubit>().signInWithGoogle(),
+                onGithubTap: () => context.read<AuthCubit>().signInWithGithub(),
+              )),
+          const SizedBox(height: 24),
+          _StaggeredReveal(
+              index: 13,
               child: Center(
                 child: RichText(
                   textAlign: TextAlign.center,

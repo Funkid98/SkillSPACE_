@@ -66,7 +66,7 @@ const checkIfEmailExistsInTrainer = async (email) => {
 
 const generateToken = (userId) => {
   const expiresIn =
-    (process.env.JWT_EXPIRES_IN && process.env.JWT_EXPIRES_IN.trim()) || "30d";
+    (process.env.JWT_EXPIRES_IN && process.env.JWT_EXPIRES_IN.trim()) || "24h";
   return jwt.sign({ id: userId, sub: userId }, process.env.JWT_SECRET, {
     expiresIn,
   });
@@ -325,7 +325,7 @@ exports.login = async (req, res) => {
     setAuthCookie(res, token);
 
     // Fire-and-forget login notification
-    sendLoginSuccessEmail(user.email, user.prenom).catch(() => {});
+    sendLoginSuccessEmail(user.email, user.prenom).catch(() => { });
 
     res.status(200).json({
       success: true,
@@ -485,7 +485,7 @@ exports.googleSignIn = async (req, res) => {
     // ← Set HttpOnly cookie
     setAuthCookie(res, token);
 
-    sendLoginSuccessEmail(user.email, user.prenom).catch(() => {});
+    sendLoginSuccessEmail(user.email, user.prenom).catch(() => { });
 
     res.status(200).json({
       success: true,
@@ -544,7 +544,7 @@ exports.forgotPassword = async (req, res) => {
             console.error("Recruiter API set-otp error:", e.message);
           }
         }
-      } catch (e) {}
+      } catch (e) { }
 
       if (!foundInRecruiter) {
         try {
@@ -912,7 +912,7 @@ exports.githubSignIn = async (req, res) => {
     // ← Set HttpOnly cookie
     setAuthCookie(res, token);
 
-    sendLoginSuccessEmail(user.email, user.prenom).catch(() => {});
+    sendLoginSuccessEmail(user.email, user.prenom).catch(() => { });
 
     res.status(200).json({
       success: true,

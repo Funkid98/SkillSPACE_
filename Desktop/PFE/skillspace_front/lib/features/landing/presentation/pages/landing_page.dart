@@ -193,14 +193,8 @@ class _LandingPageState extends State<LandingPage> {
                   ),
                 ),
 
-                // ── Layer 3: Scrollable content ───────────────────────────────
-                // NeverScrollableScrollPhysics so mouse wheel is handled by
-                // the Listener above — giving us full control over scroll speed
-                // and ensuring the video ticker stays in sync.
                 Positioned.fill(
                   child: ScrollConfiguration(
-                    // Disable the default browser/flutter scroll behavior
-                    // so our Listener is the sole driver of scroll position.
                     behavior: _NoScrollbarBehavior(),
                     child: SingleChildScrollView(
                       controller: _scrollController,
