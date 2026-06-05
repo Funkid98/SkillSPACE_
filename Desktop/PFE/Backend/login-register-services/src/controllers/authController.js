@@ -23,14 +23,9 @@ const createTrainerProfile = async (userId, data) => {
     if (!data.password) {
       data.password = Math.random().toString(36).slice(-10);
     }
-    console.log(`[AuthService] Initializing trainer profile for ${userId}`);
-    const response = await axios.put(
+    await axios.put(
       `${TRAINER_SERVICE_URL}/profile/${userId}`,
       data,
-    );
-    console.log(
-      `[AuthService] Trainer profile initialization success:`,
-      response.status,
     );
   } catch (error) {
     console.error(

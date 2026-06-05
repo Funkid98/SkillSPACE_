@@ -17,6 +17,7 @@
 ///
 /// ⚠️  Never hardcode `localhost:8088` here — that port is the raw
 ///     Express gateway and is NOT accessible from browsers in Docker.
+library;
 import 'package:flutter/foundation.dart';
 
 class ApiConstants {

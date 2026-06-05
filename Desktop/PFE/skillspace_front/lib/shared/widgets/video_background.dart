@@ -23,7 +23,7 @@ class VideoBackground extends StatefulWidget {
 }
 
 class _VideoBackgroundState extends State<VideoBackground> {
-  late VideoPlayerController _controller;
+  VideoPlayerController? _controller;
   bool _isInitialized = false;
   bool _isLoading = true;
   // ignore: unused_field
@@ -42,13 +42,17 @@ class _VideoBackgroundState extends State<VideoBackground> {
       if (kIsWeb && path.startsWith('assets/')) {
         path = path.replaceFirst('assets/', '');
       }
+      _controller?.dispose();
       _controller = VideoPlayerController.asset(path);
-      await _controller.initialize();
-      if (!mounted) return;
+      await _controller!.initialize();
+      if (!mounted) {
+        _controller?.dispose();
+        return;
+      }
 
-      await _controller.setVolume(0.0);
-      await _controller.setLooping(true);
-      await _controller.play();
+      await _controller!.setVolume(0.0);
+      await _controller!.setLooping(true);
+      await _controller!.play();
 
       setState(() {
         _isInitialized = true;
@@ -56,6 +60,8 @@ class _VideoBackgroundState extends State<VideoBackground> {
       });
     } catch (e) {
       debugPrint('Video initialization failed: $e');
+      _controller?.dispose();
+      _controller = null;
       if (mounted) {
         setState(() {
           _error = e.toString();
@@ -66,10 +72,22 @@ class _VideoBackgroundState extends State<VideoBackground> {
   }
 
   @override
+  void reassemble() {
+    super.reassemble();
+    // Hot-reload safety: dispose old controller and recreate
+    _controller?.dispose();
+    _controller = null;
+    _isInitialized = false;
+    _isLoading = true;
+    _initVideo();
+  }
+
+  @override
   void didUpdateWidget(VideoBackground oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.assetPath != widget.assetPath) {
-      _controller.dispose();
+      _controller?.dispose();
+      _controller = null;
       setState(() {
         _isInitialized = false;
         _isLoading = true;
@@ -80,7 +98,7 @@ class _VideoBackgroundState extends State<VideoBackground> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -109,9 +127,9 @@ class _VideoBackgroundState extends State<VideoBackground> {
                       : 1.0, // Slight shrink down to place
                   child: Container(
                     color: Colors.black,
-                    child: _isInitialized
+                    child: _isInitialized && _controller != null
                         ? ValueListenableBuilder(
-                            valueListenable: _controller,
+                            valueListenable: _controller!,
                             builder: (context, VideoPlayerValue value, child) {
                               if (value.size.width == 0 ||
                                   value.size.height == 0) {
@@ -125,7 +143,7 @@ class _VideoBackgroundState extends State<VideoBackground> {
                                   child: SizedBox(
                                     width: value.size.width,
                                     height: value.size.height,
-                                    child: VideoPlayer(_controller),
+                                    child: VideoPlayer(_controller!),
                                   ),
                                 ),
                               );

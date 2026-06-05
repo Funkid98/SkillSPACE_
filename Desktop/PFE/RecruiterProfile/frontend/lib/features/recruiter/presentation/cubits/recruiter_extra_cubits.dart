@@ -207,6 +207,8 @@ class RecruiterCandidatesCubit extends Cubit<RecruiterCandidatesState> {
     final filtered = _fullGroups
         .map((group) {
           final filteredCandidates = group.candidates.where((c) {
+            if (c.matchScore < 50 || c.status == 'ANALYSING' || c.matchScore == 0) return false;
+            
             if (_showSavedOnly && !c.isSaved) return false;
 
             if (q.isEmpty) return true;

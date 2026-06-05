@@ -410,7 +410,7 @@ class _TrainerPublicProfilePageState extends State<TrainerPublicProfilePage>
                   const SizedBox(height: 12),
                   ...certifications
                       .map((cert) => _buildCertCard(cert, isDark))
-                      .toList(),
+                      ,
                   const SizedBox(height: 16),
                 ],
 

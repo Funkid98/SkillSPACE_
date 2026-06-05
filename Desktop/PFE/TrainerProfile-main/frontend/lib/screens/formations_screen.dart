@@ -55,19 +55,19 @@ class _FormationsScreenState extends State<FormationsScreen> {
     }
 
     // Calculate completeness client-side (same logic as ProfileCubit._calcScore)
-    final _pd = context.watch<TrainerCubit>().state.profileData;
+    final pd = context.watch<TrainerCubit>().state.profileData;
     int profileCompleteness = 0;
-    if (_pd != null) {
-      if (_pd.firstName.isNotEmpty) profileCompleteness += 10;
-      if (_pd.lastName.isNotEmpty) profileCompleteness += 10;
-      if (_pd.email.isNotEmpty) profileCompleteness += 10;
-      if (_pd.phone.isNotEmpty) profileCompleteness += 10;
-      if (_pd.jobTitle.isNotEmpty) profileCompleteness += 10;
-      if (_pd.location.isNotEmpty) profileCompleteness += 10;
-      if (_pd.bio.isNotEmpty) profileCompleteness += 10;
-      if (_pd.linkedIn.isNotEmpty) profileCompleteness += 10;
-      if (_pd.profilePicture.isNotEmpty) profileCompleteness += 10;
-      if (_pd.expertise.isNotEmpty) profileCompleteness += 10;
+    if (pd != null) {
+      if (pd.firstName.isNotEmpty) profileCompleteness += 10;
+      if (pd.lastName.isNotEmpty) profileCompleteness += 10;
+      if (pd.email.isNotEmpty) profileCompleteness += 10;
+      if (pd.phone.isNotEmpty) profileCompleteness += 10;
+      if (pd.jobTitle.isNotEmpty) profileCompleteness += 10;
+      if (pd.location.isNotEmpty) profileCompleteness += 10;
+      if (pd.bio.isNotEmpty) profileCompleteness += 10;
+      if (pd.linkedIn.isNotEmpty) profileCompleteness += 10;
+      if (pd.profilePicture.isNotEmpty) profileCompleteness += 10;
+      if (pd.expertise.isNotEmpty) profileCompleteness += 10;
     }
     profileCompleteness = profileCompleteness.clamp(0, 100);
     final isProfileComplete = profileCompleteness >= 80;
@@ -199,17 +199,17 @@ class _FormationsScreenState extends State<FormationsScreen> {
                               onEdit: () {},
                               onDelete: () async {
                                 final success = await _dashboardService
-                                    .deleteFormation(f.id!);
+                                    .deleteFormation(f.id);
                                 if (success) _loadFormations();
                               },
                               onClose: () async {
                                 final updated = await _dashboardService
-                                    .closeFormation(f.id!);
+                                    .closeFormation(f.id);
                                 if (updated != null) _loadFormations();
                               },
                               onTerminate: () async {
                                 final updated = await _dashboardService
-                                    .terminateFormation(f.id!);
+                                    .terminateFormation(f.id);
                                 if (updated != null) _loadFormations();
                               },
                             ))

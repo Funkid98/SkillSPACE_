@@ -3,7 +3,10 @@ const Formation = require('../models/formationModel');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const { suggestExpertiseDomains, generateBio: generateBioAI, validatePortfolioUrlAI, suggestFormationContent } = require('../services/ai-service');
-const { sendVerificationEmail, sendLoginSuccessEmail, sendFormationUpdateEmail } = require('../services/emailService');
+const { sendVerificationEmail, sendLoginSuccessEmail } = require('../services/emailService');
+// Optional — may not be implemented yet
+const emailService = require('../services/emailService');
+const sendFormationUpdateEmail = emailService.sendFormationUpdateEmail || (() => Promise.resolve());
 
 const generateToken = (id) => {
   return jwt.sign({ id, sub: id }, process.env.JWT_SECRET, {
@@ -626,10 +629,17 @@ const createFormation = async (req, res) => {
       return res.status(404).json({ message: 'Profil formateur non trouvé' });
     }
 
-    const formationData = {
-      ...req.body,
-      trainerId: formateur._id
-    };
+    const body = req.body;
+
+    // Build clean formation data with only valid schema fields
+    const schemaFields = ['title', 'description', 'tags', 'duration', 'category',
+      'level', 'imageUrl', 'meetLink', 'date', 'time', 'status', 'price'];
+    const formationData = { trainerId: formateur._id };
+    for (const field of schemaFields) {
+      if (body[field] !== undefined) {
+        formationData[field] = body[field];
+      }
+    }
 
     // Strict Field Validation
     const requiredFields = ['title', 'description', 'category', 'duration', 'meetLink', 'date', 'time', 'level'];
@@ -642,14 +652,15 @@ const createFormation = async (req, res) => {
       });
     }
 
-    // Prevent duplicate meet links
+    // Prevent duplicate meet links (scoped to this trainer only)
     if (formationData.meetLink) {
       const existingLink = await Formation.findOne({ 
-        meetLink: formationData.meetLink 
+        meetLink: formationData.meetLink,
+        trainerId: formateur._id
       });
       if (existingLink) {
         return res.status(400).json({ 
-          message: 'Ce lien de réunion est déjà utilisé pour une autre formation.' 
+          message: 'Ce lien de réunion est déjà utilisé pour une autre de vos formations.' 
         });
       }
     }
@@ -674,10 +685,11 @@ const createFormation = async (req, res) => {
     const saved = await newFormation.save();
     res.status(201).json(saved);
   } catch (error) {
+    console.error('[createFormation] Error:', error.message, error.errors || '');
     res.status(500).json({
       message: 'Erreur lors de la création de la formation',
       error: error.message,
-      details: error.errors // Include validation details if any
+      details: error.errors
     });
   }
 };
@@ -687,28 +699,39 @@ const createFormation = async (req, res) => {
 const updateFormation = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = { ...req.body };
+    const body = req.body;
 
-    // Remove protected fields
-    delete updateData.trainerId;
-    delete updateData._id;
+    // Build a clean update object with only editable schema fields
+    const allowedFields = ['title', 'description', 'tags', 'duration', 'category',
+      'level', 'imageUrl', 'meetLink', 'date', 'time', 'status'];
+    const updateData = {};
+    for (const field of allowedFields) {
+      if (body[field] !== undefined) {
+        updateData[field] = body[field];
+      }
+    }
 
+    // Scope duplicate meet-link check to this formation's trainer
     if (updateData.meetLink) {
-      const existingLink = await Formation.findOne({ 
-        meetLink: updateData.meetLink,
-        _id: { $ne: id }
-      });
-      if (existingLink) {
-        return res.status(400).json({ 
-          message: 'Ce lien de réunion est déjà utilisé pour une autre formation.' 
+      const current = await Formation.findById(id).select('trainerId');
+      if (current) {
+        const existingLink = await Formation.findOne({
+          meetLink: updateData.meetLink,
+          trainerId: current.trainerId,
+          _id: { $ne: id }
         });
+        if (existingLink) {
+          return res.status(400).json({
+            message: 'Ce lien de réunion est déjà utilisé pour une autre de vos formations.'
+          });
+        }
       }
     }
 
     const updated = await Formation.findByIdAndUpdate(
       id,
       updateData,
-      { returnDocument: 'after', runValidators: true }
+      { new: true }
     );
 
     if (!updated) {
@@ -740,6 +763,7 @@ const updateFormation = async (req, res) => {
 
     res.status(200).json(updated);
   } catch (error) {
+    console.error('[updateFormation] Error:', error.message, error.errors || '');
     res.status(500).json({ message: 'Erreur lors de la mise à jour', error: error.message });
   }
 };

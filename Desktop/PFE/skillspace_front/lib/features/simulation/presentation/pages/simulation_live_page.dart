@@ -49,10 +49,6 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
   bool _checkingPermissions = true;
   bool _hasPermissions = false;
 
-  // Timer
-  Timer? _timer;
-  int _secondsRemaining = 90;
-  static const int _maxResponseTime = 90;
 
   @override
   void initState() {
@@ -129,28 +125,6 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
     });
   }
 
-  void _startTimer() {
-    _timer?.cancel();
-    setState(() => _secondsRemaining = _maxResponseTime);
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_secondsRemaining > 0) {
-        setState(() => _secondsRemaining--);
-      } else {
-        _timer?.cancel();
-        // Optionnel: Auto-envoyer ou alerter l'utilisateur
-      }
-    });
-  }
-
-  void _stopTimer() {
-    _timer?.cancel();
-  }
-
-  String _formatTime(int seconds) {
-    final mins = (seconds / 60).floor();
-    final secs = seconds % 60;
-    return '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
-  }
 
   Future<void> _startSimulationBackend() async {
     setState(() {
@@ -174,7 +148,6 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
           _audioPlayer.play(BytesSource(audioBytes));
         }
 
-        _startTimer();
         _scrollToBottom();
       }
     } catch (e) {
@@ -190,7 +163,6 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
       _chatHistory.add({'isUser': false, 'text': _currentQuestion});
       _isGenerating = false;
     });
-    _startTimer();
   }
 
   Future<void> _recordAndSend() async {
@@ -251,7 +223,6 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
       return;
     }
 
-    _stopTimer();
     setState(() => _isSending = true);
 
     try {
@@ -281,7 +252,6 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
           _audioPlayer.play(BytesSource(audioBytes));
         }
 
-        _startTimer();
         _scrollToBottom();
       }
     } catch (e) {
@@ -300,7 +270,6 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
         _chatHistory.add({'isUser': false, 'text': _currentQuestion});
         _isSending = false;
       });
-      _startTimer();
     }
   }
 
@@ -312,7 +281,6 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
 
   @override
   void dispose() {
-    _timer?.cancel();
     _scrollController.dispose();
     _audioRecorder.dispose();
     _cameraController?.dispose();
@@ -616,47 +584,7 @@ class _SimulationLivePageState extends State<SimulationLivePage> {
                               letterSpacing: 1.2,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          // Timer Display
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: _secondsRemaining < 15
-                                  ? Colors.red.withOpacity(0.1)
-                                  : (isDark
-                                      ? Colors.white.withOpacity(0.05)
-                                      : AppColors.navy.withOpacity(0.05)),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.timer_outlined,
-                                  size: 14,
-                                  color: _secondsRemaining < 15
-                                      ? Colors.red
-                                      : (isDark
-                                          ? Colors.white70
-                                          : AppColors.navy),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  _formatTime(_secondsRemaining),
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: _secondsRemaining < 15
-                                        ? Colors.red
-                                        : (isDark
-                                            ? Colors.white70
-                                            : AppColors.navy),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+
                           const SizedBox(height: 20),
 
                           // Real-time Conversation Flow

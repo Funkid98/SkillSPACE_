@@ -100,18 +100,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // Calculate completeness client-side (same logic as ProfileCubit._calcScore)
         // so it reflects the real current data, not a stale DB-stored value.
         int profileCompleteness = 0;
-        final _p = state.profileData;
-        if (_p != null) {
-          if (_p.firstName.isNotEmpty) profileCompleteness += 10;
-          if (_p.lastName.isNotEmpty) profileCompleteness += 10;
-          if (_p.email.isNotEmpty) profileCompleteness += 10;
-          if (_p.phone.isNotEmpty) profileCompleteness += 10;
-          if (_p.jobTitle.isNotEmpty) profileCompleteness += 10;
-          if (_p.location.isNotEmpty) profileCompleteness += 10;
-          if (_p.bio.isNotEmpty) profileCompleteness += 10;
-          if (_p.linkedIn.isNotEmpty) profileCompleteness += 10;
-          if (_p.profilePicture.isNotEmpty) profileCompleteness += 10;
-          if (_p.expertise.isNotEmpty) profileCompleteness += 10;
+        final p = state.profileData;
+        if (p != null) {
+          if (p.firstName.isNotEmpty) profileCompleteness += 10;
+          if (p.lastName.isNotEmpty) profileCompleteness += 10;
+          if (p.email.isNotEmpty) profileCompleteness += 10;
+          if (p.phone.isNotEmpty) profileCompleteness += 10;
+          if (p.jobTitle.isNotEmpty) profileCompleteness += 10;
+          if (p.location.isNotEmpty) profileCompleteness += 10;
+          if (p.bio.isNotEmpty) profileCompleteness += 10;
+          if (p.linkedIn.isNotEmpty) profileCompleteness += 10;
+          if (p.profilePicture.isNotEmpty) profileCompleteness += 10;
+          if (p.expertise.isNotEmpty) profileCompleteness += 10;
         }
         profileCompleteness = profileCompleteness.clamp(0, 100);
         final isProfileComplete = profileCompleteness >= 80;
@@ -1248,6 +1248,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                               msg: isEdit
                                                   ? "Formation mise à jour !"
                                                   : "Formation créée !");
+                                        } else {
+                                          Fluttertoast.showToast(
+                                              msg: "Erreur lors de ${isEdit ? 'la mise à jour' : 'la création'} de la formation.");
                                         }
                                       },
                                       style: ElevatedButton.styleFrom(

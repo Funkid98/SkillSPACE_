@@ -194,35 +194,45 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<UserModel> signInWithGoogle({String? role}) async {
     // ── WEB ──────────────────────────────────────────────────────────────────
     if (kIsWeb) {
-      // Check if we are returning from a Google OAuth redirect.
-      // consumeOAuthToken() reads the #access_token fragment and clears the URL.
+      // Check if we are returning from a legacy Google OAuth redirect.
       final webToken = consumeOAuthToken();
       final webRole = consumePendingRole() ?? role ?? 'candidat';
 
+      String accessToken;
+      String resolvedRole;
+
       if (webToken != null) {
-        // We have an access token from the redirect — authenticate with backend.
-        final isRecruiter =
-            webRole == 'recruteur' || webRole == 'recruiter';
-        final endpoint =
-            isRecruiter ? '/recruiter/google' : '/api/auth/google';
-        final response = await _apiClient
-            .post(endpoint, {'accessToken': webToken, 'role': webRole});
-        final data = jsonDecode(response.body);
-        if (response.statusCode == 200 && data['success'] == true) {
-          final user = UserModel.fromJson(data['user']);
-          _saveUserData(user);
-          return user;
-        }
-        throw Exception(
-            data['message'] ?? 'Erreur lors de la connexion Google');
+        // Legacy redirect path (should not happen with new popup flow).
+        accessToken = webToken;
+        resolvedRole = webRole;
       } else {
-        // No token yet — redirect the browser to Google OAuth.
-        // Google will redirect back to http://localhost:3000 with #access_token.
-        startGoogleRedirectFlow(role ?? 'candidat');
-        // Throwing this specific string lets the AuthCubit show a loading
-        // indicator rather than an error while the redirect is happening.
-        throw Exception('google_redirect');
+        // ── New popup-based flow — does NOT redirect the page ─────────────
+        resolvedRole = role ?? 'candidat';
+        try {
+          accessToken = await startGooglePopupFlow(resolvedRole);
+        } catch (e) {
+          final msg = e.toString();
+          if (msg.contains('popup_closed') || msg.contains('popup_bloquée')) {
+            throw Exception('popup_closed');
+          }
+          rethrow;
+        }
       }
+
+      final isRecruiter =
+          resolvedRole == 'recruteur' || resolvedRole == 'recruiter';
+      final endpoint =
+          isRecruiter ? '/recruiter/google' : '/api/auth/google';
+      final response = await _apiClient
+          .post(endpoint, {'accessToken': accessToken, 'role': resolvedRole});
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        final user = UserModel.fromJson(data['user']);
+        _saveUserData(user);
+        return user;
+      }
+      throw Exception(
+          data['message'] ?? 'Erreur lors de la connexion Google');
     }
 
     // ── MOBILE ───────────────────────────────────────────────────────────────

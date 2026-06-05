@@ -45,13 +45,7 @@ const sendVerificationEmail = async (toEmail, otp) => {
   const transporter = getTransporter();
   if (!transporter) { console.warn('[Email] GMAIL_USER/GMAIL_PASS not set — skipping verification email.'); return; }
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[Email] Verification email accepted by SMTP for ${toEmail}`);
-    console.log(`[Email] SMTP response: ${info.response}`);
-    console.log(`[Email] MessageId: ${info.messageId}`);
-    if (info.rejected && info.rejected.length > 0) {
-      console.warn(`[Email] Rejected recipients: ${info.rejected.join(', ')}`);
-    }
+    await transporter.sendMail(mailOptions);
   } catch (err) {
     console.error(`[Email] Failed to send verification email to ${toEmail}:`, err.message || err);
   }
@@ -79,9 +73,7 @@ const sendLoginSuccessEmail = async (toEmail, firstName) => {
   try {
     const transporter = getTransporter();
     if (!transporter) return;
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[Email] Login success email accepted by SMTP for ${toEmail}`);
-    console.log(`[Email] SMTP response: ${info.response}`);
+    await transporter.sendMail(mailOptions);
   } catch (error) {
     console.error(`[Email] Failed to send login success email to ${toEmail}:`, error.message || error);
   }
@@ -112,9 +104,7 @@ const sendPasswordResetEmail = async (toEmail, otp) => {
   const transporter = getTransporter();
   if (!transporter) return;
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[Email] Password reset email accepted by SMTP for ${toEmail}`);
-    console.log(`[Email] SMTP response: ${info.response}`);
+    await transporter.sendMail(mailOptions);
   } catch (err) {
     console.error(`[Email] Failed to send password reset email to ${toEmail}:`, err.message || err);
   }

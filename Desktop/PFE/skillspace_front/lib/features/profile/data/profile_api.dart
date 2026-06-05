@@ -133,7 +133,7 @@ class ProfileApi {
           throw Exception(body['error']);
         }
       } catch (e) {
-        if (e is Exception && e.toString() != 'Exception: null') throw e;
+        if (e is Exception && e.toString() != 'Exception: null') rethrow;
       }
       return false;
     }

@@ -48,9 +48,8 @@ const sendOtpEmail = async (toEmail, otp) => {
     return;
   }
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[Email] OTP email accepted by SMTP for ${toEmail}`);
-    console.log(`[Email] SMTP response: ${info.response}`);
+    await transporter.sendMail(mailOptions);
+    console.log(`[Email] OTP email sent to ${toEmail}`);
   } catch (err) {
     console.error(`[Email] Failed to send OTP email to ${toEmail}:`, err.message || err);
   }
@@ -86,9 +85,8 @@ const sendVerificationEmail = async (toEmail, otp) => {
     return;
   }
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[Email] Verification email accepted by SMTP for ${toEmail}`);
-    console.log(`[Email] SMTP response: ${info.response}`);
+    await transporter.sendMail(mailOptions);
+    console.log(`[Email] Verification email sent to ${toEmail}`);
   } catch (err) {
     console.error(`[Email] Failed to send verification email to ${toEmail}:`, err.message || err);
   }
@@ -127,9 +125,8 @@ const sendLoginSuccessEmail = async (toEmail, firstName) => {
       );
       return;
     }
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[Email] Login success email accepted by SMTP for ${toEmail}`);
-    console.log(`[Email] SMTP response: ${info.response}`);
+    await transporter.sendMail(mailOptions);
+    console.log(`[Email] Login success email sent to ${toEmail}`);
   } catch (error) {
     console.error(`[Email] Failed to send login success email to ${toEmail}:`, error.message || error);
   }

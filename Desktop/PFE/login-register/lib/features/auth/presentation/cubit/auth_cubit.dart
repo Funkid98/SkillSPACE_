@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/network/cookie_service.dart';
-import '../../data/datasources/google_auth_web.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../../../core/network/api_client.dart';
 import '../../data/models/user_model.dart';
@@ -84,13 +83,8 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   /// Checks if the app was just launched with a Google access token in the URL.
-  Future<void> handleGoogleRedirect() async {
-    try {
-      if (state.loggedInUser == null && hasGoogleRedirectToken()) {
-        await signInWithGoogle();
-      }
-    } catch (e) {}
-  }
+  /// No-op on web since popup flow handles the token without a page reload.
+  Future<void> handleGoogleRedirect() async {}
 
   Future<void> login(String email, String password) async {
     if (email.isEmpty || password.isEmpty) {
@@ -269,7 +263,6 @@ class AuthCubit extends Cubit<AuthState> {
     } catch (e) {
       final errorMsg = e.toString().replaceAll('Exception: ', '');
       if (errorMsg.contains('popup_closed') ||
-          errorMsg == 'google_redirect' ||
           errorMsg == 'Operation cancelled') {
         emit(state.copyWith(isLoading: false));
         return;

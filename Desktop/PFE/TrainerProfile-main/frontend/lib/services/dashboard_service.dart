@@ -64,6 +64,7 @@ class DashboardService {
       if (response.statusCode == 201) {
         return FormationModel.fromJson(json.decode(response.body));
       }
+      print('Create formation failed (${response.statusCode}): ${response.body}');
       return null;
     } catch (e) {
       print('Error creating formation: $e');
@@ -82,6 +83,7 @@ class DashboardService {
       if (response.statusCode == 200) {
         return FormationModel.fromJson(json.decode(response.body));
       }
+      print('Update formation failed (${response.statusCode}): ${response.body}');
       return null;
     } catch (e) {
       print('Error updating formation: $e');

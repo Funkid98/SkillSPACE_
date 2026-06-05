@@ -30,10 +30,12 @@ class _Scroll3DVideoBackgroundState extends State<Scroll3DVideoBackground> {
 
   Future<void> _initVideo() async {
     try {
+      _controller?.dispose();
       _controller = VideoPlayerController.asset('assets/scrollvideo.mp4');
       await _controller!.initialize();
       if (!mounted) {
         _controller?.dispose();
+        _controller = null;
         return;
       }
 
@@ -43,6 +45,7 @@ class _Scroll3DVideoBackgroundState extends State<Scroll3DVideoBackground> {
 
       if (!mounted) {
         _controller?.dispose();
+        _controller = null;
         return;
       }
 
@@ -52,6 +55,8 @@ class _Scroll3DVideoBackgroundState extends State<Scroll3DVideoBackground> {
       });
     } catch (e) {
       debugPrint('Video initialization failed: $e');
+      _controller?.dispose();
+      _controller = null;
       if (mounted) {
         setState(() {
           _error = e.toString();
@@ -62,10 +67,19 @@ class _Scroll3DVideoBackgroundState extends State<Scroll3DVideoBackground> {
   }
 
   @override
+  void reassemble() {
+    super.reassemble();
+    // Hot-reload safety: dispose old controller and recreate
+    _controller?.dispose();
+    _controller = null;
+    _isInitialized = false;
+    _isLoading = true;
+    _error = null;
+    _initVideo();
+  }
+
+  @override
   void dispose() {
-    if (_isInitialized) {
-      _controller?.pause();
-    }
     _controller?.dispose();
     super.dispose();
   }
